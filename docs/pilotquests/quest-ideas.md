@@ -138,7 +138,7 @@ Each quest should define:
 ## 3) Verification notes (how these quests can be proven)
 For MVP we can standardize on:
 - **Tx succeeded** (receipt/status) and capture **full tx id/signature** (no truncation)
-- **Store raw logs** (Solana logs / EVM logs / CLI JSON output where available)
+- **Store raw logs** (Solana logs / CLI JSON output where available)
 - When needed: add a second layer:
   - balance diffs for swaps
   - position state for perps (position list / tpsl)

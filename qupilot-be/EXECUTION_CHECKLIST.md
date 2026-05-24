@@ -4,8 +4,8 @@ Step-by-step buat execute `quest-api-BE-requirements-v2.md`. Setiap step dipecah
 
 > **Keputusan teknis (sudah dikonfirmasi):**
 > - Schema DB: SQL migration files di `supabase/migrations/`, dijalanin manual via Supabase SQL editor / CLI.
-> - Verifikasi tx_hash: **basic** — receipt `status=1` di EVM RPC + `from` match wallet user.
-> - Claim reward: **real on-chain** ERC-20 transfer dari treasury signer, simpan tx_hash hasil claim.
+> - Verifikasi tx_hash: via Solana RPC (`getParsedTransaction`) dan divalidasi sesuai `step_type` (swap / clmm_open / clmm_close) dengan expected signer dari `quest_participations.agent_wallet_address`.
+> - Claim reward: **real on-chain** transfer SOL dari treasury, simpan tx signature hasil claim.
 > - API Key Agent: di-generate oleh **user (wallet)** dari dashboard via JWT user. **Satu key aktif per user** (regenerate me-revoke yang lama). Simpan **SHA-256 hash + 8-char prefix**, plaintext cuma muncul sekali saat generate. Endpoint agent resolve `user_id` dari key — body `user_uuid` dihapus.
 
 > **Cara apply migrations manual:**
@@ -18,13 +18,13 @@ Step-by-step buat execute `quest-api-BE-requirements-v2.md`. Setiap step dipecah
 ## Phase 0 — Foundation
 
 - [x] **0.1** Tambah folder structure: `src/config/`, `src/lib/`, `src/middlewares/`, `src/modules/`, `src/types/`, `supabase/migrations/` (`.gitkeep` boleh kalau masih kosong).
-- [x] **0.2** `src/config/env.ts` — load + validate env pakai zod: `PORT`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `EVM_RPC_URL`, `TREASURY_PRIVATE_KEY` (hex 64 chars, optional 0x). Fail fast saat boot.
+- [x] **0.2** `src/config/env.ts` — load + validate env pakai zod: `PORT`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `SOLANA_RPC_URL`, `SOLANA_TREASURY_SECRET_KEY` (base58 secretKey). Fail fast saat boot.
 - [x] **0.3** `src/config/supabase.ts` — export single supabase client pakai service role key.
 - [x] **0.4** `src/lib/errors.ts` — class `AppError(status, code, message)` + helper `throw404/409/403/401/400`.
 - [x] **0.5** `src/middlewares/error-handler.ts` — central error middleware, format response konsisten `{ error: { code, message } }`.
 - [x] **0.6** `src/middlewares/validate.ts` — generic zod validator untuk `body` / `query` / `params`.
 - [x] **0.7** `src/types/express.d.ts` — augment `Request` dengan `auth?: { role, sub, ... }`.
-- [x] **0.8** `src/app.ts` — extract express setup dari `src/index.ts`, pasang error handler di akhir. Update `.env.example` tambahin `TREASURY_PRIVATE_KEY` + `EVM_RPC_URL`.
+- [x] **0.8** `src/app.ts` — extract express setup dari `src/index.ts`, pasang error handler di akhir. Update `.env.example` tambahin `SOLANA_TREASURY_SECRET_KEY` + `SOLANA_RPC_URL`.
 
 ## Phase 1 — Database Schema (SQL migrations)
 
@@ -47,7 +47,7 @@ Step-by-step buat execute `quest-api-BE-requirements-v2.md`. Setiap step dipecah
 
 - [x] **2.1** `src/lib/password.ts` — `hashPassword`, `verifyPassword` pakai bcrypt (cost 10).
 - [x] **2.2** `src/lib/jwt.ts` — `signProviderJwt({sub, wallet_address})`, `signUserJwt({sub, wallet_address})`, `verifyJwt()` return discriminated union by `role`.
-- [x] **2.3** `src/lib/wallet-signature.ts` — `verifyEvmSignature(walletAddress, message, signatureHex)` pakai EVM signature recover.
+- [x] **2.3** `src/lib/wallet-signature.ts` — `verifySolanaSignature(walletAddress, message, signatureBase58)` pakai ed25519 verify.
 - [x] **2.4** `src/middlewares/auth-provider.ts` — extract Bearer, verify JWT, assert `role=user_provider`, set `req.auth`.
 - [x] **2.5** `src/middlewares/auth-user.ts` — sama dengan 2.4 tapi `role=user`.
 - [x] **2.6** `src/middlewares/auth-agent.ts` — ⚠️ **versi awal (static `AI_AGENT_API_KEY`) sudah ditulis tapi DEPRECATED** oleh perubahan desain. Akan di-rewrite di **9.x** jadi DB-lookup: ambil `x-api-key`, lookup `key_prefix`, constant-time compare SHA-256 hash, resolve `user_id`, set `req.auth = { role: 'agent', user_id, key_id }`, update `last_used_at`. Hapus juga `AI_AGENT_API_KEY` dari `env.ts` & `.env.example`.
@@ -59,7 +59,7 @@ Step-by-step buat execute `quest-api-BE-requirements-v2.md`. Setiap step dipecah
 ## Phase 4 — Module: Auth User (Wallet) + Role Selection
 
 - [x] **4.1** `src/modules/auth-user/auth-user.schema.ts` — zod `walletLoginBody { wallet_address(0x), signature(0x), message, role?, display_name?, logo_url? }`.
-- [x] **4.2** `src/modules/auth-user/auth-user.service.ts` — verify signature (EVM) → jika wallet belum ada & role kosong return `{ registered:false }` → kalau role ada buat user → sign JWT by role.
+- [x] **4.2** `src/modules/auth-user/auth-user.service.ts` — verify signature (Solana) → jika wallet belum ada & role kosong return `{ registered:false }` → kalau role ada buat user → sign JWT by role.
 - [x] **4.3** `src/modules/auth-user/auth-user.controller.ts` + routes — `POST /auth/user/login`.
 
 ## Phase 5 — Module: Providers (public listing)
@@ -104,8 +104,8 @@ User yang sudah login wallet bisa generate / revoke API key untuk dipakai AI Age
 
 ## Phase 10 — Module: Claim Reward (on-chain)
 
-- [x] **10.1** `src/lib/evm.ts` — `getEvmProvider()` (EVM RPC), `loadTreasuryWallet()` dari `TREASURY_PRIVATE_KEY`, `transferErc20(to, token, amount)` return tx hash.
-- [x] **10.2** `participations.service.ts` — `claimAll(userId)`: select participations `status='success' AND reward_claimed=false` + quest reward info; loop transfer ERC-20 ke wallet user; update `reward_claimed=true` per row sukses; handle partial failure.
+- [x] **10.1** `src/lib/solana.ts` — `getTreasuryKeypair()` dari `SOLANA_TREASURY_SECRET_KEY`, `transferSol(toWallet, lamports)` return tx signature.
+- [x] **10.2** `participations.service.ts` — `claimAll(userId)`: select participations `status='success' AND reward_claimed=false`; loop transfer SOL (lamports) ke wallet user; update `reward_claimed=true` per row sukses; handle partial failure.
 - [x] **10.3** Controller + route: `POST /me/claim` (user-only). Response: `{ claimed: [{ quest_uuid, tx_hash, amount, token }], failed: [...] }`.
 - [x] **10.4** Refactor `participations.service.ts`: extract `claimAllByUserId(userId, walletAddress)` + `resolveUserWalletById(userId)` agar bisa dipakai ulang oleh agent module. Wrapper `claimAll(userUuid, wallet)` tetap dipertahankan untuk endpoint user.
 
@@ -162,7 +162,7 @@ User yang sudah login wallet bisa generate / revoke API key untuk dipakai AI Age
   - [ ] Pakai key user lain untuk complete participation user A → **403** (ownership check)
   - [ ] `POST /me/api-key` lagi → key lama otomatis revoked, key lama dipakai → **401**
   - [ ] `GET /me/participations` (Bearer user) → success + `can_claim=true`
-  - [ ] `POST /me/claim` → on-chain ERC-20 transfer terjadi, tx_hash claim ada
+  - [ ] `POST /me/claim` → on-chain transfer SOL terjadi, tx signature claim ada
   - [ ] `POST /agent/claim` (x-api-key) → reward yang belum di-claim ditransfer ke wallet user (bukan agent); call kedua kalinya `claimed=[]` (idempotent)
   - [ ] `GET /leaderboard` → user muncul dengan `total_reward` & `success_rate`
 - [x] **13.4** (Opsional) Bikin `API.md` ringkas — daftar endpoint + contoh request.

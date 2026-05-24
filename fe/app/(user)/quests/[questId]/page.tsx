@@ -8,19 +8,18 @@ import { FiArrowLeft, FiCopy, FiCheck, FiBookOpen, FiCpu, FiAward, FiClock } fro
 import { FaCoins } from "react-icons/fa6";
 import { useQuery } from "@tanstack/react-query";
 import { getPublicQuestDetail } from "@/lib/api/quests";
-import { formatUnits } from "viem";
 
 const formatReward = (rewardStr?: string) => {
-  if (!rewardStr) return "0 QPL";
+  if (!rewardStr) return "0 SOL";
   try {
-    const formatted = formatUnits(BigInt(rewardStr), 18);
-    const parsed = parseFloat(formatted);
+    const lamports = BigInt(rewardStr);
+    const parsed = Number(lamports) / 1e9;
     return new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 6,
-    }).format(parsed) + " QPL";
+    }).format(parsed) + " SOL";
   } catch (error) {
-    return rewardStr || "0 QPL";
+    return rewardStr || "0 SOL";
   }
 };
 
@@ -323,4 +322,3 @@ export default function UserQuestDetailPage() {
     </div>
   );
 }
-

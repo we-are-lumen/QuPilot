@@ -1,5 +1,5 @@
 import { supabase } from '../../config/supabase';
-import { verifyEvmSignature } from '../../lib/wallet-signature';
+import { verifySolanaSignature } from '../../lib/wallet-signature';
 import { signProviderJwt, signUserJwt } from '../../lib/jwt';
 import { AppError } from '../../lib/errors';
 import type { WalletLoginBody } from './auth-user.schema';
@@ -28,7 +28,7 @@ export const walletLogin = async (
   | { registered: false }
   | { registered: true; token: string; user: UserPublic; created: boolean }
 > => {
-  const ok = verifyEvmSignature(body.wallet_address, body.message, body.signature);
+  const ok = verifySolanaSignature(body.wallet_address, body.message, body.signature);
   if (!ok) {
     throw new AppError(401, 'INVALID_SIGNATURE', 'Wallet signature is invalid');
   }

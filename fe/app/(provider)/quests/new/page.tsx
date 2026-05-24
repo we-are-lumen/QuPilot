@@ -47,7 +47,7 @@ export default function CreateQuestPage() {
   // Rewards & Configuration
   const [totalRewardPool, setTotalRewardPool] = useState("");
   const [rewardPerUser, setRewardPerUser] = useState("");
-  const [rewardToken, setRewardToken] = useState("");
+  const [rewardToken, setRewardToken] = useState("SOL");
   const [expiresAt, setExpiresAt] = useState<DateValue | null>(today(getLocalTimeZone()));
   
   // Transaction hash & Treasury copy state
@@ -87,29 +87,24 @@ export default function CreateQuestPage() {
     },
   ]);
 
-  // Handle Token Address change with custom EVM Address regex validation
   const handleTokenChange = (val: string) => {
-    setRewardToken(val);
-    if (val && !/^0x[a-fA-F0-9]{40}$/.test(val)) {
-      setTokenError("Must be a valid 40-character EVM address (starting with 0x)");
-    } else {
-      setTokenError("");
-    }
+    const v = val.trim().toUpperCase();
+    setRewardToken(v);
+    if (v !== "SOL") setTokenError('Reward token harus "SOL"');
+    else setTokenError("");
   };
 
   // Handle Transaction Hash change with custom regex validation
   const handleTxHashChange = (val: string) => {
     setTxHash(val);
-    if (val && !/^0x[a-fA-F0-9]{64}$/.test(val)) {
-      setTxHashError("Must be a valid 66-character EVM transaction hash (starting with 0x)");
-    } else {
-      setTxHashError("");
-    }
+    if (val && !/^[1-9A-HJ-NP-Za-km-z]{64,128}$/.test(val.trim())) {
+      setTxHashError("Must be a base58 Solana signature (64-128 chars)");
+    } else setTxHashError("");
   };
 
   // Copy Treasury Address to Clipboard
   const handleCopyTreasuryAddress = () => {
-    const treasury = process.env.NEXT_PUBLIC_TREASURY_ADDRESS || "0x71C7656EC7ab88b098defB751B7401B5f6d5976F";
+    const treasury = process.env.NEXT_PUBLIC_TREASURY_ADDRESS || "11111111111111111111111111111111";
     navigator.clipboard.writeText(treasury);
     setIsCopied(true);
     toast.success("Treasury address copied to clipboard!");
@@ -172,16 +167,14 @@ export default function CreateQuestPage() {
     setRewardPoolError("");
     setTxHashError("");
 
-    // Validate Ethereum address format
-    if (!/^0x[a-fA-F0-9]{40}$/.test(rewardToken)) {
-      setTokenError("Must be a valid 40-character EVM address (starting with 0x)");
+    if (rewardToken.trim().toUpperCase() !== "SOL") {
+      setTokenError('Reward token harus "SOL"');
       toast.danger("Please correct the validation errors before submitting.");
       return;
     }
 
-    // Validate Transaction Hash format
-    if (!/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
-      setTxHashError("Must be a valid 66-character EVM transaction hash (starting with 0x)");
+    if (!/^[1-9A-HJ-NP-Za-km-z]{64,128}$/.test(txHash.trim())) {
+      setTxHashError("Must be a base58 Solana signature (64-128 chars)");
       toast.danger("Please provide a valid transaction hash as proof of deposit.");
       return;
     }
@@ -538,11 +531,11 @@ export default function CreateQuestPage() {
 
               <div className="md:col-span-2">
                 <TextField isRequired isDisabled={isLoading}>
-                  <Label className="text-[#1f1b18] text-sm font-bold tracking-wide mb-1">Reward Token Address (ERC-20)</Label>
+                  <Label className="text-[#1f1b18] text-sm font-bold tracking-wide mb-1">Reward Token</Label>
                   <Input
                     value={rewardToken}
                     onChange={(e) => handleTokenChange(e.target.value)}
-                    placeholder="e.g., 0x471ceac3d7de120... (40-char EVM Address)"
+                    placeholder="SOL"
                     className="rounded-md border border-[#e8e2d9] px-3 py-2.5 text-base shadow-sm focus-visible:border-[#a63420] font-mono"
                   />
                 </TextField>
@@ -556,7 +549,7 @@ export default function CreateQuestPage() {
                 <div className="flex flex-col gap-1">
                   <h3 className="text-[#1f1b18] text-sm font-bold tracking-wide">Manual Treasury Deposit Instructions</h3>
                   <p className="text-[#6b6560] text-xs leading-relaxed">
-                    To secure the rewards for this quest, you must manually deposit <span className="font-bold text-[#1f1b18]">{totalRewardPool || "0"} units</span> of your token to the QuPilot Treasury. Ensure you use the exact token address specified above.
+                    To secure the rewards for this quest, you must manually deposit <span className="font-bold text-[#1f1b18]">{totalRewardPool || "0"} lamports</span> of SOL to the QuPilot Treasury.
                   </p>
                 </div>
 
@@ -564,7 +557,7 @@ export default function CreateQuestPage() {
                   <span className="text-[11px] font-bold text-[#a63420] tracking-wider uppercase">QuPilot Treasury Address</span>
                   <div className="flex items-center gap-2 bg-white border border-[#e8e2d9] rounded-xl p-3 justify-between shadow-sm">
                     <code className="text-[#1f1b18] font-mono text-xs md:text-sm select-all break-all pr-2">
-                      {process.env.NEXT_PUBLIC_TREASURY_ADDRESS || "0x71C7656EC7ab88b098defB751B7401B5f6d5976F"}
+                      {process.env.NEXT_PUBLIC_TREASURY_ADDRESS || "11111111111111111111111111111111"}
                     </code>
                     <Button
                       type="button"
@@ -593,7 +586,7 @@ export default function CreateQuestPage() {
                   <Input
                     value={txHash}
                     onChange={(e) => handleTxHashChange(e.target.value)}
-                    placeholder="e.g., 0x2e06180556f8f5539fa5a9ebf552f44154c1bdf7f45778b0dbd2380f2d91b4ec (66-char hex)"
+                    placeholder="e.g., 4QG8... (base58 signature)"
                     className="rounded-md border border-[#e8e2d9] px-3 py-2.5 text-base shadow-sm focus-visible:border-[#a63420] font-mono"
                   />
                 </TextField>
@@ -601,7 +594,7 @@ export default function CreateQuestPage() {
                   <p className="text-[11px] text-red-500 font-semibold mt-1">{txHashError}</p>
                 ) : (
                   <p className="text-[11px] text-[#6b6560] font-medium mt-1">
-                    Paste the 66-character transaction hash (including 0x) of your successful treasury deposit transfer.
+                    Paste the base58 Solana signature of your successful treasury deposit transfer.
                   </p>
                 )}
               </div>

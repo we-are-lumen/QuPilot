@@ -51,7 +51,7 @@ Pros: more universal.
 Cons: requires baseline balances; approvals/fees introduce edge cases.
 
 ## 4) Edge cases to handle
-- Token approvals (ERC20 approve) before swap (can be 2 tx).
+- Associated token account creation before swap (can be an extra tx).
 - Gas fees paid in native token (balances change).
 - Slippage causes variable amountOut.
 - Partial execution / reverted tx.

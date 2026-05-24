@@ -36,7 +36,7 @@ export default function UserProfilePage() {
     setUser(getUserData());
   }, []);
 
-  const walletAddress = user?.wallet_address || "0x0000000000000000000000000000000000000000";
+  const walletAddress = user?.wallet_address || "";
 
   const { data: participationsData, isLoading: isLoadingParticipations } = useUserParticipations();
   const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useLeaderboard();
@@ -54,7 +54,7 @@ export default function UserProfilePage() {
 
   let globalRank = "-";
   if (leaderboardData?.entries) {
-    const index = leaderboardData.entries.findIndex(e => e.wallet_address.toLowerCase() === walletAddress.toLowerCase());
+    const index = leaderboardData.entries.findIndex((e) => e.wallet_address === walletAddress);
     if (index !== -1) {
       globalRank = `#${index + 1}`;
     } else if (completedQuests.length > 0) {

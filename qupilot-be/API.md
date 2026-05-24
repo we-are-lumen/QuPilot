@@ -68,8 +68,8 @@ Body:
 
 ```json
 {
-  "wallet_address": "0xEvmAddress",
-  "signature": "0xSignature",
+  "wallet_address": "SolanaPubkeyBase58",
+  "signature": "SolanaSignatureBase58",
   "message": "string yang ditandatangani wallet",
   "role": "user | user_provider (opsional)",
   "display_name": "wajib kalau role=user_provider (opsional)",
@@ -91,7 +91,7 @@ Registered login — 200/201 Response:
   "token": "jwt",
   "user": {
     "uuid": "uuid",
-    "wallet_address": "0xEvmAddress",
+    "wallet_address": "SolanaPubkeyBase58",
     "role": "user | user_provider",
     "display_name": "string | null",
     "logo_url": "string | null",
@@ -149,8 +149,8 @@ Body:
   ],
   "total_reward_pool": "10000000",
   "reward_per_user": "1000000",
-  "reward_token": "0xTokenAddress",
-  "tx_hash": "0xQuestFundingTxHash",
+  "reward_token": "SOL",
+  "tx_hash": "SolanaSignatureBase58",
   "expires_at": "2026-06-01T00:00:00.000Z"
 }
 ```
@@ -160,7 +160,7 @@ Body:
   - `clmm_open` / `clmm_close`: `token0_mint`, `token1_mint`, `position_mint` (base58 Solana pubkey)
 - `total_reward_pool`: total reward (bigint) yang tersedia untuk quest ini — batas atas akumulasi distribusi.
 - `reward_per_user`: reward (bigint) yang diterima setiap user yang berhasil men-complete quest.
-- `reward_token`: address kontrak ERC-20 (0x...) yang dikirim dari treasury ke user saat claim.
+- `reward_token`: selalu `SOL` (reward dibayar dalam lamports).
 - `tx_hash`: tx hash provider terkait create/funding quest (required).
 - Validasi: `total_reward_pool >= reward_per_user` (kalau lebih kecil, 400 VALIDATION_ERROR).
 - Kedua nilai diterima sebagai string atau integer; server reject nilai negatif / non-integer.
@@ -178,8 +178,8 @@ Body:
     "total_reward_pool": "10000000",
     "reward_per_user": "1000000",
     "total_reward_distributed": "0",
-    "reward_token": "0xTokenAddress",
-    "tx_hash": "0xQuestFundingTxHash",
+    "reward_token": "SOL",
+    "tx_hash": "SolanaSignatureBase58",
     "expires_at": "...",
     "created_at": "..."
   }
@@ -204,8 +204,8 @@ Auth: Wallet JWT dengan role=user_provider
       "total_reward_pool": "10000000",
       "reward_per_user": "1000000",
       "total_reward_distributed": "5000000",
-      "reward_token": "0xTokenAddress",
-      "tx_hash": "0xQuestFundingTxHash",
+      "reward_token": "SOL",
+      "tx_hash": "SolanaSignatureBase58",
       "expires_at": "...",
       "created_at": "...",
       "participation_count": 0
@@ -233,8 +233,8 @@ Auth: Wallet JWT dengan role=user_provider
     "total_reward_pool": "10000000",
     "reward_per_user": "1000000",
     "total_reward_distributed": "5000000",
-    "reward_token": "0xTokenAddress",
-    "tx_hash": "0xQuestFundingTxHash",
+    "reward_token": "SOL",
+    "tx_hash": "SolanaSignatureBase58",
     "expires_at": "...",
     "created_at": "..."
   },
@@ -275,8 +275,8 @@ Query:
       "total_reward_pool": "10000000",
       "reward_per_user": "1000000",
       "total_reward_distributed": "5000000",
-      "reward_token": "0xTokenAddress",
-      "tx_hash": "0xQuestFundingTxHash",
+      "reward_token": "SOL",
+      "tx_hash": "SolanaSignatureBase58",
       "expires_at": "...",
       "created_at": "...",
       "participation_count": 0,
@@ -307,8 +307,8 @@ Public.
     "total_reward_pool": "10000000",
     "reward_per_user": "1000000",
     "total_reward_distributed": "5000000",
-    "reward_token": "0xTokenAddress",
-    "tx_hash": "0xQuestFundingTxHash",
+    "reward_token": "SOL",
+    "tx_hash": "SolanaSignatureBase58",
     "expires_at": "...",
     "created_at": "...",
     "participation_count": 0,
@@ -342,8 +342,8 @@ Auth: User JWT
         "total_reward_pool": "10000000",
         "reward_per_user": "1000000",
         "total_reward_distributed": "5000000",
-        "reward_token": "0xTokenAddress",
-        "tx_hash": "0xQuestFundingTxHash",
+        "reward_token": "SOL",
+        "tx_hash": "SolanaSignatureBase58",
         "expires_at": "...",
         "created_at": "...",
         "provider": { "uuid": "uuid", "display_name": "Byreal", "logo_url": "https://..." }
@@ -378,8 +378,8 @@ Auth: User JWT
       "total_reward_pool": "10000000",
       "reward_per_user": "1000000",
       "total_reward_distributed": "5000000",
-      "reward_token": "0xTokenAddress",
-      "tx_hash": "0xQuestFundingTxHash",
+      "reward_token": "SOL",
+      "tx_hash": "SolanaSignatureBase58",
       "expires_at": "...",
       "created_at": "...",
       "provider": { "uuid": "uuid", "display_name": "Byreal", "logo_url": "https://..." }
@@ -397,7 +397,7 @@ Claim semua participation yang `status=success` dan `reward_claimed=false`.
 
 ```json
 {
-  "claimed": [{ "quest_uuid": "uuid", "tx_hash": "0xTxHash", "amount": "1000000", "token": "0xTokenAddress" }],
+  "claimed": [{ "quest_uuid": "uuid", "tx_hash": "SolanaSignatureBase58", "amount": "1000000", "token": "SOL" }],
   "failed": [{ "quest_uuid": "uuid", "reason": "..." }]
 }
 ```
@@ -523,7 +523,7 @@ Body: (kosong)
 
 ```json
 {
-  "claimed": [{ "quest_uuid": "uuid", "tx_hash": "0xTxHash", "amount": "1000000", "token": "0xTokenAddress" }],
+  "claimed": [{ "quest_uuid": "uuid", "tx_hash": "SolanaSignatureBase58", "amount": "1000000", "token": "SOL" }],
   "failed": [{ "quest_uuid": "uuid", "reason": "..." }]
 }
 ```
@@ -541,7 +541,7 @@ Query:
 ```json
 {
   "entries": [
-    { "user_uuid": "uuid", "wallet_address": "0xEvmAddress", "total_reward": "10000000", "success_rate": 0.8 }
+    { "user_uuid": "uuid", "wallet_address": "SolanaPubkeyBase58", "total_reward": "10000000", "success_rate": 0.8 }
   ]
 }
 ```

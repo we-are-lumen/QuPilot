@@ -14,8 +14,7 @@ const truncateAddress = (addr: string) => {
 
 const getInitial = (addr: string) => {
   if (!addr) return "";
-  // Return the first character after 0x, default to E
-  return addr.slice(2, 3).toUpperCase() || "E";
+  return addr.slice(0, 1).toUpperCase() || "S";
 };
 
 export default function LeaderboardPage() {
