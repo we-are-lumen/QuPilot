@@ -202,7 +202,7 @@ export default function LeaderboardPage() {
       {!isLoading && !error && entries.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#fcfbfa] border border-[#dfbfb94d] rounded-2xl max-w-4xl mx-auto w-full">
           <p className="text-lg font-bold text-[#a63420]">Leaderboard is empty</p>
-          <p className="text-sm text-[#6b6560] max-w-md">
+          <p className="text-sm text-[#6b6560]">
             There are currently no active explorer records in the system. Start completing quests to appear on the board!
           </p>
         </div>

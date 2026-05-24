@@ -55,7 +55,11 @@ export default function ProviderLayout({
               href="/dashboard"
               className="flex items-center gap-2 group transition-transform duration-200 hover:scale-105"
             >
-              <LuRocket className="text-2xl text-[#a63420]" />
+              <img
+                src="/logo.png"
+                alt="QuPilot Logo"
+                className="w-6 h-6 object-contain"
+              />
               <span className="text-xl text-[#a63420] font-extrabold tracking-tight">
                 QuPilot
               </span>

@@ -4,17 +4,31 @@ import React, { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Modal, Button, Input, toast, TextField, Label, cn } from "@heroui/react";
 import { FaWallet, FaRocket, FaUser, FaUserTie } from "react-icons/fa6";
-import { FiCheckCircle, FiLoader } from "react-icons/fi";
+import { FiCheckCircle, FiLoader, FiArrowLeft } from "react-icons/fi";
 import { useWalletLogin } from "@/lib/hooks/useWalletLogin";
 import {
   isSolanaWalletInstalled,
+  isPhantomInstalled,
+  isSolflareInstalled,
+  isBackpackInstalled,
+  isOkxInstalled,
+  isMetaMaskInstalled,
+  isMetaMaskSandboxActive,
   connectWallet,
   buildSignInMessage,
   signMessage,
   disconnectWallet,
+  type WalletType,
 } from "@/lib/utils/wallet";
 import { setAuthToken, setUserData, clearAuth } from "@/lib/utils/auth";
 import type { IWalletLoginResponse } from "@/lib/types/auth";
+import {
+  PhantomIcon,
+  SolflareIcon,
+  BackpackIcon,
+  OkxIcon,
+  MetaMaskIcon,
+} from "./icons/WalletIcons";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -22,7 +36,7 @@ interface AuthModalProps {
   onSuccess?: () => void;
 }
 
-type AuthStep = "role_selection" | "wallet_action" | "provider_form";
+type AuthStep = "role_selection" | "wallet_selection" | "wallet_action" | "provider_form";
 
 export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModalProps) {
   const router = useRouter();
@@ -38,6 +52,11 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string>("");
   const [pendingSignature, setPendingSignature] = useState<string>("");
+  const [phantomDetected, setPhantomDetected] = useState(false);
+  const [solflareDetected, setSolflareDetected] = useState(false);
+  const [backpackDetected, setBackpackDetected] = useState(false);
+  const [okxDetected, setOkxDetected] = useState(false);
+  const [metamaskDetected, setMetamaskDetected] = useState(false);
 
   // Provider Form State
   const [displayName, setDisplayName] = useState("");
@@ -57,24 +76,50 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
       setFieldErrors({});
       setIsSubmitting(false);
       setLoadingText("");
+      setPhantomDetected(isPhantomInstalled());
+      setSolflareDetected(isSolflareInstalled());
+      setBackpackDetected(isBackpackInstalled());
+      setOkxDetected(isOkxInstalled());
+      setMetamaskDetected(isMetaMaskInstalled());
     }
   }, [isOpen]);
 
-  const handleWalletLogin = useCallback(async () => {
-    if (!isSolanaWalletInstalled()) {
-      toast.danger("Phantom (atau wallet Solana yang kompatibel) belum terpasang. Silakan install dulu.");
+  const handleWalletLogin = useCallback(async (walletType: WalletType) => {
+    let installed = false;
+    switch (walletType) {
+      case 'phantom': installed = isPhantomInstalled(); break;
+      case 'solflare': installed = isSolflareInstalled(); break;
+      case 'backpack': installed = isBackpackInstalled(); break;
+      case 'okx': installed = isOkxInstalled(); break;
+      case 'metamask': installed = isMetaMaskInstalled(); break;
+    }
+    if (!installed) {
+      const names: Record<WalletType, string> = {
+        phantom: 'Phantom',
+        solflare: 'Solflare',
+        backpack: 'Backpack',
+        okx: 'OKX Wallet',
+        metamask: 'MetaMask'
+      };
+      toast.danger(`${names[walletType]} is not installed. Please install it first.`);
       return;
     }
 
     try {
       setAuthStep("wallet_action");
       setLoadingText("Connecting to wallet...");
-      const address = await connectWallet();
+      const address = await connectWallet(walletType);
       setWalletAddress(address);
+
+      if (walletType === "metamask" && isMetaMaskSandboxActive()) {
+        toast.warning(
+          "MetaMask Solana Snap failed (e.g. Invalid origin). Activating Sandbox Mode with a persistent local devnet wallet."
+        );
+      }
 
       setLoadingText("Please sign the message in your wallet...");
       const message = buildSignInMessage(address);
-      const signature = await signMessage(message);
+      const signature = await signMessage(message, walletType);
       setPendingMessage(message);
       setPendingSignature(signature);
 
@@ -96,6 +141,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                 toast.success("Wallet verified! Please complete your provider profile.");
               } else {
                 toast.danger("User account not registered.");
+                setAuthStep("role_selection");
               }
             } else {
               // Registered provider or standard user (which is auto-registered/logged in)
@@ -204,7 +250,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
       <Modal.Backdrop>
         <Modal.Container size="md">
           <Modal.Dialog
-            className="bg-white/95 border border-[#dfbfb9]/40 backdrop-blur-md text-[#1f1b18] shadow-2xl rounded-2xl overflow-hidden"
+            className="border bg-white/95 border-[#dfbfb9]/40 text-[#1f1b18] backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden transition-all duration-300"
             style={{ width: "calc(100vw - 32px)", maxWidth: "448px" }}
           >
             <Modal.CloseTrigger />
@@ -272,13 +318,179 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
 
                 <Modal.Footer className="pt-2 pb-6 px-6">
                   <Button
-                    onPress={handleWalletLogin}
-                    className="w-full bg-[#A63420] text-white font-bold text-xs uppercase tracking-widest py-3.5 rounded-full flex items-center justify-center gap-2 hover:bg-[#8f2b1a] transition-all shadow-md active:scale-[0.98]"
+                    onPress={() => setAuthStep("wallet_selection")}
+                    className="w-full bg-[#A63420] text-white font-bold text-xs tracking-widest py-3.5 rounded-full flex items-center justify-center gap-2 hover:bg-[#8f2b1a] transition-all shadow-md active:scale-[0.98]"
                   >
                     <FaWallet size={14} />
                     Connect & Login
                   </Button>
                 </Modal.Footer>
+              </>
+            )}
+
+            {authStep === "wallet_selection" && (
+              <>
+                <Modal.Header className="flex flex-col items-center text-center pb-2 relative">
+                  <button
+                    type="button"
+                    onClick={() => setAuthStep("role_selection")}
+                    className="absolute left-4 top-5 p-2 text-[#6b6560] hover:text-[#1f1b18] rounded-full hover:bg-[#FFE9E5]/50 transition-colors"
+                  >
+                    <FiArrowLeft size={18} />
+                  </button>
+                  <div className="w-12 h-12 rounded-full bg-[#FFE9E5] text-[#A63420] flex items-center justify-center mb-2 mt-2">
+                    <FaWallet size={20} />
+                  </div>
+                  <Modal.Heading className="text-xl font-bold tracking-tight text-[#1f1b18] px-8">
+                    Connect a wallet
+                  </Modal.Heading>
+                  <p className="text-xs text-[#6b6560] mt-1 px-8">
+                    Select a wallet on Solana to continue
+                  </p>
+                </Modal.Header>
+
+                 <Modal.Body className="py-4 px-6 flex flex-col gap-3">
+                  {/* Phantom Wallet Row */}
+                  <button
+                    type="button"
+                    onClick={() => handleWalletLogin("phantom")}
+                    className="flex items-center justify-between p-4 rounded-xl border border-[#dfbfb9]/40 bg-white/50 hover:bg-[#FFE9E5]/10 hover:border-[#A63420]/30 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group w-full"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-[#dfbfb9]/30 flex items-center justify-center shrink-0 shadow-sm">
+                        <PhantomIcon size={24} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-[#1f1b18]">Phantom</h4>
+                        <p className="text-xs text-[#6b6560]">Solana Wallet</p>
+                      </div>
+                    </div>
+                    <div>
+                      {phantomDetected ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#10B981] border border-[#10B981]/20">
+                          Detected
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F8F4EF] text-[#A39D97] border border-[#E8E2D9]">
+                          Not Installed
+                        </span>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Solflare Wallet Row */}
+                  <button
+                    type="button"
+                    onClick={() => handleWalletLogin("solflare")}
+                    className="flex items-center justify-between p-4 rounded-xl border border-[#dfbfb9]/40 bg-white/50 hover:bg-[#FFE9E5]/10 hover:border-[#A63420]/30 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group w-full"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-[#dfbfb9]/30 flex items-center justify-center shrink-0 shadow-sm">
+                        <SolflareIcon size={24} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-[#1f1b18]">Solflare</h4>
+                        <p className="text-xs text-[#6b6560]">Solana Wallet</p>
+                      </div>
+                    </div>
+                    <div>
+                      {solflareDetected ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#10B981] border border-[#10B981]/20">
+                          Detected
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F8F4EF] text-[#A39D97] border border-[#E8E2D9]">
+                          Not Installed
+                        </span>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Backpack Wallet Row */}
+                  <button
+                    type="button"
+                    onClick={() => handleWalletLogin("backpack")}
+                    className="flex items-center justify-between p-4 rounded-xl border border-[#dfbfb9]/40 bg-white/50 hover:bg-[#FFE9E5]/10 hover:border-[#A63420]/30 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group w-full"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-[#dfbfb9]/30 flex items-center justify-center shrink-0 shadow-sm">
+                        <BackpackIcon size={24} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-[#1f1b18]">Backpack</h4>
+                        <p className="text-xs text-[#6b6560]">Solana Wallet</p>
+                      </div>
+                    </div>
+                    <div>
+                      {backpackDetected ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#10B981] border border-[#10B981]/20">
+                          Detected
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F8F4EF] text-[#A39D97] border border-[#E8E2D9]">
+                          Not Installed
+                        </span>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* OKX Wallet Row */}
+                  <button
+                    type="button"
+                    onClick={() => handleWalletLogin("okx")}
+                    className="flex items-center justify-between p-4 rounded-xl border border-[#dfbfb9]/40 bg-white/50 hover:bg-[#FFE9E5]/10 hover:border-[#A63420]/30 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group w-full"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-[#dfbfb9]/30 flex items-center justify-center shrink-0 shadow-sm">
+                        <OkxIcon size={24} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-[#1f1b18]">OKX Wallet</h4>
+                        <p className="text-xs text-[#6b6560]">Solana Wallet</p>
+                      </div>
+                    </div>
+                    <div>
+                      {okxDetected ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#10B981] border border-[#10B981]/20">
+                          Detected
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F8F4EF] text-[#A39D97] border border-[#E8E2D9]">
+                          Not Installed
+                        </span>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* MetaMask Wallet Row */}
+                  <button
+                    type="button"
+                    onClick={() => handleWalletLogin("metamask")}
+                    className="flex items-center justify-between p-4 rounded-xl border border-[#dfbfb9]/40 bg-white/50 hover:bg-[#FFE9E5]/10 hover:border-[#A63420]/30 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group w-full"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-[#dfbfb9]/30 flex items-center justify-center shrink-0 shadow-sm">
+                        <MetaMaskIcon size={24} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-[#1f1b18]">MetaMask</h4>
+                        <p className="text-xs text-[#6b6560]">EVM & Solana Snap</p>
+                      </div>
+                    </div>
+                    <div>
+                      {metamaskDetected ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#10B981] border border-[#10B981]/20">
+                          Detected
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F8F4EF] text-[#A39D97] border border-[#E8E2D9]">
+                          Not Installed
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                </Modal.Body>
+                <div className="h-6" />
               </>
             )}
 
@@ -363,7 +575,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                   <Button
                     type="submit"
                     isDisabled={isSubmitting}
-                    className="w-full bg-[#A63420] text-white font-bold text-xs uppercase tracking-widest py-3.5 rounded-full flex items-center justify-center gap-2 hover:bg-[#8f2b1a] transition-all shadow-md"
+                    className="w-full bg-[#A63420] text-white font-bold text-xs tracking-widest py-3.5 rounded-full flex items-center justify-center gap-2 hover:bg-[#8f2b1a] transition-all shadow-md"
                   >
                     {isSubmitting ? (
                       <>

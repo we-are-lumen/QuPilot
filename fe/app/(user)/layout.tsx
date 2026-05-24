@@ -74,9 +74,10 @@ export default function UserLayout({
             className="flex items-center gap-2 group transition-transform duration-200 hover:scale-105"
           >
             <span className="text-[#a63420] text-2xl font-extrabold flex items-center gap-1.5">
-              <FaRocket
-                className="inline-block animate-pulse text-[#a63420]"
-                size={22}
+              <img
+                src="/logo.png"
+                alt="QuPilot Logo"
+                className="w-6 h-6 object-contain"
               />
               <span className="font-extrabold tracking-tight">QuPilot</span>
             </span>
