@@ -79,8 +79,12 @@ export const verifyCreateQuestTx = async (input: VerifyCreateQuestInput): Promis
         ? (eventProvider as { toBase58: () => string }).toBase58()
         : null;
 
-  if (!providerStr) return { ok: false, reason: 'provider mismatch' };
-  if (providerStr !== input.expected.providerWallet) return { ok: false, reason: 'provider mismatch' };
+  if (!providerStr) {
+    return { ok: false, reason: `provider mismatch (expected ${input.expected.providerWallet}, got <unparsed>)` };
+  }
+  if (providerStr !== input.expected.providerWallet) {
+    return { ok: false, reason: `provider mismatch (expected ${input.expected.providerWallet}, got ${providerStr})` };
+  }
 
   const questIdBytes = uuidToBytes32(input.expected.questUuid);
   const eventQuestId = toBytes(data.questId ?? data.quest_id);
@@ -110,4 +114,3 @@ export const verifyCreateQuestTx = async (input: VerifyCreateQuestInput): Promis
 
   return { ok: true, questPoolPda: questPoolPda.toBase58(), questIdBytes };
 };
-

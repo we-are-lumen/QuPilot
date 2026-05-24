@@ -293,7 +293,7 @@ export default function CreateQuestPage() {
           .join(", ");
         toast.danger(`Validation error: ${issuesMsg}`);
       } else if (backendError?.code === "DEPOSIT_TX_SIGNER_MISMATCH") {
-        toast.danger("Deposit transaction signer doesn't match your provider wallet.");
+        toast.danger(backendError?.message || "Deposit transaction signer doesn't match your provider wallet.");
       } else {
         toast.danger(backendError?.message || "Failed to launch quest. Please check parameters.");
       }
