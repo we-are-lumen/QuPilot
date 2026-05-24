@@ -1,5 +1,22 @@
 import { apiClient } from './client';
-import type { IProviderQuestsResponse, ICreateQuestPayload, IQuest, IProviderQuestDetailResponse } from '@/lib/types/quests';
+import type { 
+  IProviderQuestsResponse, 
+  ICreateQuestPayload, 
+  IQuest, 
+  IProviderQuestDetailResponse,
+  IPublicQuestsResponse,
+  IPublicQuestDetailResponse
+} from '@/lib/types/quests';
+
+/**
+ * GET /quests
+ * 
+ * Fetches public quests. Optional query params: protocol, type.
+ */
+export async function getPublicQuests(params?: { protocol?: string; type?: string }): Promise<IPublicQuestsResponse> {
+  const response = await apiClient.get<IPublicQuestsResponse>('/quests', { params });
+  return response.data;
+}
 
 /**
  * GET /provider/quests
@@ -11,6 +28,7 @@ export async function getProviderQuests(): Promise<IProviderQuestsResponse> {
   const response = await apiClient.get<IProviderQuestsResponse>('/provider/quests');
   return response.data;
 }
+
 
 /**
  * POST /provider/quests
@@ -31,5 +49,16 @@ export async function getProviderQuestDetail(uuid: string): Promise<IProviderQue
   const response = await apiClient.get<IProviderQuestDetailResponse>(`/provider/quests/${uuid}`);
   return response.data;
 }
+
+/**
+ * GET /quests/:uuid
+ * 
+ * Fetches specific public quest details.
+ */
+export async function getPublicQuestDetail(uuid: string): Promise<IPublicQuestDetailResponse> {
+  const response = await apiClient.get<IPublicQuestDetailResponse>(`/quests/${uuid}`);
+  return response.data;
+}
+
 
 

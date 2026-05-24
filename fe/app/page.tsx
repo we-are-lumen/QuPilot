@@ -246,14 +246,22 @@ function LandingPageContent() {
 
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // Populate user data from storage on mount
+  // Check auth and redirect if already authenticated
   useEffect(() => {
     const user = getUserData();
     if (user) {
       setWalletAddress(user.wallet_address);
+      if (user.role === "user_provider") {
+        router.replace("/dashboard");
+      } else {
+        router.replace("/explore");
+      }
+    } else {
+      setIsCheckingAuth(false);
     }
-  }, []);
+  }, [router]);
 
   // Handle URL redirect query parameter ?login=true
   useEffect(() => {
@@ -279,8 +287,26 @@ function LandingPageContent() {
     const user = getUserData();
     if (user) {
       setWalletAddress(user.wallet_address);
+      if (user.role === "user_provider") {
+        router.replace("/dashboard");
+      } else {
+        router.replace("/explore");
+      }
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FFFBF5] text-[#A63420]">
+        <div className="flex flex-col items-center gap-4">
+          <FaRocket className="w-12 h-12 animate-bounce" />
+          <span className="font-bold tracking-wide text-sm font-sans animate-pulse">
+            MISSION CONTROL INITIATED...
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -313,7 +339,7 @@ function LandingPageContent() {
                 color: "#A63420",
               }}
             >
-              Pilot
+              QuPilot
             </span>
           </Link>
 
@@ -605,7 +631,7 @@ function LandingPageContent() {
                   className="text-2xl font-extrabold tracking-tight"
                   style={{ fontFamily: "var(--font-nunito)", color: "#A63420" }}
                 >
-                  Pilot
+                  QuPilot
                 </span>
               </Link>
               <p className="text-sm leading-relaxed" style={{ color: "#6B6560" }}>
@@ -666,7 +692,7 @@ function LandingPageContent() {
             style={{ borderTop: "1px solid rgba(223,191,185,0.3)" }}
           >
             <p className="text-sm" style={{ color: "#6B6560" }}>
-              © 2024 Pilot Web3 Quests. Explore the stars.
+              © 2024 QuPilot Web3 Quests. Explore the stars.
             </p>
             <div className="flex gap-5">
               {["Terms of Service", "Privacy Policy"].map((l) => (

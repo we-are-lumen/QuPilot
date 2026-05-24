@@ -278,6 +278,8 @@ export default function ProviderDashboard() {
             gradient = "from-[#0a1820] via-[#0d2a3a] to-[#12425c]";
           }
 
+          const firstStepType = quest.steps?.[0]?.step_type;
+
           return (
             <Card key={quest.uuid} className="bg-white border border-[#dfbfb94d] rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               {/* Visual Cover Header */}
@@ -303,7 +305,7 @@ export default function ProviderDashboard() {
 
                 {/* Icon Overlay inside Cover */}
                 <div className="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white">
-                  {quest.quest_type === "swap" ? <LuSparkles className="text-lg" /> : <LuMilestone className="text-lg" />}
+                  {firstStepType === "swap" ? <LuSparkles className="text-lg" /> : <LuMilestone className="text-lg" />}
                 </div>
               </div>
 

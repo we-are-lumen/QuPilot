@@ -5,7 +5,7 @@ import Link from "next/link";
 import AuthGate from "@/app/components/AuthGate";
 import { getUserData } from "@/lib/utils/auth";
 import type { IUser } from "@/lib/types/auth";
-import { Button, Card, Avatar, Badge, Chip, ProgressBar, Tabs } from "@heroui/react";
+import { Button, Card, Avatar, Badge, Chip, ProgressBar, Tabs, Skeleton } from "@heroui/react";
 import {
   FaUserAstronaut,
   FaRegCopy,
@@ -21,31 +21,11 @@ import {
   FaSpinner,
   FaCheck,
   FaLock,
-  FaChevronRight
+  FaChevronRight,
+  FaGift
 } from "react-icons/fa6";
-
-const COMPLETED_QUESTS = [
-  {
-    id: "q-c1",
-    title: "Bridge Initiate",
-    description: "Successfully bridge any amount of ETH to Base mainnet using QuPilot.",
-    category: "BRIDGING",
-    xp: "100 XP",
-    date: "2 days ago",
-    icon: FaRoute,
-    iconColor: "text-[#006767]"
-  },
-  {
-    id: "q-c2",
-    title: "First Space Telemetry Scrap",
-    description: "Inspect telemetry anomaly logs and check for deep space telemetry errors.",
-    category: "TELEMETRY",
-    xp: "300 XP",
-    date: "5 days ago",
-    icon: FaAward,
-    iconColor: "text-[#a63420]"
-  }
-];
+import { useUserParticipations, useClaimRewards } from "@/lib/hooks/useParticipations";
+import { useLeaderboard } from "@/lib/hooks/useLeaderboard";
 
 export default function UserProfilePage() {
   const [copied, setCopied] = useState(false);
@@ -58,10 +38,49 @@ export default function UserProfilePage() {
 
   const walletAddress = user?.wallet_address || "0x0000000000000000000000000000000000000000";
 
+  const { data: participationsData, isLoading: isLoadingParticipations } = useUserParticipations();
+  const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useLeaderboard();
+  const { mutate: claimRewards, isPending: isClaiming } = useClaimRewards();
+
+  const participations = participationsData?.participations || [];
+  const activeQuests = participations.filter(p => p.status === 'inprogress');
+  const completedQuests = participations.filter(p => p.status === 'success');
+  const unclaimedQuests = completedQuests.filter(p => !p.reward_claimed);
+
+  const questsDone = completedQuests.length;
+  
+  const totalXp = completedQuests.reduce((acc, p) => acc + (BigInt(p.quest.reward_per_user || 0)), BigInt(0));
+  const formattedXp = totalXp >= BigInt(1000) ? `${(Number(totalXp) / 1000).toFixed(1)}k` : totalXp.toString();
+
+  let globalRank = "-";
+  if (leaderboardData?.entries) {
+    const index = leaderboardData.entries.findIndex(e => e.wallet_address.toLowerCase() === walletAddress.toLowerCase());
+    if (index !== -1) {
+      globalRank = `#${index + 1}`;
+    } else if (completedQuests.length > 0) {
+       globalRank = "> 100";
+    } else {
+       globalRank = "Unranked";
+    }
+  }
+
   const copyToClipboard = () => {
     navigator.clipboard.writeText(walletAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const getIconForQuest = (type?: string, protocol?: string) => {
+    if (type === 'swap') return FaRoute;
+    if (type === 'clmm_open' || type === 'clmm_close') return FaWater;
+    if (protocol?.toLowerCase().includes('twitter') || protocol?.toLowerCase() === 'x') return FaShareNodes;
+    return FaRocket;
+  };
+  
+  const getIconColor = (type?: string) => {
+    if (type === 'swap') return "text-[#006767]";
+    if (type === 'clmm_open' || type === 'clmm_close') return "text-[#6746c5]";
+    return "text-[#a63420]";
   };
 
   const newLocal = "rounded-xl border border-[#dfbfb94d] bg-white p-8 shadow-sm transition-all duration-300 hover:shadow-md";
@@ -175,12 +194,20 @@ export default function UserProfilePage() {
                 {/* Quests Done Card */}
                 <div className="bg-[#f8f4ef] border border-[#dfbfb94d] rounded-xl p-4 flex flex-col gap-1 transition-all duration-200 hover:scale-[1.02] hover:shadow-2xs">
                   <span className="text-[10px] text-[#6b6560] font-bold uppercase tracking-wider">Quests Done</span>
-                  <span className="text-2xl font-extrabold text-[#a63420]">128</span>
+                  {isLoadingParticipations ? (
+                    <Skeleton className="w-12 h-8 rounded-lg mt-1" />
+                  ) : (
+                    <span className="text-2xl font-extrabold text-[#a63420]">{questsDone}</span>
+                  )}
                 </div>
                 {/* Total XP Card */}
                 <div className="bg-[#f8f4ef] border border-[#dfbfb94d] rounded-xl p-4 flex flex-col gap-1 transition-all duration-200 hover:scale-[1.02] hover:shadow-2xs">
                   <span className="text-[10px] text-[#6b6560] font-bold uppercase tracking-wider">Total XP</span>
-                  <span className="text-2xl font-extrabold text-[#6746c5]">45.2k</span>
+                  {isLoadingParticipations ? (
+                    <Skeleton className="w-16 h-8 rounded-lg mt-1" />
+                  ) : (
+                    <span className="text-2xl font-extrabold text-[#6746c5]">{formattedXp}</span>
+                  )}
                 </div>
               </div>
 
@@ -188,7 +215,11 @@ export default function UserProfilePage() {
               <div className="bg-[#f8f4ef] border border-[#dfbfb94d] rounded-xl p-4 flex items-center justify-between transition-all duration-200 hover:scale-[1.02] hover:shadow-2xs">
                 <div className="flex flex-col gap-1">
                   <span className="text-[10px] text-[#6b6560] font-bold uppercase tracking-wider">Global Rank</span>
-                  <span className="text-2xl font-extrabold text-[#1f1b18]">#1,042</span>
+                  {isLoadingLeaderboard ? (
+                    <Skeleton className="w-20 h-8 rounded-lg mt-1" />
+                  ) : (
+                    <span className="text-2xl font-extrabold text-[#1f1b18]">{globalRank}</span>
+                  )}
                 </div>
                 <FaTrophy className="text-[#f59e0b] text-3xl opacity-90 animate-bounce" style={{ animationDuration: "3s" }} />
               </div>
@@ -279,234 +310,188 @@ export default function UserProfilePage() {
             </Card.Header>
             <Card.Content>
               
-              {/* Controlled Tabs Component to guarantee bulletproof functional interactivity */}
               <Tabs 
                 selectedKey={activeTab} 
                 onSelectionChange={(key) => setActiveTab(key as string)} 
                 className="w-full flex flex-col gap-6"
               >
                 <Tabs.ListContainer className="border-b border-[#dfbfb94d] pb-2">
-                  <Tabs.List aria-label="Quest filters" className="flex gap-4">
-                    
-                    {/* Active quests tab */}
-                    <Tabs.Tab 
-                      id="active" 
-                      className="px-4 py-2 text-sm font-bold text-[#6b6560] data-[selected=true]:text-[#a63420] relative cursor-pointer outline-none transition-colors"
-                    >
-                      Active (3)
-                      <Tabs.Indicator className="absolute -bottom-2.25 left-0 right-0 h-0.75 bg-[#a63420] rounded-full" />
-                    </Tabs.Tab>
+                  <div className="flex justify-between items-center w-full">
+                    <Tabs.List aria-label="Quest filters" className="flex gap-4">
+                      <Tabs.Tab 
+                        id="active" 
+                        className="px-4 py-2 text-sm font-bold text-[#6b6560] data-[selected=true]:text-[#a63420] relative cursor-pointer outline-none transition-colors"
+                      >
+                        Active ({isLoadingParticipations ? '...' : activeQuests.length})
+                        <Tabs.Indicator className="absolute -bottom-2.25 left-0 right-0 h-0.75 bg-[#a63420] rounded-full" />
+                      </Tabs.Tab>
 
-                    {/* Completed quests tab */}
-                    <Tabs.Tab 
-                      id="completed" 
-                      className="px-4 py-2 text-sm font-bold text-[#6b6560] data-[selected=true]:text-[#a63420] relative cursor-pointer outline-none transition-colors"
-                    >
-                      Completed (12)
-                      <Tabs.Indicator className="absolute -bottom-2.25 left-0 right-0 h-0.75 bg-[#a63420] rounded-full" />
-                    </Tabs.Tab>
-                  </Tabs.List>
+                      <Tabs.Tab 
+                        id="completed" 
+                        className="px-4 py-2 text-sm font-bold text-[#6b6560] data-[selected=true]:text-[#a63420] relative cursor-pointer outline-none transition-colors"
+                      >
+                        Completed ({isLoadingParticipations ? '...' : completedQuests.length})
+                        <Tabs.Indicator className="absolute -bottom-2.25 left-0 right-0 h-0.75 bg-[#a63420] rounded-full" />
+                      </Tabs.Tab>
+                    </Tabs.List>
+
+                    {/* Claim Rewards Button above tabs */}
+                    {unclaimedQuests.length > 0 && (
+                      <Button
+                        onPress={() => claimRewards()}
+                        isDisabled={isClaiming}
+                        className="bg-[#10b981] hover:bg-[#0ea5e9] text-white font-bold py-1.5 px-4 rounded-full text-xs shadow-md transition-colors flex items-center gap-1.5 cursor-pointer font-sans"
+                      >
+                        {isClaiming ? (
+                          <>
+                            <span className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent" />
+                            <span>Claiming...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FaGift className="text-[12px]" />
+                            <span>Claim {unclaimedQuests.length} Reward{unclaimedQuests.length > 1 ? 's' : ''}</span>
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </Tabs.ListContainer>
 
                 {/* Tab Panel: Active Quests */}
                 <Tabs.Panel id="active" className="flex flex-col gap-4 mt-2">
                   
-                  {/* Quest Card 1: DeFi Liquidity Provider */}
-                  <div className="bg-[#f8f4ef] border border-[#dfbfb94d] rounded-xl p-5 flex flex-col md:flex-row gap-5 items-stretch justify-between transition-all duration-200 hover:border-[#ebdcd6] hover:shadow-2xs">
-                    <div className="flex gap-4 items-start flex-1">
-                      <div className="w-12 h-12 rounded-lg bg-white border border-[#dfbfb94d] flex items-center justify-center text-xl shrink-0 shadow-3xs">
-                        <FaWater className="text-[#6746c5]" />
-                      </div>
-                      <div className="flex-1 flex flex-col gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-[9px] font-extrabold tracking-wider bg-[#ffe9e5] text-[#a63420] px-2 py-0.5 rounded-[4px] uppercase font-sans border border-[#ffdad3]">
-                            DeFi
-                          </span>
-                          <h3 className="text-base font-extrabold text-[#1f1b18]">
-                            Liquidity Provider Initiate
-                          </h3>
-                        </div>
-                        <p className="text-xs text-[#6b6560] leading-relaxed">
-                          Provide at least $50 equivalent liquidity to the ETH/USDC pool on Uniswap V3.
-                        </p>
-                        
-                        {/* Outer layout for progress labels to prevent HeroUI layout overrides */}
-                        <div className="mt-2 w-full max-w-md">
-                          <div className="flex justify-between text-[10px] text-[#6b6560] font-bold mb-1.5 font-sans">
-                            <span className="whitespace-nowrap">Progress: 45%</span>
-                            <span className="whitespace-nowrap">Reward: 500 XP + NFT</span>
+                  {isLoadingParticipations ? (
+                    Array(3).fill(0).map((_, i) => (
+                      <Skeleton key={i} className="w-full h-32 rounded-xl" />
+                    ))
+                  ) : activeQuests.length === 0 ? (
+                    <div className="flex items-center justify-center py-12 text-[#6b6560] text-sm">
+                      No active quests found. Go explore and start some quests!
+                    </div>
+                  ) : (
+                    activeQuests.map(participation => {
+                      const QuestIcon = getIconForQuest(participation.quest.steps[0]?.step_type, participation.quest.protocol);
+                      const iconColor = getIconColor(participation.quest.steps[0]?.step_type);
+                      return (
+                        <div key={participation.uuid} className="bg-[#f8f4ef] border border-[#dfbfb94d] rounded-xl p-5 flex flex-col md:flex-row gap-5 items-stretch justify-between transition-all duration-200 hover:border-[#ebdcd6] hover:shadow-2xs">
+                          <div className="flex gap-4 items-start flex-1">
+                            <div className="w-12 h-12 rounded-lg bg-white border border-[#dfbfb94d] flex items-center justify-center text-xl shrink-0 shadow-3xs">
+                              <QuestIcon className={iconColor} />
+                            </div>
+                            <div className="flex-1 flex flex-col gap-2">
+                              <div className="flex items-center gap-2.5">
+                                <span className="text-[9px] font-extrabold tracking-wider bg-[#ffe9e5] text-[#a63420] px-2 py-0.5 rounded-[4px] uppercase font-sans border border-[#ffdad3]">
+                                  {participation.quest.protocol}
+                                </span>
+                                <h3 className="text-base font-extrabold text-[#1f1b18]">
+                                  {participation.quest.title}
+                                </h3>
+                              </div>
+                              <p className="text-xs text-[#6b6560] leading-relaxed">
+                                {participation.quest.description}
+                              </p>
+                              
+                              <div className="mt-2 w-full max-w-md">
+                                <div className="flex justify-between text-[10px] text-[#6b6560] font-bold mb-1.5 font-sans">
+                                  <span className="whitespace-nowrap">Progress: In Progress</span>
+                                  <span className="whitespace-nowrap">Reward: {participation.quest.reward_per_user} XP</span>
+                                </div>
+                                <ProgressBar value={50} aria-label="Quest Progress" className="w-full">
+                                  <ProgressBar.Track className="h-2 w-full bg-[#f5ddd9] rounded-full overflow-hidden">
+                                    <ProgressBar.Fill 
+                                      className="h-full bg-[#a63420] rounded-full transition-all duration-300" 
+                                      style={{ width: '50%' }} 
+                                    />
+                                  </ProgressBar.Track>
+                                </ProgressBar>
+                              </div>
+                            </div>
                           </div>
-                          <ProgressBar value={45} aria-label="Quest Progress" className="w-full">
-                            <ProgressBar.Track className="h-2 w-full bg-[#f5ddd9] rounded-full overflow-hidden">
-                              <ProgressBar.Fill 
-                                className="h-full bg-[#a63420] rounded-full transition-all duration-300" 
-                                style={{ width: '45%' }} 
-                              />
-                            </ProgressBar.Track>
-                          </ProgressBar>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Status Chip wrapper */}
-                    <div className="flex items-center shrink-0 self-center md:self-auto">
-                      <Chip className="bg-[#e8ddff] text-[#20005e] border border-[#cebdff] font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs shadow-3xs">
-                        <FaSpinner className="animate-spin text-[10px]" />
-                        <Chip.Label>In Progress</Chip.Label>
-                      </Chip>
-                    </div>
-                  </div>
-
-                  {/* Quest Card 2: Social Signal */}
-                  <div className="bg-[#f8f4ef] border border-[#dfbfb94d] rounded-xl p-5 flex flex-col md:flex-row gap-5 items-stretch justify-between transition-all duration-200 hover:border-[#ebdcd6] hover:shadow-2xs">
-                    <div className="flex gap-4 items-start flex-1">
-                      <div className="w-12 h-12 rounded-lg bg-white border border-[#dfbfb94d] flex items-center justify-center text-xl shrink-0 shadow-3xs">
-                        <FaShareNodes className="text-[#f59e0b]" />
-                      </div>
-                      <div className="flex-1 flex flex-col gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-[9px] font-extrabold tracking-wider bg-[#fff3d6] text-[#b25e00] px-2 py-0.5 rounded-[4px] uppercase font-sans border border-[#ffe1a8]">
-                            Social
-                          </span>
-                          <h3 className="text-base font-extrabold text-[#1f1b18]">
-                            Social Signal Booster
-                          </h3>
-                        </div>
-                        <p className="text-xs text-[#6b6560] leading-relaxed">
-                          Retweet the official QuPilot launch post and verify with your connected X account.
-                        </p>
-                        
-                        {/* Outer layout for progress labels to prevent HeroUI layout overrides */}
-                        <div className="mt-2 w-full max-w-md">
-                          <div className="flex justify-between text-[10px] text-[#6b6560] font-bold mb-1.5 font-sans">
-                            <span className="whitespace-nowrap">Progress: 0%</span>
-                            <span className="whitespace-nowrap">Reward: 150 XP</span>
+                          
+                          <div className="flex items-center shrink-0 self-center md:self-auto">
+                            <Chip className="bg-[#e8ddff] text-[#20005e] border border-[#cebdff] font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs shadow-3xs">
+                              <FaSpinner className="animate-spin text-[10px]" />
+                              <Chip.Label>In Progress</Chip.Label>
+                            </Chip>
                           </div>
-                          <ProgressBar value={0} aria-label="Quest Progress" className="w-full">
-                            <ProgressBar.Track className="h-2 w-full bg-[#f5ddd9] rounded-full overflow-hidden">
-                              <ProgressBar.Fill 
-                                className="h-full bg-[#a63420] rounded-full transition-all duration-300" 
-                                style={{ width: '0%' }} 
-                              />
-                            </ProgressBar.Track>
-                          </ProgressBar>
                         </div>
-                      </div>
-                    </div>
-                    
-                    {/* Status Chip wrapper */}
-                    <div className="flex items-center shrink-0 self-center md:self-auto">
-                      <Chip className="bg-[#f8f4ef] text-[#6b6560] border border-[#dfbfb94d] hover:bg-[#ebdcd6]/50 font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs shadow-3xs cursor-pointer transition-colors">
-                        <Chip.Label>AVAILABLE</Chip.Label>
-                      </Chip>
-                    </div>
-                  </div>
-
-                  {/* Quest Card 3: Bridge Explorer */}
-                  <div className="bg-[#f8f4ef] border border-[#dfbfb94d] rounded-xl p-5 flex flex-col md:flex-row gap-5 items-stretch justify-between transition-all duration-200 hover:border-[#ebdcd6] hover:shadow-2xs">
-                    <div className="flex gap-4 items-start flex-1">
-                      <div className="w-12 h-12 rounded-lg bg-white border border-[#dfbfb94d] flex items-center justify-center text-xl shrink-0 shadow-3xs">
-                        <FaRoute className="text-[#006767]" />
-                      </div>
-                      <div className="flex-1 flex flex-col gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-[9px] font-extrabold tracking-wider bg-[#d6f2f2] text-[#004d4d] px-2 py-0.5 rounded-[4px] uppercase font-sans border border-[#b2e8e8]">
-                            Bridging
-                          </span>
-                          <h3 className="text-base font-extrabold text-[#1f1b18]">
-                            Bridge Explorer
-                          </h3>
-                        </div>
-                        <p className="text-xs text-[#6b6560] leading-relaxed">
-                          Bridge at least 0.05 ETH to Arbitrum or Optimism using the QuPilot Bridge Portal.
-                        </p>
-                        
-                        {/* Outer layout for progress labels to prevent HeroUI layout overrides */}
-                        <div className="mt-2 w-full max-w-md">
-                          <div className="flex justify-between items-center text-[10px] text-[#6b6560] font-bold mb-1.5 font-sans">
-                            <span className="whitespace-nowrap">
-                              Progress: 90% <span className="text-[#f59e0b] font-semibold">(Waiting Confirmation)</span>
-                            </span>
-                            <span className="whitespace-nowrap">Reward: 400 XP</span>
-                          </div>
-                          <ProgressBar value={90} aria-label="Quest Progress" className="w-full">
-                            <ProgressBar.Track className="h-2 w-full bg-[#f5ddd9] rounded-full overflow-hidden">
-                              <ProgressBar.Fill 
-                                className="h-full bg-[#f59e0b] rounded-full transition-all duration-300" 
-                                style={{ width: '90%' }} 
-                              />
-                            </ProgressBar.Track>
-                          </ProgressBar>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Status Chip wrapper */}
-                    <div className="flex items-center shrink-0 self-center md:self-auto">
-                      <Chip className="bg-[#fff3d6] text-[#b25e00] border border-[#ffe1a8] font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs shadow-3xs">
-                        <FaSpinner className="animate-spin text-[10px]" />
-                        <Chip.Label>Processing</Chip.Label>
-                      </Chip>
-                    </div>
-                  </div>
+                      )
+                    })
+                  )}
 
                 </Tabs.Panel>
 
                 {/* Tab Panel: Completed Quests */}
                 <Tabs.Panel id="completed" className="flex flex-col gap-4 mt-2">
                   
-                  {COMPLETED_QUESTS.map((quest) => {
-                    const QuestIcon = quest.icon;
-                    return (
-                      <div 
-                        key={quest.id} 
-                        className="bg-[#f8f4ef] border border-[#dfbfb94d] rounded-xl p-5 flex flex-col md:flex-row gap-5 items-stretch justify-between transition-all duration-200 hover:border-[#ebdcd6] hover:shadow-2xs"
-                      >
-                        <div className="flex gap-4 items-start flex-1">
-                          <div className="w-12 h-12 rounded-lg bg-white border border-[#dfbfb94d] flex items-center justify-center text-xl shrink-0 shadow-3xs">
-                            <QuestIcon className={quest.iconColor} />
-                          </div>
-                          <div className="flex-1 flex flex-col gap-2">
-                            <div className="flex items-center gap-2.5">
-                              <span className="text-[9px] font-extrabold tracking-wider bg-[#d1f7c4] text-[#1a5f08] px-2 py-0.5 rounded-[4px] uppercase font-sans border border-[#a2e88a]">
-                                {quest.category}
-                              </span>
-                              <h3 className="text-base font-extrabold text-[#1f1b18] line-through decoration-1 opacity-75">
-                                {quest.title}
-                              </h3>
+                  {isLoadingParticipations ? (
+                    Array(3).fill(0).map((_, i) => (
+                      <Skeleton key={i} className="w-full h-32 rounded-xl" />
+                    ))
+                  ) : completedQuests.length === 0 ? (
+                    <div className="flex items-center justify-center py-12 text-[#6b6560] text-sm">
+                      No completed quests yet.
+                    </div>
+                  ) : (
+                    completedQuests.map((participation) => {
+                      const QuestIcon = getIconForQuest(participation.quest.steps[0]?.step_type, participation.quest.protocol);
+                      const iconColor = getIconColor(participation.quest.steps[0]?.step_type);
+                      return (
+                        <div 
+                          key={participation.uuid} 
+                          className="bg-[#f8f4ef] border border-[#dfbfb94d] rounded-xl p-5 flex flex-col md:flex-row gap-5 items-stretch justify-between transition-all duration-200 hover:border-[#ebdcd6] hover:shadow-2xs"
+                        >
+                          <div className="flex gap-4 items-start flex-1">
+                            <div className="w-12 h-12 rounded-lg bg-white border border-[#dfbfb94d] flex items-center justify-center text-xl shrink-0 shadow-3xs">
+                              <QuestIcon className={iconColor} />
                             </div>
-                            <p className="text-xs text-[#6b6560] leading-relaxed opacity-75">
-                              {quest.description}
-                            </p>
-                            
-                            {/* ProgressBar fully completed */}
-                            <div className="mt-2 w-full max-w-md">
-                              <div className="flex justify-between text-[10px] text-[#6b6560] font-bold mb-1.5 font-sans">
-                                <span className="whitespace-nowrap">Completed • {quest.date}</span>
-                                <span className="whitespace-nowrap">Reward: {quest.xp}</span>
+                            <div className="flex-1 flex flex-col gap-2">
+                              <div className="flex items-center gap-2.5">
+                                <span className="text-[9px] font-extrabold tracking-wider bg-[#d1f7c4] text-[#1a5f08] px-2 py-0.5 rounded-[4px] uppercase font-sans border border-[#a2e88a]">
+                                  {participation.quest.protocol}
+                                </span>
+                                <h3 className="text-base font-extrabold text-[#1f1b18] line-through decoration-1 opacity-75">
+                                  {participation.quest.title}
+                                </h3>
                               </div>
-                              <ProgressBar value={100} aria-label="Quest Progress" className="w-full">
-                                <ProgressBar.Track className="h-2 w-full bg-[#d1f7c4] rounded-full overflow-hidden">
-                                  <ProgressBar.Fill 
-                                    className="h-full bg-[#10b981] rounded-full" 
-                                    style={{ width: '100%' }} 
-                                  />
-                                </ProgressBar.Track>
-                              </ProgressBar>
+                              <p className="text-xs text-[#6b6560] leading-relaxed opacity-75">
+                                {participation.quest.description}
+                              </p>
+                              
+                              <div className="mt-2 w-full max-w-md">
+                                <div className="flex justify-between text-[10px] text-[#6b6560] font-bold mb-1.5 font-sans">
+                                  <span className="whitespace-nowrap">Completed • {new Date(participation.completed_at || '').toLocaleDateString()}</span>
+                                  <span className="whitespace-nowrap">Reward: {participation.quest.reward_per_user} XP</span>
+                                </div>
+                                <ProgressBar value={100} aria-label="Quest Progress" className="w-full">
+                                  <ProgressBar.Track className="h-2 w-full bg-[#d1f7c4] rounded-full overflow-hidden">
+                                    <ProgressBar.Fill 
+                                      className="h-full bg-[#10b981] rounded-full" 
+                                      style={{ width: '100%' }} 
+                                    />
+                                  </ProgressBar.Track>
+                                </ProgressBar>
+                              </div>
                             </div>
                           </div>
+                          
+                          <div className="flex items-center shrink-0 self-center md:self-auto gap-2">
+                            {participation.reward_claimed ? (
+                              <Chip className="bg-[#d1f7c4] text-[#1a5f08] border border-[#a2e88a] font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1 text-xs shadow-3xs">
+                                <FaCheck className="text-[10px]" />
+                                <Chip.Label>CLAIMED</Chip.Label>
+                              </Chip>
+                            ) : (
+                              <Chip className="bg-[#fff3d6] text-[#b25e00] border border-[#ffe1a8] font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1 text-xs shadow-3xs">
+                                <Chip.Label>UNCLAIMED</Chip.Label>
+                              </Chip>
+                            )}
+                          </div>
                         </div>
-                        
-                        {/* Status Chip showing full completion */}
-                        <div className="flex items-center shrink-0 self-center md:self-auto">
-                          <Chip className="bg-[#d1f7c4] text-[#1a5f08] border border-[#a2e88a] font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1 text-xs shadow-3xs">
-                            <FaCheck className="text-[10px]" />
-                            <Chip.Label>COMPLETED</Chip.Label>
-                          </Chip>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
 
                 </Tabs.Panel>
               </Tabs>
