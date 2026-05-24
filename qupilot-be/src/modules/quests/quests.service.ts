@@ -107,8 +107,8 @@ export const create = async (providerUuid: string, providerWallet: string, body:
   });
 
   if (!verification.ok) {
-    if (verification.reason === 'provider mismatch') {
-      throw403('DEPOSIT_TX_SIGNER_MISMATCH', "Deposit transaction signer doesn't match your wallet");
+    if (verification.reason.startsWith('provider mismatch')) {
+      throw403('DEPOSIT_TX_SIGNER_MISMATCH', verification.reason);
     }
     throw400('INVALID_DEPOSIT_TX', verification.reason);
   }
