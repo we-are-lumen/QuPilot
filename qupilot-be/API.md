@@ -100,6 +100,8 @@ Registered login — 200/201 Response:
 }
 ```
 
+- Jika request mengirim `role` tapi berbeda dengan role yang sudah tersimpan untuk wallet tsb → 409 `ROLE_MISMATCH`.
+
 ## Providers (Public)
 
 ### GET /providers
@@ -123,7 +125,7 @@ Registered login — 200/201 Response:
 ## Quests — Provider
 
 Protocol enum: `byreal | bybit | sui`  
-Quest type enum: `swap | lp | stake`
+Step type enum: `swap | clmm_open | clmm_close`
 
 ### POST /provider/quests
 
@@ -136,19 +138,30 @@ Body:
   "title": "Swap on Byreal",
   "description": "Lakukan swap ...",
   "protocol": "byreal",
-  "quest_type": "swap",
-  "action_params": [{ "step": 1, "any": "json" }],
+  "steps": [
+    {
+      "step_type": "swap",
+      "action_params": {
+        "token_in": "0xTokenIn",
+        "token_out": "0xTokenOut",
+        "amount_in": "1000000",
+        "min_amount_out": "990000"
+      }
+    }
+  ],
   "total_reward_pool": "10000000",
   "reward_per_user": "1000000",
   "reward_token": "0xTokenAddress",
+  "tx_hash": "0xQuestFundingTxHash",
   "expires_at": "2026-06-01T00:00:00.000Z"
 }
 ```
 
-- `action_params`: **JSON array** (jsonb di DB) berisi satu atau lebih step yang akan dieksekusi AI agent. Minimal 1 elemen, setiap elemen berbentuk object bebas. Server menolak object tunggal / null / array kosong.
+- `steps`: urutan step yang harus dieksekusi agent. Minimal 1 item. Bentuk `action_params` divalidasi berdasarkan `step_type`.
 - `total_reward_pool`: total reward (bigint) yang tersedia untuk quest ini — batas atas akumulasi distribusi.
 - `reward_per_user`: reward (bigint) yang diterima setiap user yang berhasil men-complete quest.
 - `reward_token`: address kontrak ERC-20 (0x...) yang dikirim dari treasury ke user saat claim.
+- `tx_hash`: tx hash provider terkait create/funding quest (required).
 - Validasi: `total_reward_pool >= reward_per_user` (kalau lebih kecil, 400 VALIDATION_ERROR).
 - Kedua nilai diterima sebagai string atau integer; server reject nilai negatif / non-integer.
 
@@ -161,12 +174,14 @@ Body:
     "title": "...",
     "description": "...",
     "protocol": "byreal",
-    "quest_type": "swap",
-    "action_params": [{ "step": 1 }],
+    "steps": [
+      { "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "token_in": "0x...", "token_out": "0x...", "amount_in": "1000000" } }
+    ],
     "total_reward_pool": "10000000",
     "reward_per_user": "1000000",
     "total_reward_distributed": "0",
     "reward_token": "0xTokenAddress",
+    "tx_hash": "0xQuestFundingTxHash",
     "expires_at": "...",
     "created_at": "..."
   }
@@ -187,12 +202,14 @@ Auth: Wallet JWT dengan role=user_provider
       "title": "...",
       "description": "...",
       "protocol": "byreal",
-      "quest_type": "swap",
-      "action_params": [{ "step": 1 }],
+      "steps": [
+        { "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "token_in": "0x...", "token_out": "0x...", "amount_in": "1000000" } }
+      ],
       "total_reward_pool": "10000000",
       "reward_per_user": "1000000",
       "total_reward_distributed": "5000000",
       "reward_token": "0xTokenAddress",
+      "tx_hash": "0xQuestFundingTxHash",
       "expires_at": "...",
       "created_at": "...",
       "participation_count": 0
@@ -216,12 +233,14 @@ Auth: Wallet JWT dengan role=user_provider
     "title": "...",
     "description": "...",
     "protocol": "byreal",
-    "quest_type": "swap",
-    "action_params": [{ "step": 1 }],
+    "steps": [
+      { "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "token_in": "0x...", "token_out": "0x...", "amount_in": "1000000" } }
+    ],
     "total_reward_pool": "10000000",
     "reward_per_user": "1000000",
     "total_reward_distributed": "5000000",
     "reward_token": "0xTokenAddress",
+    "tx_hash": "0xQuestFundingTxHash",
     "expires_at": "...",
     "created_at": "..."
   },
@@ -246,7 +265,7 @@ Selalu 403 (immutable).
 Query:
 
 - `protocol` (optional): `byreal | bybit | sui`
-- `type` (optional): `swap | lp | stake`
+- `type` (optional): `swap | clmm_open | clmm_close` (filter berdasarkan first step / `order_index = 0`)
 
 200 Response:
 
@@ -258,12 +277,14 @@ Query:
       "title": "...",
       "description": "...",
       "protocol": "byreal",
-      "quest_type": "swap",
-      "action_params": [{ "step": 1 }],
+      "steps": [
+        { "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "token_in": "0x...", "token_out": "0x...", "amount_in": "1000000" } }
+      ],
       "total_reward_pool": "10000000",
       "reward_per_user": "1000000",
       "total_reward_distributed": "5000000",
       "reward_token": "0xTokenAddress",
+      "tx_hash": "0xQuestFundingTxHash",
       "expires_at": "...",
       "created_at": "...",
       "participation_count": 0,
@@ -290,12 +311,14 @@ Public.
     "title": "...",
     "description": "...",
     "protocol": "byreal",
-    "quest_type": "swap",
-    "action_params": [{ "step": 1 }],
+    "steps": [
+      { "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "token_in": "0x...", "token_out": "0x...", "amount_in": "1000000" } }
+    ],
     "total_reward_pool": "10000000",
     "reward_per_user": "1000000",
     "total_reward_distributed": "5000000",
     "reward_token": "0xTokenAddress",
+    "tx_hash": "0xQuestFundingTxHash",
     "expires_at": "...",
     "created_at": "...",
     "participation_count": 0,
@@ -318,7 +341,6 @@ Auth: User JWT
     {
       "uuid": "uuid",
       "status": "inprogress",
-      "tx_hash": null,
       "reward_claimed": false,
       "started_at": "...",
       "completed_at": null,
@@ -327,11 +349,11 @@ Auth: User JWT
         "title": "...",
         "description": "...",
         "protocol": "byreal",
-        "quest_type": "swap",
         "total_reward_pool": "10000000",
         "reward_per_user": "1000000",
         "total_reward_distributed": "5000000",
         "reward_token": "0xTokenAddress",
+        "tx_hash": "0xQuestFundingTxHash",
         "expires_at": "...",
         "created_at": "...",
         "provider": { "uuid": "uuid", "display_name": "Byreal", "logo_url": "https://..." }
@@ -354,7 +376,6 @@ Auth: User JWT
   "participation": {
     "uuid": "uuid",
     "status": "success",
-    "tx_hash": "txhash",
     "reward_claimed": false,
     "started_at": "...",
     "completed_at": "...",
@@ -364,11 +385,11 @@ Auth: User JWT
       "title": "...",
       "description": "...",
       "protocol": "byreal",
-      "quest_type": "swap",
       "total_reward_pool": "10000000",
       "reward_per_user": "1000000",
       "total_reward_distributed": "5000000",
       "reward_token": "0xTokenAddress",
+      "tx_hash": "0xQuestFundingTxHash",
       "expires_at": "...",
       "created_at": "...",
       "provider": { "uuid": "uuid", "display_name": "Byreal", "logo_url": "https://..." }
@@ -471,7 +492,11 @@ Auth: `x-api-key`
 Body:
 
 ```json
-{ "tx_hash": "0xTxHash" }
+{
+  "steps": [
+    { "step_uuid": "uuid", "tx_hash": "0xTxHash" }
+  ]
+}
 ```
 
 200 Response:
@@ -486,11 +511,15 @@ Body:
 }
 ```
 
-Saat status berubah ke `success`:
+Catatan:
+- `steps[].step_uuid` diambil dari `quest.steps[].uuid` (lihat `GET /quests/:uuid`).
+- Request boleh mengirim sebagian step; response bisa tetap `status=inprogress` sampai semua step berhasil / ada step yang gagal.
+
+Saat status berubah ke `success` (semua step success):
 - `quests.total_reward_distributed` di-increment sebesar `quests.reward_per_user`.
 - Kalau `total_reward_distributed + reward_per_user > total_reward_pool` → 409 `REWARD_POOL_EXHAUSTED` (pool sudah habis untuk quest ini).
 
-Saat status `failed`: `total_reward_distributed` tidak berubah.
+Saat status `failed` (ada step failed): `total_reward_distributed` tidak berubah.
 
 ### POST /agent/claim
 
