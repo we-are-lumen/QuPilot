@@ -247,6 +247,24 @@ function LandingPageContent() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Track page scroll progress for header progress bar
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (totalHeight > 0) {
+        const progress = (window.scrollY / totalHeight) * 100;
+        setScrollProgress(progress);
+      } else {
+        setScrollProgress(0);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Check auth and redirect if already authenticated
   useEffect(() => {
@@ -310,7 +328,7 @@ function LandingPageContent() {
 
   return (
     <div
-      className="min-h-screen flex flex-col overflow-x-hidden"
+      className="min-h-screen flex flex-col"
       style={{ background: "#FFFBF5" }}
     >
       {/* ── Navbar ── */}
@@ -328,10 +346,14 @@ function LandingPageContent() {
           {/* Logo */}
           <Link
             href="/"
-            className="flex items-center gap-1 group"
+            className="flex items-center gap-2 group"
             id="nav-logo"
           >
-            <FaRocket className="text-xl text-[#A63420] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
+            <img
+              src="/logo.png"
+              alt="QuPilot Logo"
+              className="w-6 h-6 object-contain transition-transform duration-300 group-hover:scale-110"
+            />
             <span
               className="text-2xl font-extrabold tracking-tight"
               style={{
@@ -377,6 +399,17 @@ function LandingPageContent() {
               </Button>
             )}
           </div>
+        </div>
+
+        {/* Scroll Progress Bar */}
+        <div className="absolute bottom-0 left-0 w-full h-0.75 bg-transparent overflow-hidden">
+          <div
+            className="h-full transition-all duration-75 ease-out"
+            style={{
+              width: `${scrollProgress}%`,
+              background: "linear-gradient(90deg, #A63420 0%, #F59E0B 100%)",
+            }}
+          />
         </div>
       </header>
 
@@ -625,8 +658,12 @@ function LandingPageContent() {
           <div className="flex items-start justify-between gap-12">
             {/* Brand */}
             <div className="flex flex-col gap-3" style={{ maxWidth: 384 }}>
-              <Link href="/" className="flex items-center gap-1">
-                <FaRocket className="text-xl text-[#A63420]" />
+              <Link href="/" className="flex items-center gap-2">
+                <img
+                  src="/logo.png"
+                  alt="QuPilot Logo"
+                  className="w-6 h-6 object-contain"
+                />
                 <span
                   className="text-2xl font-extrabold tracking-tight"
                   style={{ fontFamily: "var(--font-nunito)", color: "#A63420" }}
