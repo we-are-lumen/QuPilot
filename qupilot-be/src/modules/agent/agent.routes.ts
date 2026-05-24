@@ -6,7 +6,7 @@ import * as controller from './agent.controller';
 
 export const agentRouter = Router();
 
-agentRouter.use(authAgent);
+agentRouter.use('/agent', authAgent);
 
 agentRouter.post('/agent/participations', validate(joinBodySchema), controller.join);
 agentRouter.post(

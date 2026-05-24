@@ -6,7 +6,7 @@ import * as controller from './api-keys.controller';
 
 export const apiKeysRouter = Router();
 
-apiKeysRouter.use(authUser);
+apiKeysRouter.use('/me', authUser);
 
 apiKeysRouter.post('/me/api-key', validate(generateBodySchema), controller.generateMine);
 apiKeysRouter.get('/me/api-key', controller.getMine);
