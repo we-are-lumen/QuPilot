@@ -53,7 +53,7 @@ export const join = async (
       quest_id: quest.id,
       status: 'inprogress',
     })
-    .select('uuid, status, started_at')
+    .select('id, uuid, status, started_at')
     .single();
 
   if (inserted.error) {
@@ -77,7 +77,31 @@ export const join = async (
     throw inserted.error;
   }
 
-  return inserted.data as { uuid: string; status: 'inprogress'; started_at: string };
+  const participation = inserted.data as { id: number; uuid: string; status: 'inprogress'; started_at: string };
+
+  const stepsRes = await supabase
+    .from('quest_steps')
+    .select('id')
+    .eq('quest_id', quest.id)
+    .order('order_index', { ascending: true });
+  if (stepsRes.error) throw stepsRes.error;
+
+  const stepIds = (stepsRes.data ?? []) as Array<{ id: number }>;
+  if (stepIds.length === 0) {
+    throw new AppError(500, 'QUEST_STEPS_MISSING', 'Quest has no steps');
+  }
+
+  const stepPartRows = stepIds.map((s) => ({
+    participation_id: participation.id,
+    step_id: s.id,
+    status: 'inprogress' as const,
+  }));
+
+  const stepPartRes = await supabase.from('quest_step_participations').insert(stepPartRows);
+  if (stepPartRes.error) throw stepPartRes.error;
+
+  const { id: _id, ...resp } = participation;
+  return resp;
 };
 
 type ParticipationRow = {
@@ -95,6 +119,8 @@ type QuestRewardRow = {
   total_reward_distributed: number | string;
 };
 
+type CompleteStepInput = { step_uuid: string; tx_hash: string };
+
 const toBigIntSafe = (v: number | string): bigint => {
   if (typeof v === 'number') return BigInt(Math.trunc(v));
   return BigInt(v);
@@ -103,11 +129,11 @@ const toBigIntSafe = (v: number | string): bigint => {
 export const complete = async (
   userId: number,
   participationUuid: string,
-  txHash: string,
+  steps: CompleteStepInput[],
 ): Promise<{
   uuid: string;
-  status: 'success' | 'failed';
-  completed_at: string;
+  status: 'inprogress' | 'success' | 'failed';
+  completed_at: string | null;
 }> => {
   const { data, error } = await supabase
     .from('quest_participations')
@@ -127,14 +153,60 @@ export const complete = async (
   }
 
   const userWallet = await resolveUserWalletById(userId);
-  const ok = await verifyTxBasic(txHash, userWallet);
-  const status: 'success' | 'failed' = ok ? 'success' : 'failed';
+
+  for (const s of steps) {
+    const stepRow = await supabase
+      .from('quest_step_participations')
+      .select('id, status, step_id, quest_steps(uuid)')
+      .eq('participation_id', row.id)
+      .eq('quest_steps.uuid', s.step_uuid)
+      .maybeSingle();
+
+    if (stepRow.error) throw stepRow.error;
+    if (!stepRow.data) throw404('STEP_NOT_FOUND', 'Quest step not found');
+
+    const base = stepRow.data as unknown as {
+      id: number;
+      status: 'inprogress' | 'success' | 'failed';
+    };
+    if (base.status !== 'inprogress') {
+      throw new AppError(409, 'STEP_ALREADY_COMPLETED', 'Step already completed');
+    }
+
+    const ok = await verifyTxBasic(s.tx_hash, userWallet);
+    const status: 'success' | 'failed' = ok ? 'success' : 'failed';
+    const completed_at = nowIso();
+
+    const updated = await supabase
+      .from('quest_step_participations')
+      .update({ status, tx_hash: s.tx_hash, completed_at })
+      .eq('id', base.id)
+      .select('id')
+      .single();
+    if (updated.error) throw updated.error;
+  }
+
+  const statusRes = await supabase
+    .from('quest_step_participations')
+    .select('status')
+    .eq('participation_id', row.id);
+  if (statusRes.error) throw statusRes.error;
+
+  const statuses = (statusRes.data ?? []) as Array<{ status: 'inprogress' | 'success' | 'failed' }>;
+  const anyFailed = statuses.some((r) => r.status === 'failed');
+  const allSuccess = statuses.length > 0 && statuses.every((r) => r.status === 'success');
+
+  let finalStatus: ParticipationRow['status'] = 'inprogress';
+  if (anyFailed) finalStatus = 'failed';
+  else if (allSuccess) finalStatus = 'success';
+
+  if (finalStatus === 'inprogress') {
+    return { uuid: row.uuid, status: 'inprogress', completed_at: null };
+  }
+
   const completed_at = nowIso();
 
-  // Saat sukses, bump quests.total_reward_distributed sebesar reward_per_user.
-  // Tolak kalau pool sudah habis (total_reward_distributed + reward_per_user > pool)
-  // supaya tidak melewati janji provider.
-  if (status === 'success') {
+  if (finalStatus === 'success') {
     const questRes = await supabase
       .from('quests')
       .select('id, reward_per_user, total_reward_pool, total_reward_distributed')
@@ -142,8 +214,8 @@ export const complete = async (
       .maybeSingle();
     if (questRes.error) throw questRes.error;
     if (!questRes.data) throw404('QUEST_NOT_FOUND', 'Quest not found');
-
     const quest = questRes.data as unknown as QuestRewardRow;
+
     const perUser = toBigIntSafe(quest.reward_per_user);
     const pool = toBigIntSafe(quest.total_reward_pool);
     const distributed = toBigIntSafe(quest.total_reward_distributed);
@@ -160,23 +232,16 @@ export const complete = async (
     if (bumpRes.error) throw bumpRes.error;
   }
 
-  const updated = await supabase
+  const updatedPart = await supabase
     .from('quest_participations')
-    .update({
-      status,
-      completed_at,
-      tx_hash: txHash,
-    })
+    .update({ status: finalStatus, completed_at })
     .eq('id', row.id)
     .select('uuid, status, completed_at')
     .single();
+  if (updatedPart.error) throw updatedPart.error;
 
-  if (updated.error) throw updated.error;
-  return updated.data as {
-    uuid: string;
-    status: 'success' | 'failed';
-    completed_at: string;
-  };
+  const out = updatedPart.data as unknown as { uuid: string; status: ParticipationRow['status']; completed_at: string };
+  return { uuid: out.uuid, status: out.status, completed_at: out.completed_at };
 };
 
 export const claim = async (userId: number): Promise<ClaimResult> => {

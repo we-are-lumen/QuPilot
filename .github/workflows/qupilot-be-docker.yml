@@ -51,13 +51,14 @@ jobs:
           EVM_RPC_URL: ${{ secrets.EVM_RPC_URL }}
           CHAIN_ID: ${{ secrets.CHAIN_ID }}
           TREASURY_PRIVATE_KEY: ${{ secrets.TREASURY_PRIVATE_KEY }}
+          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           password: ${{ secrets.VPS_PASSWORD }}
           port: 22
           script_stop: true
-          envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,JWT_SECRET,JWT_EXPIRES_IN,EVM_RPC_URL,CHAIN_ID,TREASURY_PRIVATE_KEY
+          envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,JWT_SECRET,JWT_EXPIRES_IN,EVM_RPC_URL,CHAIN_ID,TREASURY_PRIVATE_KEY,SOLANA_RPC_URL
           script: |
             set -e
 
@@ -81,4 +82,5 @@ jobs:
               -e EVM_RPC_URL="$EVM_RPC_URL" \
               -e CHAIN_ID="$CHAIN_ID" \
               -e TREASURY_PRIVATE_KEY="$TREASURY_PRIVATE_KEY" \
+              -e SOLANA_RPC_URL="$SOLANA_RPC_URL" \
               "$IMAGE"

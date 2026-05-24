@@ -1,14 +1,24 @@
 import { supabase } from '../../config/supabase';
 import { throw404 } from '../../lib/errors';
-import type { CreateQuestBody, ListPublicQuery, Protocol, QuestType } from './quests.schema';
+import type { CreateQuestBody, ListPublicQuery, Protocol, QuestStepInput, StepType } from './quests.schema';
+
+// ---------------------------------------------------------------------------
+// Public types
+// ---------------------------------------------------------------------------
+
+export type QuestStepPublic = {
+  uuid: string;
+  order_index: number;
+  step_type: StepType;
+  action_params: Record<string, unknown>;
+};
 
 export type QuestPublic = {
   uuid: string;
   title: string;
   description: string;
   protocol: Protocol;
-  quest_type: QuestType;
-  action_params: Array<Record<string, unknown>>;
+  steps: QuestStepPublic[];
   total_reward_pool: number | string;
   reward_per_user: number | string;
   total_reward_distributed: number | string;
@@ -36,10 +46,32 @@ export type QuestAnalytics = {
 };
 
 type ProviderRow = { id: number };
-type QuestRow = QuestPublic & { id: number };
 
-const QUEST_PUBLIC_COLS =
-  'uuid, title, description, protocol, quest_type, action_params, total_reward_pool, reward_per_user, total_reward_distributed, reward_token, tx_hash, expires_at, created_at';
+// Raw row shape returned from Supabase before we normalize quest_steps.
+type QuestRawRow = Omit<QuestPublic, 'steps'> & {
+  quest_steps?: Array<{
+    uuid: string;
+    order_index: number;
+    step_type: StepType;
+    action_params: Record<string, unknown>;
+  }>;
+};
+
+const QUEST_BASE_COLS =
+  'uuid, title, description, protocol, total_reward_pool, reward_per_user, total_reward_distributed, reward_token, tx_hash, expires_at, created_at';
+
+// Used everywhere we want quest + its ordered steps. Postgrest nested-select.
+const QUEST_PUBLIC_COLS = `${QUEST_BASE_COLS}, quest_steps(uuid, order_index, step_type, action_params)`;
+
+const sortSteps = (rows?: QuestRawRow['quest_steps']): QuestStepPublic[] => {
+  if (!rows || rows.length === 0) return [];
+  return [...rows].sort((a, b) => a.order_index - b.order_index);
+};
+
+const normalizeQuest = <T extends QuestRawRow>(row: T): Omit<T, 'quest_steps'> & { steps: QuestStepPublic[] } => {
+  const { quest_steps, ...rest } = row;
+  return { ...rest, steps: sortSteps(quest_steps) };
+};
 
 const resolveProviderId = async (providerUuid: string): Promise<number> => {
   const { data, error } = await supabase
@@ -53,30 +85,64 @@ const resolveProviderId = async (providerUuid: string): Promise<number> => {
   return (data as ProviderRow).id;
 };
 
+// ---------------------------------------------------------------------------
+// Create
+// ---------------------------------------------------------------------------
+
 export const create = async (providerUuid: string, body: CreateQuestBody): Promise<QuestPublic> => {
   const provider_id = await resolveProviderId(providerUuid);
 
-  const { data, error } = await supabase
+  // Insert the quest parent row.
+  const { data: inserted, error: insertErr } = await supabase
     .from('quests')
     .insert({
       provider_id,
       title: body.title,
       description: body.description,
       protocol: body.protocol,
-      quest_type: body.quest_type,
-      action_params: body.action_params,
       total_reward_pool: body.total_reward_pool,
       reward_per_user: body.reward_per_user,
       reward_token: body.reward_token,
       tx_hash: body.tx_hash,
       expires_at: body.expires_at,
     })
-    .select(QUEST_PUBLIC_COLS)
+    .select('id')
     .single();
 
-  if (error) throw error;
-  return data as unknown as QuestPublic;
+  if (insertErr) throw insertErr;
+  const questId = (inserted as { id: number }).id;
+
+  // Bulk-insert the steps in order.
+  const stepRows = body.steps.map((s: QuestStepInput, idx: number) => ({
+    quest_id: questId,
+    order_index: idx,
+    step_type: s.step_type,
+    action_params: s.action_params,
+  }));
+
+  const { error: stepErr } = await supabase.from('quest_steps').insert(stepRows);
+  if (stepErr) {
+    // Best-effort cleanup so we don't leave an orphan parent. (ON DELETE
+    // CASCADE on the children FK means deleting the parent removes any
+    // partial inserts too.)
+    await supabase.from('quests').delete().eq('id', questId);
+    throw stepErr;
+  }
+
+  // Re-read with nested steps so the response matches the public shape.
+  const { data: full, error: readErr } = await supabase
+    .from('quests')
+    .select(QUEST_PUBLIC_COLS)
+    .eq('id', questId)
+    .single();
+  if (readErr) throw readErr;
+
+  return normalizeQuest(full as unknown as QuestRawRow) as QuestPublic;
 };
+
+// ---------------------------------------------------------------------------
+// Provider-scoped reads
+// ---------------------------------------------------------------------------
 
 export const listByProvider = async (providerUuid: string): Promise<QuestListItem[]> => {
   const provider_id = await resolveProviderId(providerUuid);
@@ -90,18 +156,21 @@ export const listByProvider = async (providerUuid: string): Promise<QuestListIte
   if (error) throw error;
 
   const rows = (data ?? []) as Array<
-    QuestPublic & {
+    QuestRawRow & {
       quest_participations?: Array<{ count: number }>;
     }
   >;
 
   return rows.map((row) => ({
-    ...row,
+    ...normalizeQuest(row),
     participation_count: row.quest_participations?.[0]?.count ?? 0,
   }));
 };
 
-const countParticipations = async (quest_id: number, status?: 'inprogress' | 'success' | 'failed'): Promise<number> => {
+const countParticipations = async (
+  quest_id: number,
+  status?: 'inprogress' | 'success' | 'failed',
+): Promise<number> => {
   let q = supabase.from('quest_participations').select('id', { count: 'exact', head: true }).eq('quest_id', quest_id);
   if (status) q = q.eq('status', status);
   const { count, error } = await q;
@@ -125,7 +194,7 @@ export const getDetailForProvider = async (
   if (error) throw error;
   if (!data) throw404('QUEST_NOT_FOUND', 'Quest not found');
 
-  const row = data as unknown as QuestRow;
+  const row = data as unknown as QuestRawRow & { id: number };
 
   const [total, success, failed] = await Promise.all([
     countParticipations(row.id),
@@ -140,36 +209,47 @@ export const getDetailForProvider = async (
     success_rate: total > 0 ? success / total : 0,
   };
 
-  const { id: _id, ...quest } = row;
-  return { quest, analytics };
+  const { id: _id, ...rest } = row;
+  return { quest: normalizeQuest(rest) as QuestPublic, analytics };
 };
 
+// ---------------------------------------------------------------------------
+// Public reads
+// ---------------------------------------------------------------------------
+
 const nowIso = (): string => new Date().toISOString();
+
+// `type` filter targets the first step (order_index = 0). For multi-step quests
+// the "primary" action is conventionally step 0 — same UX intent as before the
+// refactor.
+const applyTypeFilter = <Q>(q: Q, type?: StepType): Q => {
+  if (!type) return q;
+  // @ts-expect-error: supabase chain types collapse to any here.
+  return q.eq('quest_steps.order_index', 0).eq('quest_steps.step_type', type);
+};
 
 export const listPublic = async (query: ListPublicQuery): Promise<PublicQuestListItem[]> => {
   let q = supabase
     .from('quests')
-    .select(
-      `${QUEST_PUBLIC_COLS}, users(uuid, display_name, logo_url), quest_participations(count)`,
-    )
+    .select(`${QUEST_PUBLIC_COLS}, users(uuid, display_name, logo_url), quest_participations(count)`)
     .gt('expires_at', nowIso())
     .order('created_at', { ascending: false });
 
   if (query.protocol) q = q.eq('protocol', query.protocol);
-  if (query.type) q = q.eq('quest_type', query.type);
+  q = applyTypeFilter(q, query.type);
 
   const { data, error } = await q;
   if (error) throw error;
 
   const rows = (data ?? []) as Array<
-    QuestPublic & {
+    QuestRawRow & {
       users: ProviderSummary | ProviderSummary[] | null;
       quest_participations?: Array<{ count: number }>;
     }
   >;
 
   return rows.map((row) => ({
-    ...row,
+    ...normalizeQuest(row),
     provider: Array.isArray(row.users) ? row.users[0] ?? null : row.users,
     participation_count: row.quest_participations?.[0]?.count ?? 0,
   }));
@@ -180,9 +260,7 @@ export const listPublicByProvider = async (providerUuid: string): Promise<Public
 
   const { data, error } = await supabase
     .from('quests')
-    .select(
-      `${QUEST_PUBLIC_COLS}, users(uuid, display_name, logo_url), quest_participations(count)`,
-    )
+    .select(`${QUEST_PUBLIC_COLS}, users(uuid, display_name, logo_url), quest_participations(count)`)
     .eq('provider_id', provider_id)
     .gt('expires_at', nowIso())
     .order('created_at', { ascending: false });
@@ -190,14 +268,14 @@ export const listPublicByProvider = async (providerUuid: string): Promise<Public
   if (error) throw error;
 
   const rows = (data ?? []) as Array<
-    QuestPublic & {
+    QuestRawRow & {
       users: ProviderSummary | ProviderSummary[] | null;
       quest_participations?: Array<{ count: number }>;
     }
   >;
 
   return rows.map((row) => ({
-    ...row,
+    ...normalizeQuest(row),
     provider: Array.isArray(row.users) ? row.users[0] ?? null : row.users,
     participation_count: row.quest_participations?.[0]?.count ?? 0,
   }));
@@ -206,9 +284,7 @@ export const listPublicByProvider = async (providerUuid: string): Promise<Public
 export const getPublicDetail = async (questUuid: string): Promise<{ quest: PublicQuestListItem }> => {
   const { data, error } = await supabase
     .from('quests')
-    .select(
-      `${QUEST_PUBLIC_COLS}, users(uuid, display_name, logo_url), quest_participations(count)`,
-    )
+    .select(`${QUEST_PUBLIC_COLS}, users(uuid, display_name, logo_url), quest_participations(count)`)
     .eq('uuid', questUuid)
     .gt('expires_at', nowIso())
     .maybeSingle();
@@ -216,13 +292,13 @@ export const getPublicDetail = async (questUuid: string): Promise<{ quest: Publi
   if (error) throw error;
   if (!data) throw404('QUEST_NOT_FOUND', 'Quest not found');
 
-  const row = data as unknown as QuestPublic & {
+  const row = data as unknown as QuestRawRow & {
     users: ProviderSummary | ProviderSummary[] | null;
     quest_participations?: Array<{ count: number }>;
   };
 
   const quest: PublicQuestListItem = {
-    ...row,
+    ...normalizeQuest(row),
     provider: Array.isArray(row.users) ? row.users[0] ?? null : row.users,
     participation_count: row.quest_participations?.[0]?.count ?? 0,
   };
