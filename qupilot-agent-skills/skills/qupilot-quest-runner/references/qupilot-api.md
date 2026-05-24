@@ -211,28 +211,21 @@ When `status` becomes `success` (all steps verified):
 
 ---
 
-## Phase 4 — Claim Rewards (optional)
+## Phase 4 — Claim is user-only (no agent endpoint)
 
-### `POST /agent/claim`
+**There is no agent claim endpoint.** Reward claim is intentionally restricted to the user:
 
-Auth: `x-api-key`
+- On-chain, the Anchor program's `claim_reward` instruction requires `signer == participation.user_wallet`. The agent's wallet (or any relayer) cannot satisfy this constraint — the transaction reverts.
+- Off-chain, there is no `POST /agent/claim`. If you previously saw it in older docs, it has been removed (calls return `404` or `410 Gone`).
 
-Claims all of the user's participations where `status=success` and `reward_claimed=false`. The agent acts on behalf of the user who owns the API key — rewards go to that user's `wallet_address`, not the agent. Idempotent: already-claimed participations are skipped.
+When a participation reaches `status: success`, your job is to tell the user the reward is **ready to claim from the QuPilot website** (`/profile` or the claim page). The user connects the same wallet that owns the API key, clicks "Claim", and signs the transaction themselves.
 
-Body: (empty)
+For reference, the user-facing endpoints (session-auth, not `x-api-key`) are:
 
-Response (`200`):
+- `GET /me/participations?status=success&reward_claimed=false` — list claimable participations.
+- `POST /me/participations/sync-claim` — body `{ "participation_uuid", "claim_tx_hash" }`; called by the FE after the user successfully submits their own `claim_reward` tx, to update DB state.
 
-```json
-{
-  "claimed": [
-    { "quest_uuid": "uuid", "tx_hash": "SolanaSignatureBase58", "amount": "1000000", "token": "SOL" }
-  ],
-  "failed": [
-    { "quest_uuid": "uuid", "reason": "..." }
-  ]
-}
-```
+You do not call these. They are listed only so you can answer the user's "how do I claim" question accurately.
 
 ---
 
@@ -246,7 +239,7 @@ Response (`200`):
 4. [execute each step on-chain via byreal-cli]  → collect tx_hash per step
 5. POST /agent/participations/:uuid/complete    → submit { steps: [{ step_uuid, tx_hash }, ...] }
    → status: success | failed | inprogress (partial)
-6. POST /agent/claim                            → (optional) claim rewards to user wallet
+6. (NOT an agent step) — tell the user to claim from the QuPilot website.
 ```
 
 ---

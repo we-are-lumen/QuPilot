@@ -222,10 +222,10 @@ CREATE UNIQUE INDEX quests_pool_pda_uniq ON quests (quest_pool_pda);
 
 ## 8) Checklist implementasi BE
 
-- [ ] Tambah env `SOLANA_RPC_URL`, `QUPILOT_PROGRAM_ID`.
-- [ ] Import IDL Anchor + bangun `BorshCoder` saat boot.
-- [ ] Tulis `verify-create-quest.ts` + unit test.
-- [ ] Migrasi DB tambah `quest_pool_pda`, `quest_id_onchain`, `deposit_tx_hash`.
-- [ ] Update `quests.controller.ts` create flow → panggil verifier.
-- [ ] Update `quests.schema.ts` response → expose `quest_pool_pda` ke client.
-- [ ] Update `API.md` dokumentasi field baru + alur "deposit dulu, daftar kemudian".
+- [x] Tambah env `SOLANA_RPC_URL`, `QUPILOT_PROGRAM_ID`.
+- [x] Import IDL Anchor + bangun `BorshCoder` saat boot.
+- [x] Tulis `verify-create-quest.ts` + unit test.
+- [x] Migrasi DB tambah `quest_pool_pda`, `quest_id_onchain`, `deposit_tx_hash`.
+- [x] Update `quests.controller.ts` create flow → panggil verifier.
+- [x] Update `quests.schema.ts` response → expose `quest_pool_pda` ke client.
+- [x] Update `API.md` dokumentasi field baru + alur "deposit dulu, daftar kemudian".

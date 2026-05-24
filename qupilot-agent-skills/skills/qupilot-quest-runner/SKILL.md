@@ -93,16 +93,17 @@ Possible `participation.status` values in the response:
 
 When `status` is `success`, tell the user the quest cleared and what `reward_per_user` they earned (lamports → SOL). When `status` is `failed`, quote the `error.message` verbatim — don't soften it, the user needs the actual signal.
 
-### Phase 4 — Claim rewards (optional)
+### Phase 4 — Tell the user to claim on the website
 
-`POST /agent/claim` (empty body, `x-api-key` auth) claims **all** of the user's `status=success && reward_claimed=false` participations and sends SOL to the user's wallet on record. Idempotent. Only run this if the user asks ("claim my rewards") — don't auto-claim after every quest.
+**Agents do not claim rewards. There is no `POST /agent/claim` endpoint.** Claim is enforced on-chain to be a user-only action: the Anchor program requires the claim transaction to be signed by `participation.user_wallet` — the agent's API key and wallet have no authority over it. Don't try to construct or sign a claim transaction; it will revert at the program's address constraint.
 
-```bash
-curl -sS -X POST -H "x-api-key: $QUPILOT_API_KEY" \
-  "$QUPILOT_API_URL/agent/claim"
-```
+When `complete` returns `status: success`, your job is to:
 
-Response gives `claimed[]` and `failed[]` arrays — report both.
+1. Report the result and the reward amount (lamports → SOL).
+2. Tell the user the reward is **ready to claim from the QuPilot website** — typically `https://qupilot.xyz/profile` (or wherever the user's QuPilot instance lives). They connect the same wallet that owns the API key and click "Claim".
+3. Stop. Don't poll, don't retry, don't ask the user for their private key, don't build a claim ix on their behalf.
+
+If the user asks "can you claim it for me" — explain that QuPilot's design intentionally keeps reward custody on the user side, and link them to the claim page.
 
 ## Hard constraints
 
@@ -117,7 +118,7 @@ These are non-negotiable because they're the difference between a useful agent a
 
 ## What to keep in your head vs. consult on demand
 
-- **In head**: the four-phase shape (fetch → join → complete → optional claim), the `x-api-key` header, the bare-object response shape, the hard constraints.
+- **In head**: the four-phase shape (fetch → join → complete → tell user to claim on website), the `x-api-key` header, the bare-object response shape, the hard constraints. Claim is **not** an agent action — never call a claim endpoint and never sign a claim tx.
 - **Consult `references/qupilot-api.md`** when you need exact endpoint paths, body shapes, or error codes.
 - **Consult `references/quest-mapping.md`** every time you dispatch a step — even when you "remember" the mapping. The byreal CLIs change flags occasionally and the file is the canonical source.
 

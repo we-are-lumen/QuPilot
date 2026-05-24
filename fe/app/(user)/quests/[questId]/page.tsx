@@ -4,10 +4,11 @@ import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Card, Button, Spinner } from "@heroui/react";
-import { FiArrowLeft, FiCopy, FiCheck, FiBookOpen, FiCpu, FiAward, FiClock } from "react-icons/fi";
+import { FiArrowLeft, FiCopy, FiCheck, FiBookOpen, FiCpu, FiAward, FiClock, FiTerminal } from "react-icons/fi";
 import { FaCoins } from "react-icons/fa6";
 import { useQuery } from "@tanstack/react-query";
 import { getPublicQuestDetail } from "@/lib/api/quests";
+import { buildAgentPrompt } from "@/lib/utils/agentPrompt";
 
 const formatReward = (rewardStr?: string) => {
   if (!rewardStr) return "0 SOL";
@@ -34,6 +35,7 @@ export default function UserQuestDetailPage() {
 
   const [copiedId, setCopiedId] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
 
   const quest = data?.quest;
 
@@ -60,6 +62,18 @@ export default function UserQuestDetailPage() {
     }
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const handleCopyPrompt = (promptText: string) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(promptText);
+      }
+    } catch (err) {
+      console.warn("Clipboard copy failed, state will still update visually", err);
+    }
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 2000);
   };
 
   if (isLoading) {
@@ -93,6 +107,7 @@ export default function UserQuestDetailPage() {
     : [];
 
   const jsonParams = JSON.stringify(quest.steps, null, 2);
+  const agentPrompt = buildAgentPrompt({ quest });
   const formattedExpiresAt = quest.expires_at
     ? new Date(quest.expires_at).toLocaleDateString("en-US", {
         year: "numeric",
@@ -225,7 +240,47 @@ export default function UserQuestDetailPage() {
               </div>
             </Card>
 
-            {/* JSON Parameters */}
+            {/* Agent Prompt (copy → paste into Claude / any agent that has the qupilot-quest-runner skill) */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-label font-bold text-[#58413d]">
+                  <FiTerminal className="w-3.5 h-3.5" />
+                  AGENT PROMPT
+                </div>
+
+                <Button
+                  onPress={() => handleCopyPrompt(agentPrompt)}
+                  className="bg-[#a63420] hover:bg-[#8a2917] text-white rounded-lg text-xs font-bold px-3 py-1.5 transition-all flex items-center gap-1.5"
+                >
+                  {copiedPrompt ? (
+                    <>
+                      <FiCheck className="w-3.5 h-3.5 text-white" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <FiCopy className="w-3.5 h-3.5" />
+                      Copy Prompt
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              <p className="text-body-sm text-[#58413d] leading-relaxed">
+                Paste this into any AI agent that has the{" "}
+                <span className="font-mono font-bold">qupilot-quest-runner</span> skill installed
+                (Claude Code, etc.). It will fetch → join → execute → submit completion using{" "}
+                <span className="font-mono font-bold">byreal-cli</span> on your behalf.
+              </p>
+
+              <div className="bg-[#251916f2] border border-[#dfbfb9] rounded-xl p-4 overflow-x-auto shadow-inner max-h-[28rem] overflow-y-auto">
+                <pre className="text-mono text-[#ffdad3] leading-relaxed select-all whitespace-pre-wrap break-words">
+                  <code>{agentPrompt}</code>
+                </pre>
+              </div>
+            </div>
+
+            {/* JSON Parameters (raw steps payload — for debugging / advanced users) */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-label font-bold text-[#58413d]">

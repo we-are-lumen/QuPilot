@@ -277,9 +277,9 @@ cargo update -p unicode-segmentation --precise 1.12.0
 
 ## 11) Definition of Done (untuk fase ini)
 
-- [ ] Anchor workspace ter-init di `qupilot-anchor-program/`.
-- [ ] Instruction `create_quest` implemented, dengan event + error codes.
-- [ ] Semua test di §7 hijau.
-- [ ] Deploy ke devnet, program ID dicatat.
-- [ ] IDL di-export ke `qupilot-be` agar BE bisa decode event saat verifikasi.
-- [ ] Dokumen `02-be-integration.md` ditulis untuk panduan BE verify `tx_hash`.
+- [x] Anchor workspace ter-init di `qupilot-anchor-program/`.
+- [x] Instruction `create_quest` implemented, dengan event + error codes.
+- [x] Semua test di §7 hijau.
+- [x] Deploy ke devnet, program ID dicatat.
+- [x] IDL di-export ke `qupilot-be` agar BE bisa decode event saat verifikasi.
+- [x] Dokumen `02-be-integration.md` ditulis untuk panduan BE verify `tx_hash`.
