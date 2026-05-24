@@ -118,7 +118,7 @@ export default function QuestExplorerPage() {
         <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#fcfbfa] border border-[#dfbfb94d] rounded-2xl">
           <FiCompass className="text-4xl text-[#dfbfb9]" />
           <p className="text-lg font-bold text-[#a63420]">No missions found</p>
-          <p className="text-sm text-[#6b6560] max-w-md">
+          <p className="text-sm text-[#6b6560]">
             There are currently no active quests for this category. Check back later for new updates!
           </p>
         </div>
