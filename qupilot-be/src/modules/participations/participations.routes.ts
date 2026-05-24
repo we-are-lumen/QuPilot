@@ -6,7 +6,7 @@ import * as controller from './participations.controller';
 
 export const participationsRouter = Router();
 
-participationsRouter.use(authUser);
+participationsRouter.use('/me', authUser);
 
 participationsRouter.get('/me/participations', controller.listMine);
 participationsRouter.get(
