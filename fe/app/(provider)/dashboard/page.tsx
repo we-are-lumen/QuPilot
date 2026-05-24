@@ -16,6 +16,11 @@ import {
   LuMilestone 
 } from "react-icons/lu";
 
+const truncateAddress = (addr?: string | null) => {
+  if (!addr) return "-";
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+};
+
 export default function ProviderDashboard() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["providerQuests"],
@@ -323,6 +328,13 @@ export default function ProviderDashboard() {
                 <p className="text-xs text-[#6b6560] leading-relaxed line-clamp-2">
                   {quest.description}
                 </p>
+
+                <div className="bg-[#fcfbfa] border border-[#dfbfb94d] rounded-lg p-3 flex items-center justify-between">
+                  <span className="text-[10px] text-[#6b6560] uppercase tracking-wider font-bold">Pool PDA</span>
+                  <span className="text-xs font-mono font-bold text-[#1f1b18]">
+                    {truncateAddress(quest.quest_pool_pda)}
+                  </span>
+                </div>
 
                 {/* Metrics Row */}
                 <div className="bg-[#fff8f6] border border-[#dfbfb94d] rounded-lg p-3 flex items-center justify-between">

@@ -265,13 +265,12 @@ export default function ProviderQuestDetailPage() {
               <h2 className="text-h3 font-bold font-heading">Technical Parameters</h2>
             </div>
             <Card.Content className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-0">
-              {/* Reward Token Contract */}
               <div className="bg-surface border border-outline-variant rounded-lg p-4 flex flex-col gap-1.5 shadow-sm">
-                <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Reward Token Contract</span>
+                <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Reward Token</span>
                 <div className="flex items-center justify-between text-text-primary font-mono text-[13px] font-bold">
                   <div className="flex items-center gap-2">
                     <FiLock className="text-primary" />
-                    <span>{quest.reward_token.slice(0, 6)}...{quest.reward_token.slice(-4)}</span>
+                    <span>{quest.reward_token}</span>
                   </div>
                   <button 
                     onClick={() => {
@@ -299,6 +298,48 @@ export default function ProviderQuestDetailPage() {
                         navigator.clipboard.writeText(quest.tx_hash || "");
                         alert("Transaction hash copied!");
                       }} 
+                      className="text-text-muted hover:text-primary transition-colors p-1"
+                    >
+                      <FiCopy />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {quest.quest_pool_pda && (
+                <div className="bg-surface border border-outline-variant rounded-lg p-4 flex flex-col gap-1.5 shadow-sm">
+                  <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Quest Pool PDA</span>
+                  <div className="flex items-center justify-between text-text-primary font-mono text-[13px] font-bold">
+                    <div className="flex items-center gap-2">
+                      <FiCheckCircle className="text-success" />
+                      <span>{quest.quest_pool_pda.slice(0, 6)}...{quest.quest_pool_pda.slice(-4)}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(quest.quest_pool_pda || "");
+                        alert("Quest pool PDA copied!");
+                      }}
+                      className="text-text-muted hover:text-primary transition-colors p-1"
+                    >
+                      <FiCopy />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {quest.quest_id_onchain && (
+                <div className="bg-surface border border-outline-variant rounded-lg p-4 flex flex-col gap-1.5 shadow-sm">
+                  <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Quest ID On-chain</span>
+                  <div className="flex items-center justify-between text-text-primary font-mono text-[13px] font-bold">
+                    <div className="flex items-center gap-2">
+                      <FiCheckCircle className="text-success" />
+                      <span>{quest.quest_id_onchain.slice(0, 10)}...{quest.quest_id_onchain.slice(-6)}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(quest.quest_id_onchain || "");
+                        alert("Quest id on-chain copied!");
+                      }}
                       className="text-text-muted hover:text-primary transition-colors p-1"
                     >
                       <FiCopy />

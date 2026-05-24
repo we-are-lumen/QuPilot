@@ -11,6 +11,13 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('7d'),
 
   SOLANA_RPC_URL: z.url().default('https://api.devnet.solana.com'),
+  QUPILOT_PROGRAM_ID: z
+    .string()
+    .trim()
+    .min(32)
+    .max(64)
+    .regex(/^[1-9A-HJ-NP-Za-km-z]+$/, 'QUPILOT_PROGRAM_ID must be a base58 Solana pubkey')
+    .default('2auiCCwYy8pj6LpDnMomZRqKs49Gb5oRjtVkYDYRVmm3'),
   SOLANA_TREASURY_SECRET_KEY: z
     .string()
     .trim()

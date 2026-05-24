@@ -8,7 +8,7 @@ export const create: RequestHandler = async (req, res, next) => {
     if (!req.auth || req.auth.role !== 'user_provider') {
       throw new AppError(403, 'FORBIDDEN', 'Requires user_provider role');
     }
-    const quest = await service.create(req.auth.sub, req.body as CreateQuestBody);
+    const quest = await service.create(req.auth.sub, req.auth.wallet_address, req.body as CreateQuestBody);
     res.status(201).json({ quest });
   } catch (err) {
     next(err);

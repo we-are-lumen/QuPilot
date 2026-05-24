@@ -20,10 +20,12 @@ import {
 import type { Key } from "@heroui/react";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import type { DateValue } from "@internationalized/date";
-import { FiTarget, FiGift, FiSliders, FiPlus, FiTrash2, FiClock, FiCopy, FiCheck } from "react-icons/fi";
+import { FiTarget, FiGift, FiSliders, FiPlus, FiTrash2, FiClock } from "react-icons/fi";
 import { LuRocket } from "react-icons/lu";
 import { createQuest } from "@/lib/api/quests";
 import type { ICreateQuestPayload, Protocol, StepType } from "@/lib/types/quests";
+import { createQuestDepositTx, isSolanaWalletInstalled } from "@/lib/utils/wallet";
+import { QUPILOT_PROGRAM_ID } from "@/config";
 
 interface StepParam {
   key: string;
@@ -50,10 +52,9 @@ export default function CreateQuestPage() {
   const [rewardToken, setRewardToken] = useState("SOL");
   const [expiresAt, setExpiresAt] = useState<DateValue | null>(today(getLocalTimeZone()));
   
-  // Transaction hash & Treasury copy state
+  // Transaction hash (deposit signature) state
   const [txHash, setTxHash] = useState("");
   const [txHashError, setTxHashError] = useState("");
-  const [isCopied, setIsCopied] = useState(false);
   
   // Validation Errors
   const [tokenError, setTokenError] = useState("");
@@ -100,15 +101,6 @@ export default function CreateQuestPage() {
     if (val && !/^[1-9A-HJ-NP-Za-km-z]{64,128}$/.test(val.trim())) {
       setTxHashError("Must be a base58 Solana signature (64-128 chars)");
     } else setTxHashError("");
-  };
-
-  // Copy Treasury Address to Clipboard
-  const handleCopyTreasuryAddress = () => {
-    const treasury = process.env.NEXT_PUBLIC_TREASURY_ADDRESS || "11111111111111111111111111111111";
-    navigator.clipboard.writeText(treasury);
-    setIsCopied(true);
-    toast.success("Treasury address copied to clipboard!");
-    setTimeout(() => setIsCopied(false), 2000);
   };
 
   // Step-builder functions
@@ -172,10 +164,9 @@ export default function CreateQuestPage() {
       toast.danger("Please correct the validation errors before submitting.");
       return;
     }
-
-    if (!/^[1-9A-HJ-NP-Za-km-z]{64,128}$/.test(txHash.trim())) {
+    if (txHash.trim().length > 0 && !/^[1-9A-HJ-NP-Za-km-z]{64,128}$/.test(txHash.trim())) {
       setTxHashError("Must be a base58 Solana signature (64-128 chars)");
-      toast.danger("Please provide a valid transaction hash as proof of deposit.");
+      toast.danger("Please provide a valid deposit signature or leave it empty to deposit via wallet.");
       return;
     }
 
@@ -247,8 +238,37 @@ export default function CreateQuestPage() {
 
     // Construct expires_at ISO string (end of the chosen day in UTC to be safe)
     const expiresISO = new Date(`${expiresAt.toString()}T23:59:59.000Z`).toISOString();
+    const expiresUnix = Math.floor(new Date(expiresISO).getTime() / 1000);
+
+    const questUuid = crypto.randomUUID();
+
+    let depositSignature = txHash.trim();
+    try {
+      if (!depositSignature) {
+        if (!isSolanaWalletInstalled()) {
+          toast.danger("Solana wallet not found. Install Phantom or paste a valid deposit signature.");
+          setIsLoading(false);
+          setStatusText("");
+          return;
+        }
+        setStatusText("Depositing rewards on-chain...");
+        depositSignature = await createQuestDepositTx({
+          questUuid,
+          totalRewardPoolLamports: totalRewardPool,
+          rewardPerUserLamports: rewardPerUser,
+          expiresAtUnixSeconds: String(expiresUnix),
+        });
+        setTxHash(depositSignature);
+      }
+    } catch (err: any) {
+      toast.danger(err?.message || "Failed to deposit on-chain. Please try again.");
+      setIsLoading(false);
+      setStatusText("");
+      return;
+    }
 
     const payload: ICreateQuestPayload = {
+      quest_uuid: questUuid,
       title,
       description,
       protocol: protocol as Protocol,
@@ -256,11 +276,12 @@ export default function CreateQuestPage() {
       total_reward_pool: totalRewardPool,
       reward_per_user: rewardPerUser,
       reward_token: rewardToken,
-      tx_hash: txHash,
+      tx_hash: depositSignature,
       expires_at: expiresISO,
     };
 
     try {
+      setStatusText("Registering quest on backend...");
       await createQuest(payload);
       toast.success("Quest successfully launched!");
       router.push("/dashboard");
@@ -271,6 +292,8 @@ export default function CreateQuestPage() {
           .map((i: any) => `${i.path}: ${i.message}`)
           .join(", ");
         toast.danger(`Validation error: ${issuesMsg}`);
+      } else if (backendError?.code === "DEPOSIT_TX_SIGNER_MISMATCH") {
+        toast.danger("Deposit transaction signer doesn't match your provider wallet.");
       } else {
         toast.danger(backendError?.message || "Failed to launch quest. Please check parameters.");
       }
@@ -544,44 +567,20 @@ export default function CreateQuestPage() {
                 )}
               </div>
 
-              {/* Treasury Deposit Instructions */}
-              <div className="md:col-span-2 bg-[#faf7f5] rounded-2xl border border-[#f5ddd9] p-6 flex flex-col gap-4 mt-2">
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-[#1f1b18] text-sm font-bold tracking-wide">Manual Treasury Deposit Instructions</h3>
-                  <p className="text-[#6b6560] text-xs leading-relaxed">
-                    To secure the rewards for this quest, you must manually deposit <span className="font-bold text-[#1f1b18]">{totalRewardPool || "0"} lamports</span> of SOL to the QuPilot Treasury.
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <span className="text-[11px] font-bold text-[#a63420] tracking-wider uppercase">QuPilot Treasury Address</span>
-                  <div className="flex items-center gap-2 bg-white border border-[#e8e2d9] rounded-xl p-3 justify-between shadow-sm">
-                    <code className="text-[#1f1b18] font-mono text-xs md:text-sm select-all break-all pr-2">
-                      {process.env.NEXT_PUBLIC_TREASURY_ADDRESS || "11111111111111111111111111111111"}
-                    </code>
-                    <Button
-                      type="button"
-                      onPress={handleCopyTreasuryAddress}
-                      className="bg-[#a63420]/5 hover:bg-[#a63420]/10 text-[#a63420] p-2 rounded-lg cursor-pointer transition-all flex items-center justify-center shrink-0 border border-[#a63420]/10 size-9 min-w-9"
-                    >
-                      {isCopied ? <FiCheck className="text-base text-green-600 animate-bounce" /> : <FiCopy className="text-base" />}
-                    </Button>
-                  </div>
-                </div>
-
-                <p className="text-[#a63420] text-[11px] font-medium leading-normal flex items-start gap-1">
-                  <span>⚠️</span>
-                  <span>
-                    Make sure the transaction has succeeded on the block explorer before submitting the transaction hash below. Incorrect hashes or failed transactions may result in the quest not activating or user execution failing.
-                  </span>
+              <div className="md:col-span-2 bg-[#faf7f5] rounded-2xl border border-[#f5ddd9] p-6 flex flex-col gap-2 mt-2">
+                <h3 className="text-[#1f1b18] text-sm font-bold tracking-wide">On-chain Deposit</h3>
+                <p className="text-[#6b6560] text-xs leading-relaxed">
+                  When you submit this form, QuPilot will create an on-chain deposit via the QuPilot program using your connected wallet. If you already deposited, you can paste the deposit signature below.
                 </p>
+                <code className="text-[#1f1b18] font-mono text-[11px] select-all break-all">
+                  Program: {QUPILOT_PROGRAM_ID}
+                </code>
               </div>
 
-              {/* Transaction Hash Input */}
               <div className="md:col-span-2">
-                <TextField isRequired isDisabled={isLoading}>
+                <TextField isDisabled={isLoading}>
                   <Label className="text-[#1f1b18] text-sm font-bold tracking-wide mb-1 flex items-center gap-1.5">
-                    <span>Transaction Hash (Proof of Deposit)</span>
+                    <span>Deposit Signature (Optional)</span>
                   </Label>
                   <Input
                     value={txHash}
@@ -594,7 +593,7 @@ export default function CreateQuestPage() {
                   <p className="text-[11px] text-red-500 font-semibold mt-1">{txHashError}</p>
                 ) : (
                   <p className="text-[11px] text-[#6b6560] font-medium mt-1">
-                    Paste the base58 Solana signature of your successful treasury deposit transfer.
+                    Leave empty to deposit via wallet on submit.
                   </p>
                 )}
               </div>

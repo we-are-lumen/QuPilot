@@ -135,6 +135,7 @@ Body:
 
 ```json
 {
+  "quest_uuid": "uuid-v4-generated-by-client",
   "title": "Swap on Byreal",
   "description": "Lakukan swap ...",
   "protocol": "byreal",
@@ -155,13 +156,14 @@ Body:
 }
 ```
 
+- `quest_uuid`: UUID v4 yang dibuat di client sebelum deposit. Dipakai untuk derive `quest_id` on-chain (sha256 UUID → 32 bytes).
 - `steps`: urutan step yang harus dieksekusi agent. Minimal 1 item. Bentuk `action_params` divalidasi berdasarkan `step_type`.
   - `swap`: `from_token_symbol`, `to_token_symbol`
   - `clmm_open` / `clmm_close`: `token0_mint`, `token1_mint`, `position_mint` (base58 Solana pubkey)
 - `total_reward_pool`: total reward (bigint) yang tersedia untuk quest ini — batas atas akumulasi distribusi.
 - `reward_per_user`: reward (bigint) yang diterima setiap user yang berhasil men-complete quest.
 - `reward_token`: selalu `SOL` (reward dibayar dalam lamports).
-- `tx_hash`: tx hash provider terkait create/funding quest (required).
+- `tx_hash`: signature transaksi deposit `create_quest` (Anchor) yang dibuat provider (required). Server akan verifikasi ke Solana RPC dan parse event `QuestCreated`.
 - Validasi: `total_reward_pool >= reward_per_user` (kalau lebih kecil, 400 VALIDATION_ERROR).
 - Kedua nilai diterima sebagai string atau integer; server reject nilai negatif / non-integer.
 
@@ -180,6 +182,8 @@ Body:
     "total_reward_distributed": "0",
     "reward_token": "SOL",
     "tx_hash": "SolanaSignatureBase58",
+    "quest_pool_pda": "Base58SolanaPubkey",
+    "quest_id_onchain": "\\x<hex32bytes>",
     "expires_at": "...",
     "created_at": "..."
   }
