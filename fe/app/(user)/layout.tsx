@@ -16,6 +16,8 @@ import { FiLayout, FiUser, FiAward, FiCompass } from "react-icons/fi";
 import { LuLogOut } from "react-icons/lu";
 import { getUserData, getAuthToken, clearAuth } from "@/lib/utils/auth";
 import type { IUser } from "@/lib/types/auth";
+import { useSolBalance } from "@/lib/hooks/useSolBalance";
+import SolanaIcon from "@/app/components/SolanaIcon";
 
 export default function UserLayout({
   children,
@@ -26,6 +28,7 @@ export default function UserLayout({
   const router = useRouter();
   const [user, setUser] = useState<IUser | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const { data: solBalance } = useSolBalance(user?.wallet_address);
 
   // Load user data on mount
   useEffect(() => {
@@ -160,6 +163,12 @@ export default function UserLayout({
                         </p>
                         <p className="text-[10px] text-[#6b6560] font-mono truncate">
                           {shortWallet}
+                        </p>
+                        <p className="text-sm text-[#1f1b18] font-mono truncate font-bold mt-1">
+                          <span className="inline-flex items-center gap-1.5">
+                            <SolanaIcon size={16} />
+                            {(solBalance?.sol ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 })} SOL
+                          </span>
                         </p>
                       </div>
 

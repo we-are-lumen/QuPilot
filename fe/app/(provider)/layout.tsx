@@ -8,6 +8,8 @@ import { LuRocket, LuLogOut } from "react-icons/lu";
 import { getUserData, clearAuth } from "@/lib/utils/auth";
 import type { IUser } from "@/lib/types/auth";
 import AuthGate from "@/app/components/AuthGate";
+import { useSolBalance } from "@/lib/hooks/useSolBalance";
+import SolanaIcon from "@/app/components/SolanaIcon";
 
 export default function ProviderLayout({
   children,
@@ -16,6 +18,7 @@ export default function ProviderLayout({
 }) {
   const router = useRouter();
   const [user, setUser] = useState<IUser | null>(null);
+  const { data: solBalance } = useSolBalance(user?.wallet_address);
 
   useEffect(() => {
     const stored = getUserData();
@@ -94,6 +97,12 @@ export default function ProviderLayout({
                       </p>
                       <p className="text-[10px] text-[#6b6560] font-mono truncate">
                         {shortWallet}
+                      </p>
+                      <p className="text-sm text-[#1f1b18] font-mono truncate font-bold mt-2">
+                        <span className="inline-flex items-center gap-1.5">
+                          <SolanaIcon size={16} />
+                          {(solBalance?.sol ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 })} SOL
+                        </span>
                       </p>
                     </div>
 
