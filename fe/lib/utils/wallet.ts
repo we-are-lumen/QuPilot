@@ -114,6 +114,12 @@ export async function createQuestDepositTx(input: CreateQuestDepositInput): Prom
 
   const res = await window.solana.signAndSendTransaction(tx);
   const signature = res?.signature ?? res;
-  await conn.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
+  if (typeof signature !== 'string' || signature.trim().length === 0) {
+    throw new Error('Invalid wallet signature response');
+  }
+  try {
+    await conn.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
+  } catch {
+  }
   return signature;
 }

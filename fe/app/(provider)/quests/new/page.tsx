@@ -261,7 +261,14 @@ export default function CreateQuestPage() {
         setTxHash(depositSignature);
       }
     } catch (err: any) {
-      toast.danger(err?.message || "Failed to deposit on-chain. Please try again.");
+      const raw = (() => {
+        try {
+          return JSON.stringify(err);
+        } catch {
+          return String(err);
+        }
+      })();
+      toast.danger(err?.message || raw || "Failed to deposit on-chain. Please try again.");
       setIsLoading(false);
       setStatusText("");
       return;
