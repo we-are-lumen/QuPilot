@@ -1,4 +1,4 @@
-import { connect, disconnect, signMessage as wagmiSignMessage } from '@wagmi/core';
+import { connect, disconnect, signMessage as wagmiSignMessage, sendTransaction as wagmiSendTransaction } from '@wagmi/core';
 import { wagmiConfig } from '@/lib/wagmi';
 import { injected } from 'wagmi/connectors';
 
@@ -71,3 +71,26 @@ export async function signMessage(message: string): Promise<string> {
   });
   return signature;
 }
+
+/**
+ * Send a 0-value transaction to the treasury address (or any valid EVM address)
+ * to generate a valid, on-chain transaction hash (tx_hash) for quest creation.
+ */
+export async function sendTreasuryDepositTx(toAddress?: string): Promise<string> {
+  // Make sure we have a connected wallet
+  const currentAddress = await connectWallet();
+  
+  // Use user-supplied address if it is not the zero address
+  const safeAddress = (toAddress && toAddress !== '0x0000000000000000000000000000000000000000') ? toAddress : undefined;
+  
+  // Use safeAddress, then environment variable, then fallback to currentAddress or valid checksummed address
+  const destination = safeAddress || process.env.NEXT_PUBLIC_TREASURY_ADDRESS || currentAddress || '0x71C7656EC7ab88b098defB751B7401B5f6d5976F';
+
+  const hash = await wagmiSendTransaction(wagmiConfig, {
+    to: destination as `0x${string}`,
+    value: BigInt(0),
+  });
+  
+  return hash;
+}
+
