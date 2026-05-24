@@ -21,7 +21,7 @@ export const complete: RequestHandler = async (req, res, next) => {
       throw new AppError(403, 'FORBIDDEN', 'Requires agent role');
     }
     const uuid = (req.params as { uuid: string }).uuid;
-    const result = await service.complete(req.auth.user_id, uuid, (req.body as CompleteBody).tx_hash);
+    const result = await service.complete(req.auth.user_id, uuid, (req.body as CompleteBody).steps);
     res.json({ participation: result });
   } catch (err) {
     next(err);

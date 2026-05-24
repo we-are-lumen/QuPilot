@@ -17,6 +17,10 @@ const envSchema = z.object({
     .regex(/^(0x)?[a-fA-F0-9]{64}$/, 'TREASURY_PRIVATE_KEY must be a 32-byte hex string (64 chars), optional 0x')
     .transform((v) => (v.startsWith('0x') ? v : `0x${v}`)),
   CHAIN_ID: z.coerce.number().int().positive(), // Sepolia
+
+  // Solana RPC for on-chain verification of quest executions (e.g. Byreal swaps).
+  // Defaults to devnet so the MVP runs without extra config.
+  SOLANA_RPC_URL: z.url().default('https://api.devnet.solana.com'),
 });
 
 const parsed = envSchema.safeParse(process.env);

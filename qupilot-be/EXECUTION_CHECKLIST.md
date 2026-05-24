@@ -30,7 +30,7 @@ Step-by-step buat execute `quest-api-BE-requirements-v2.md`. Setiap step dipecah
 
 - [x] **1.1** `supabase/migrations/0001_user_providers.sql` — legacy table untuk provider (akan di-drop oleh `0009`).
 - [x] **1.2** `supabase/migrations/0002_users.sql` — table users, unique `wallet_address` & `uuid`.
-- [x] **1.3** `supabase/migrations/0003_quests.sql` — table quests (FK awal ke `user_providers(id)`, lalu dipindah ke `users(id)` oleh `0009`), index `(provider_id)`, `(expires_at)`, `(protocol)`, `(quest_type)`.
+- [x] **1.3** `supabase/migrations/0003_quests.sql` — table quests (FK awal ke `user_providers(id)`, lalu dipindah ke `users(id)` oleh `0009`), index `(provider_id)`, `(expires_at)`, `(protocol)`.
 - [x] **1.4** `supabase/migrations/0004_quest_participations.sql` — table participations, FK user/quest, **partial unique index** `(user_id, quest_id) WHERE status='inprogress'` untuk enforce "satu inprogress per kombinasi".
 - [x] **1.5** `supabase/migrations/0005_agent_api_keys.sql` — table `agent_api_keys` (id, uuid, user_id FK, key_prefix, key_hash, label, created_at, last_used_at, revoked_at) + **partial unique index** `(user_id) WHERE revoked_at IS NULL` (enforce satu key aktif per user) + index `(key_prefix)` untuk lookup.
 - [x] **1.6** `supabase/migrations/0006_enable_rls.sql` — `ENABLE ROW LEVEL SECURITY` di semua 5 table **tanpa policy**, plus `REVOKE ALL ... FROM anon, authenticated` + `ALTER DEFAULT PRIVILEGES` untuk table baru. Efek: hanya `service_role` (yang dipakai BE) yang punya akses; siapa pun yang coba lewat Supabase PostgREST publik / anon key dapat empty response.
@@ -69,7 +69,7 @@ Step-by-step buat execute `quest-api-BE-requirements-v2.md`. Setiap step dipecah
 
 ## Phase 6 — Module: Quests (Provider side)
 
-- [x] **6.1** `src/modules/quests/quests.schema.ts` — zod `createQuestBody` dengan enum protocol & quest_type, validasi `expires_at` di masa depan (`refine`), dan field wajib `tx_hash`.
+- [x] **6.1** `src/modules/quests/quests.schema.ts` — zod `createQuestBody` dengan enum protocol, field wajib `tx_hash`, dan `steps[]` (tiap step punya `step_type` + `action_params`).
 - [x] **6.2** `src/modules/quests/quests.service.ts` — `create(providerId, body)`, `listByProvider(providerId)` dengan participation count, `getDetailForProvider(providerId, questUuid)` dengan analytics (total/success/failed/success_rate).
 - [x] **6.3** Controller + routes (provider-only): `POST /provider/quests`, `GET /provider/quests`, `GET /provider/quests/:uuid`. Mount dengan `authProvider`.
 - [x] **6.4** Handler `PUT`/`PATCH /provider/quests/:uuid` → return **403** ("Quest is immutable") sesuai business rule.
@@ -78,7 +78,7 @@ Step-by-step buat execute `quest-api-BE-requirements-v2.md`. Setiap step dipecah
 
 - [x] **7.1** Extend `quests.service.ts`: `listPublic({ protocol?, type? })` filter `expires_at > now()`, join provider untuk nama+logo, plus participation count.
 - [x] **7.2** `listPublicByProvider(providerUuid)` — sama tapi filter by provider uuid.
-- [x] **7.3** `getPublicDetail(uuid)` — full detail termasuk `action_params`.
+- [x] **7.3** `getPublicDetail(uuid)` — full detail termasuk `steps[]` (ordered) untuk AI agent.
 - [x] **7.4** Controller + routes (no auth): `GET /quests`, `GET /providers/:uuid/quests`, `GET /quests/:uuid`.
 
 ## Phase 8 — Module: User Participations & Achievements
@@ -112,9 +112,9 @@ User yang sudah login wallet bisa generate / revoke API key untuk dipakai AI Age
 ## Phase 11 — Module: AI Agent (join + complete)
 
 - [x] **11.1** **Rewrite** `src/middlewares/auth-agent.ts`: ambil `x-api-key`, validasi format `qpk_*`, lookup `agent_api_keys` by `key_prefix` & `revoked_at IS NULL`, constant-time compare hash via `verifyKey` (lib/api-key), set `req.auth = { role: 'agent', user_id, key_id }`, update `last_used_at` async (fire-and-forget). Hapus `AI_AGENT_API_KEY` dari `env.ts` + `.env.example`.
-- [x] **11.2** `src/modules/agent/agent.schema.ts` — `joinBody { quest_uuid }` (tanpa `user_uuid` — di-resolve dari key), `completeBody { tx_hash }`.
+- [x] **11.2** `src/modules/agent/agent.schema.ts` — `joinBody { quest_uuid }` (tanpa `user_uuid` — di-resolve dari key), `completeBody { steps: [{ step_uuid, tx_hash }] }`.
 - [x] **11.3** `agent.service.ts` — `join(userId, questUuid)`: resolve quest by uuid (cek belum expired), insert participation status `inprogress` (partial unique handle race → 409 kalau sudah ada).
-- [x] **11.4** `agent.service.ts` — `complete(userId, participationUuid, txHash)`: load participation, **assert `participation.user_id === userId`** (else 403), panggil `verifyTxBasic(txHash, userWallet)` (EVM `getTransactionReceipt` + `status=1` + `from` match wallet). Set status success/failed + `completed_at` + `tx_hash`.
+- [x] **11.4** `agent.service.ts` — `complete(userId, participationUuid, steps)`: update `quest_step_participations` per step + `tx_hash`, set participation `success` jika semua step sukses atau `failed` jika ada step gagal, lalu bump `quests.total_reward_distributed` saat `success`.
 - [x] **11.5** Controller + routes (agent-only via `authAgent`): `POST /agent/participations` (join), `POST /agent/participations/:uuid/complete`.
 - [x] **11.6** Tambah `agent.service.claim(userId)` — resolve `wallet_address` via `resolveUserWalletById`, panggil `claimAllByUserId` (re-use logic dari `participations.service`). Destination tetap wallet user, bukan agent.
 - [x] **11.7** Controller + route: `POST /agent/claim` (agent-only). Response shape sama dengan `POST /me/claim`. Idempotent — aman dipanggil berulang & co-existence dengan claim manual user.
@@ -158,7 +158,7 @@ User yang sudah login wallet bisa generate / revoke API key untuk dipakai AI Age
   - [ ] `GET /me/api-key` → metadata key (prefix, label, created_at), tanpa plaintext
   - [ ] `GET /quests` (public) → quest muncul, ada nama+logo provider
   - [ ] `POST /agent/participations` (x-api-key) → 201 participation uuid (user di-resolve dari key)
-  - [ ] Eksekusi tx manual → `POST /agent/participations/:uuid/complete` → status `success`
+  - [ ] Eksekusi tx manual → `POST /agent/participations/:uuid/complete` dengan body `steps:[{step_uuid, tx_hash}]` sampai semua step complete → status `success`
   - [ ] Pakai key user lain untuk complete participation user A → **403** (ownership check)
   - [ ] `POST /me/api-key` lagi → key lama otomatis revoked, key lama dipakai → **401**
   - [ ] `GET /me/participations` (Bearer user) → success + `can_claim=true`
@@ -167,18 +167,18 @@ User yang sudah login wallet bisa generate / revoke API key untuk dipakai AI Age
   - [ ] `GET /leaderboard` → user muncul dengan `total_reward` & `success_rate`
 - [x] **13.4** (Opsional) Bikin `API.md` ringkas — daftar endpoint + contoh request.
 
-## Phase 15 — action_params: array of objects
+## Phase 15 — Quest Steps (multi-step quests)
 
-- [x] **15.1** Migration `supabase/migrations/0011_quest_action_params_array.sql`:
-  - Backfill: row existing yang masih object di-wrap ke array satu elemen (`jsonb_build_array(action_params)`); row null / sudah array di-skip → idempotent.
-  - Add `CHECK (action_params is null or jsonb_typeof(action_params) = 'array')`.
-- [x] **15.2** `quests.schema.ts` — `action_params: z.array(z.record(z.string(), z.unknown())).min(1)`. Tolak object tunggal & array kosong.
-- [x] **15.3** `quests.service.ts` — type `QuestPublic.action_params: Array<Record<string, unknown>>`. Insert lewat tanpa modifikasi karena body sudah berbentuk array setelah lewat schema.
-- [x] **15.4** Update `API.md` & spec — semua sample `action_params` jadi array, plus catatan validasi.
-- [ ] **15.5** Apply `0011` di Supabase SQL editor; verifikasi:
-  - Row lama tidak ada lagi yang `jsonb_typeof != 'array'` (query: `select count(*) from quests where jsonb_typeof(action_params) <> 'array';` → 0).
-  - Insert quest baru dengan body `action_params = {}` (object) → ditolak 400 oleh zod.
-  - Insert quest baru dengan `action_params = [{...}]` → sukses. _(manual)_
+- [x] **15.1** Migration `supabase/migrations/0011_quest_steps.sql`:
+  - Buat table `quest_steps` (order_index + step_type + action_params).
+  - Buat table `quest_step_participations` (per-step status + tx_hash).
+  - Backfill quest existing jadi 1 step (`step_type='swap'`, order_index=0) dari legacy `quests.action_params`.
+  - Drop kolom legacy: `quests.quest_type`, `quests.action_params`, dan `quest_participations.tx_hash`.
+- [ ] **15.2** Apply `0011` di Supabase SQL editor; verifikasi:
+  - Table `quest_steps` & `quest_step_participations` ada + RLS enabled.
+  - Table `quests` tidak punya `quest_type` & `action_params`.
+  - Table `quest_participations` tidak punya `tx_hash`.
+  - `select count(*) from quest_steps;` > 0 (minimal backfill 1 step per quest). _(manual)_
 
 ---
 

@@ -7,7 +7,6 @@ export type ParticipationStatus = 'inprogress' | 'success' | 'failed';
 export type ParticipationItem = {
   uuid: string;
   status: ParticipationStatus;
-  tx_hash: string | null;
   reward_claimed: boolean;
   started_at: string;
   completed_at: string | null;
@@ -16,11 +15,11 @@ export type ParticipationItem = {
     title: string;
     description: string;
     protocol: string;
-    quest_type: string;
     total_reward_pool: number | string;
     reward_per_user: number | string;
     total_reward_distributed: number | string;
     reward_token: string;
+    tx_hash: string;
     expires_at: string;
     created_at: string;
     provider: {
@@ -59,11 +58,11 @@ type QuestEmbed = {
   title: string;
   description: string;
   protocol: string;
-  quest_type: string;
   total_reward_pool: number | string;
   reward_per_user: number | string;
   total_reward_distributed: number | string;
   reward_token: string;
+  tx_hash: string;
   expires_at: string;
   created_at: string;
   users:
@@ -81,7 +80,7 @@ export const listByUser = async (userUuid: string): Promise<ParticipationItem[]>
   const { data, error } = await supabase
     .from('quest_participations')
     .select(
-      'uuid, status, tx_hash, reward_claimed, started_at, completed_at, quests(uuid, title, description, protocol, quest_type, total_reward_pool, reward_per_user, total_reward_distributed, reward_token, expires_at, created_at, users(uuid, display_name, logo_url))',
+      'uuid, status, reward_claimed, started_at, completed_at, quests(uuid, title, description, protocol, total_reward_pool, reward_per_user, total_reward_distributed, reward_token, tx_hash, expires_at, created_at, users(uuid, display_name, logo_url))',
     )
     .eq('user_id', user_id)
     .order('started_at', { ascending: false });
@@ -91,7 +90,6 @@ export const listByUser = async (userUuid: string): Promise<ParticipationItem[]>
   const rows = (data ?? []) as unknown as Array<{
     uuid: string;
     status: ParticipationStatus;
-    tx_hash: string | null;
     reward_claimed: boolean;
     started_at: string;
     completed_at: string | null;
@@ -106,7 +104,6 @@ export const listByUser = async (userUuid: string): Promise<ParticipationItem[]>
       return {
         uuid: r.uuid,
         status: r.status,
-        tx_hash: r.tx_hash,
         reward_claimed: r.reward_claimed,
         started_at: r.started_at,
         completed_at: r.completed_at,
@@ -115,11 +112,11 @@ export const listByUser = async (userUuid: string): Promise<ParticipationItem[]>
           title: q.title,
           description: q.description,
           protocol: q.protocol,
-          quest_type: q.quest_type,
           total_reward_pool: q.total_reward_pool,
           reward_per_user: q.reward_per_user,
           total_reward_distributed: q.total_reward_distributed,
           reward_token: q.reward_token,
+          tx_hash: q.tx_hash,
           expires_at: q.expires_at,
           created_at: q.created_at,
           provider: toProvider(q.users),
@@ -134,7 +131,7 @@ export const getDetailForUser = async (userUuid: string, questUuid: string): Pro
   const { data, error } = await supabase
     .from('quest_participations')
     .select(
-      'uuid, status, tx_hash, reward_claimed, started_at, completed_at, quests(uuid, title, description, protocol, quest_type, total_reward_pool, reward_per_user, total_reward_distributed, reward_token, expires_at, created_at, users(uuid, display_name, logo_url))',
+      'uuid, status, reward_claimed, started_at, completed_at, quests(uuid, title, description, protocol, total_reward_pool, reward_per_user, total_reward_distributed, reward_token, tx_hash, expires_at, created_at, users(uuid, display_name, logo_url))',
     )
     .eq('user_id', user_id)
     .eq('quests.uuid', questUuid)
@@ -149,7 +146,6 @@ export const getDetailForUser = async (userUuid: string, questUuid: string): Pro
   const row = data as unknown as {
     uuid: string;
     status: ParticipationStatus;
-    tx_hash: string | null;
     reward_claimed: boolean;
     started_at: string;
     completed_at: string | null;
@@ -161,7 +157,6 @@ export const getDetailForUser = async (userUuid: string, questUuid: string): Pro
   const item: ParticipationItem = {
     uuid: row.uuid,
     status: row.status,
-    tx_hash: row.tx_hash,
     reward_claimed: row.reward_claimed,
     started_at: row.started_at,
     completed_at: row.completed_at,
@@ -170,11 +165,11 @@ export const getDetailForUser = async (userUuid: string, questUuid: string): Pro
       title: q.title,
       description: q.description,
       protocol: q.protocol,
-      quest_type: q.quest_type,
       total_reward_pool: q.total_reward_pool,
       reward_per_user: q.reward_per_user,
       total_reward_distributed: q.total_reward_distributed,
       reward_token: q.reward_token,
+      tx_hash: q.tx_hash,
       expires_at: q.expires_at,
       created_at: q.created_at,
       provider: toProvider(q.users),

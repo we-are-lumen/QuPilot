@@ -83,8 +83,6 @@ Menyimpan quest yang dibuat oleh user provider. Quest langsung aktif dan publik 
 | title | text | Judul quest |
 | description | text | Deskripsi detail quest |
 | protocol | text | Enum: `byreal`, `bybit`, `sui` |
-| quest_type | text | Enum: `swap`, `lp`, `stake` |
-| action_params | jsonb (array of objects) | Parameter siap pakai untuk eksekusi on-chain oleh AI agent. Selalu JSON **array** berisi satu atau lebih step (object). Constraint DB (`0011`) enforce `jsonb_typeof = 'array'`. |
 | total_reward_pool | bigint NOT NULL | Total reward (base units, bigint) yang tersedia untuk quest ini. Batas atas akumulasi distribusi. Immutable setelah quest dibuat. |
 | reward_per_user | bigint NOT NULL | Reward (base units) yang diterima setiap user yang berhasil men-complete quest. Immutable setelah quest dibuat. Constraint DB: `total_reward_pool >= reward_per_user`. |
 | total_reward_distributed | bigint NOT NULL DEFAULT 0 | Akumulasi reward yang sudah diberikan ke semua participation `status=success` quest ini. Di-increment server saat agent berhasil complete participation. Hanya kolom inilah di `quests` yang mutable. Constraint DB: `total_reward_distributed <= total_reward_pool`. |
@@ -93,7 +91,7 @@ Menyimpan quest yang dibuat oleh user provider. Quest langsung aktif dan publik 
 | expires_at | timestamptz | Quest tidak muncul di listing publik setelah tanggal ini |
 | created_at | timestamptz | |
 
-**Catatan `action_params`:** Field ini adalah **JSON array** berisi satu atau lebih step yang langsung bisa dikonsumsi AI agent tanpa perlu parsing tambahan. Setiap elemen berbentuk object dengan key bebas, tetapi konvensinya cocok dengan `quest_type` quest (mis. `swap` → `[{input, output, minOut}]`, `lp` → `[{pair, amountA, amountB}]`). Zod schema: `z.array(z.record(z.string(), z.unknown())).min(1)` — server menolak object tunggal, array kosong, atau null.
+Quest sudah tidak menyimpan `quest_type` ataupun `action_params`. Langkah-langkah eksekusi disimpan di tabel `quest_steps`.
 
 **Tidak ada kolom `status`:** Quest selalu publik sejak dibuat. Visibilitas di listing publik dikontrol murni oleh `expires_at`.
 
@@ -118,6 +116,37 @@ Menyimpan record eksekusi quest oleh AI agent atas nama user tertentu.
 **Tidak ada kolom reward** di `quest_participations`. Nominal reward untuk claim direfer ke `quests.reward_per_user` — aman karena kolom itu immutable.
 
 ---
+
+### Tabel: `quest_steps`
+
+Menyimpan langkah-langkah penyelesaian quest. Step bersifat immutable (tidak bisa diedit setelah quest dibuat).
+
+| Column | Type | Keterangan |
+|---|---|---|
+| id | bigint PK auto increment | Internal FK |
+| uuid | uuid UNIQUE default uuidv4 | ID publik step |
+| quest_id | bigint FK | → quests.id |
+| order_index | int | Urutan step (mulai dari 0) |
+| step_type | text | Enum: `swap`, `clmm_open`, `clmm_close` |
+| action_params | jsonb | Parameter per step untuk AI agent (shape tergantung `step_type`) |
+| created_at | timestamptz | |
+
+---
+
+### Tabel: `quest_step_participations`
+
+Menyimpan progress eksekusi per step untuk satu `quest_participations` + `quest_steps`.
+
+| Column | Type | Keterangan |
+|---|---|---|
+| id | bigint PK auto increment | Internal FK |
+| uuid | uuid UNIQUE default uuidv4 | ID publik |
+| participation_id | bigint FK | → quest_participations.id |
+| step_id | bigint FK | → quest_steps.id |
+| status | text | Enum: `inprogress` → `success` / `failed` |
+| tx_hash | text | Tx hash EVM untuk step ini |
+| started_at | timestamptz | |
+| completed_at | timestamptz | |
 
 ## JWT Payload
 
@@ -174,7 +203,7 @@ Semua endpoint memerlukan JWT dengan role `user_provider`.
 **Create Quest**
 - Quest langsung aktif dan publik setelah dibuat — tidak ada tahap draft atau publish
 - Quest tidak bisa diedit dalam kondisi apapun setelah dibuat — enforce di level backend, return 403 jika ada request PUT/PATCH
-- Input wajib: `title`, `description`, `protocol`, `quest_type`, `action_params`, `total_reward_pool`, `reward_per_user`, `reward_token`, `tx_hash`, `expires_at`
+- Input wajib: `title`, `description`, `protocol`, `steps`, `total_reward_pool`, `reward_per_user`, `reward_token`, `tx_hash`, `expires_at`
 - Validasi: `expires_at` harus di masa depan; `total_reward_pool >= reward_per_user` (zod + DB check); kedua nilai reward >= 0
 - `total_reward_distributed` di-set 0 oleh server (tidak di body)
 - Response mengembalikan `uuid` quest sebagai identifier publik
@@ -243,8 +272,8 @@ Tidak memerlukan autentikasi apapun.
 - Setiap quest menampilkan nama dan logo provider asalnya
 
 **Detail Quest**
-- Menampilkan detail lengkap satu quest berdasarkan `uuid` termasuk `action_params`
-- Field `action_params` digunakan AI agent untuk mengeksekusi quest secara otomatis
+- Menampilkan detail lengkap satu quest berdasarkan `uuid` termasuk `steps[]` (ordered)
+- Field `steps[].action_params` digunakan AI agent untuk mengeksekusi quest secara otomatis
 
 **Leaderboard**
 - Menampilkan ranking user berdasarkan dua metrik:
@@ -268,7 +297,7 @@ AI agent mengakses API menggunakan API key via header `x-api-key`. Key di-genera
 
 **Discovery Quest**
 - Menggunakan endpoint publik `GET /quests` dengan filter `protocol` dan `type`
-- Membaca `action_params` dari `GET /quests/:uuid` untuk mendapatkan parameter eksekusi
+- Membaca `steps[]` dari `GET /quests/:uuid` untuk mendapatkan parameter eksekusi
 
 **Join Quest**
 - Membuat record baru di `quest_participations` dengan status `inprogress`
@@ -277,12 +306,12 @@ AI agent mengakses API menggunakan API key via header `x-api-key`. Key di-genera
 - Validasi: quest belum expired
 
 **Complete Quest**
-- Mengirimkan `tx_hash` dari transaksi on-chain yang sudah dieksekusi
+- Mengirimkan `steps: [{ step_uuid, tx_hash }]` dari transaksi on-chain yang sudah dieksekusi per step
 - Validasi ownership: participation yang dirujuk harus milik user yang sama dengan owner API key — agent tidak bisa complete participation milik user lain (return 403)
 - Backend **wajib memverifikasi `tx_hash` ke EVM RPC** sebelum mengubah status — tidak bisa langsung percaya input dari agent
-- Jika transaksi valid dan sesuai dengan `action_params` quest: update status ke `success`
-- Jika transaksi tidak valid: update status ke `failed`
-- Set `completed_at` ke waktu sekarang
+- Jika transaksi valid: update `quest_step_participations.status=success` untuk step tsb.
+- Jika transaksi tidak valid: update `quest_step_participations.status=failed` untuk step tsb.
+- Participation quest dianggap `success` kalau semua step `success`, dan dianggap `failed` kalau ada minimal satu step `failed`.
 - **Saat dan hanya saat status berubah ke `success`:**
   - Load `quests.{reward_per_user, total_reward_pool, total_reward_distributed}` untuk quest yang bersangkutan.
   - Hitung `new = total_reward_distributed + reward_per_user`. Kalau `new > total_reward_pool` → return 409 `REWARD_POOL_EXHAUSTED` (status participation tetap inprogress, agent boleh retry / inform user).
