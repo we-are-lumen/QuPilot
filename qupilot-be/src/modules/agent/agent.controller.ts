@@ -8,7 +8,8 @@ export const join: RequestHandler = async (req, res, next) => {
     if (!req.auth || req.auth.role !== 'agent') {
       throw new AppError(403, 'FORBIDDEN', 'Requires agent role');
     }
-    const result = await service.join(req.auth.user_id, (req.body as JoinBody).quest_uuid);
+    const body = req.body as JoinBody;
+    const result = await service.join(req.auth.user_id, body.quest_uuid, body.agent_wallet_address);
     res.status(201).json({ participation: result });
   } catch (err) {
     next(err);

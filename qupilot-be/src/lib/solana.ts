@@ -84,6 +84,26 @@ export type VerifySwapFailure =
   | 'TOKEN_IN_NOT_DECREASED'
   | 'TOKEN_OUT_NOT_INCREASED';
 
+export type VerifySwapBasicInput = {
+  signature: string;
+  expectedSigner: string;
+  fromTokenSymbol: string;
+  toTokenSymbol: string;
+};
+
+export type VerifySwapBasicFailure =
+  | 'INVALID_SIGNATURE_FORMAT'
+  | 'UNKNOWN_FROM_TOKEN'
+  | 'UNKNOWN_TO_TOKEN'
+  | 'TX_NOT_FOUND'
+  | 'TX_FAILED'
+  | 'TOKEN_IN_NOT_DECREASED'
+  | 'TOKEN_OUT_NOT_INCREASED';
+
+export type VerifySwapBasicResult =
+  | { ok: true; tokenInDelta: bigint; tokenOutDelta: bigint }
+  | { ok: false; reason: VerifySwapBasicFailure };
+
 const isValidPubkey = (s: string): boolean => {
   try {
     new PublicKey(s);
@@ -97,6 +117,39 @@ const isValidSignature = (s: string): boolean => {
   // Solana signatures are base58, typically 87-88 chars. Light validation only;
   // RPC will reject malformed ones anyway.
   return typeof s === 'string' && s.length >= 64 && s.length <= 128 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(s);
+};
+
+export const verifySolanaTxBasic = async (signature: string): Promise<boolean> => {
+  if (!isValidSignature(signature)) return false;
+
+  const conn = getSolanaConnection();
+  const tx = await conn.getParsedTransaction(signature, {
+    commitment: 'confirmed',
+    maxSupportedTransactionVersion: 0,
+  });
+
+  if (!tx || !tx.meta) return false;
+  return tx.meta.err === null;
+};
+
+const computeTokenDeltaByOwnerMint = (
+  tx: ParsedTransactionWithMeta,
+  owner: string,
+  mint: string,
+): bigint => {
+  const pre = (tx.meta?.preTokenBalances ?? []).filter((b) => b.owner === owner && b.mint === mint);
+  const post = (tx.meta?.postTokenBalances ?? []).filter((b) => b.owner === owner && b.mint === mint);
+  const sum = (arr: typeof pre): bigint => arr.reduce<bigint>((acc, b) => acc + BigInt(b.uiTokenAmount.amount), 0n);
+  return sum(post) - sum(pre);
+};
+
+const computeNativeDeltaByWallet = (tx: ParsedTransactionWithMeta, wallet: string): bigint => {
+  const accountKeys = tx.transaction.message.accountKeys;
+  const idx = accountKeys.findIndex((k) => k.pubkey.toBase58() === wallet);
+  if (idx < 0) return 0n;
+  const pre = BigInt(tx.meta?.preBalances?.[idx] ?? 0);
+  const post = BigInt(tx.meta?.postBalances?.[idx] ?? 0);
+  return post - pre;
 };
 
 /**
@@ -186,44 +239,21 @@ export const verifySolanaSwapTx = async (input: VerifySwapInput): Promise<Verify
   return { ok: true, tokenInDelta: fromDelta, tokenOutDelta: toDelta };
 };
 
-// ---------------------------------------------------------------------------
-// CLMM verifiers (stubs)
-// ---------------------------------------------------------------------------
-// Proper CLMM verification needs Byreal-specific knowledge:
-//   - decode the position NFT mint emitted by the open instruction
-//   - confirm the pool, tick range, and liquidity values match action_params
-//   - for close: confirm the position NFT was burned / liquidity drained
-// Until we have Byreal's program IDs and IDLs wired up, these stubs do the
-// universal "tx-basic" checks (exists, succeeded, fee payer = user) so the
-// MVP can score these quests without lying about deeper guarantees.
-
-export type VerifyClmmInput = {
-  signature: string;
-  userWallet: string;
-};
-
-export type VerifyClmmFailure =
-  | 'INVALID_SIGNATURE_FORMAT'
-  | 'INVALID_USER_WALLET'
-  | 'TX_NOT_FOUND'
-  | 'TX_FAILED'
-  | 'WRONG_SIGNER'
-  | 'PROGRAM_NOT_ALLOWED';
-
-export type VerifyClmmResult =
-  | { ok: true; note: string }
-  | { ok: false; reason: VerifyClmmFailure };
-
-const verifyTxBasicSolana = async (input: VerifyClmmInput): Promise<VerifyClmmResult> => {
+export const verifySolanaSwapTxBasic = async (input: VerifySwapBasicInput): Promise<VerifySwapBasicResult> => {
   if (!isValidSignature(input.signature)) {
     return { ok: false, reason: 'INVALID_SIGNATURE_FORMAT' };
   }
-  if (!isValidPubkey(input.userWallet)) {
-    return { ok: false, reason: 'INVALID_USER_WALLET' };
+  if (!isValidPubkey(input.expectedSigner)) {
+    return { ok: false, reason: 'TX_FAILED' };
   }
 
+  const fromTok = resolveToken(input.fromTokenSymbol);
+  const toTok = resolveToken(input.toTokenSymbol);
+  if (!fromTok) return { ok: false, reason: 'UNKNOWN_FROM_TOKEN' };
+  if (!toTok) return { ok: false, reason: 'UNKNOWN_TO_TOKEN' };
+
   const conn = getSolanaConnection();
-  const tx = await conn.getParsedTransaction(input.signature, {
+  const tx: ParsedTransactionWithMeta | null = await conn.getParsedTransaction(input.signature, {
     commitment: 'confirmed',
     maxSupportedTransactionVersion: 0,
   });
@@ -231,29 +261,103 @@ const verifyTxBasicSolana = async (input: VerifyClmmInput): Promise<VerifyClmmRe
   if (!tx || !tx.meta) return { ok: false, reason: 'TX_NOT_FOUND' };
   if (tx.meta.err !== null) return { ok: false, reason: 'TX_FAILED' };
 
-  const feePayer = tx.transaction.message.accountKeys[0]?.pubkey?.toBase58();
-  if (!feePayer || feePayer !== input.userWallet) {
-    return { ok: false, reason: 'WRONG_SIGNER' };
-  }
+  const accountKeys = tx.transaction.message.accountKeys;
+  const feePayer = accountKeys[0]?.pubkey?.toBase58();
+  if (!feePayer || feePayer !== input.expectedSigner) return { ok: false, reason: 'TX_FAILED' };
 
-  if (isAllowlistEnabled()) {
-    const allowSet = new Set(BYREAL_PROGRAM_IDS);
-    const outer = tx.transaction.message.instructions.map((ix) => ix.programId.toBase58());
-    const inner = (tx.meta.innerInstructions ?? []).flatMap((g) =>
-      g.instructions.map((ix) => ix.programId.toBase58()),
-    );
-    if (![...outer, ...inner].some((id) => allowSet.has(id))) {
-      return { ok: false, reason: 'PROGRAM_NOT_ALLOWED' };
-    }
-  }
+  const fromDelta = fromTok.mint
+    ? computeTokenDeltaByOwnerMint(tx, feePayer, fromTok.mint)
+    : computeNativeDeltaByWallet(tx, feePayer);
+  const toDelta = toTok.mint
+    ? computeTokenDeltaByOwnerMint(tx, feePayer, toTok.mint)
+    : computeNativeDeltaByWallet(tx, feePayer);
 
-  return { ok: true, note: 'tx-basic only — CLMM state verification not yet implemented' };
+  if (fromDelta >= 0n) return { ok: false, reason: 'TOKEN_IN_NOT_DECREASED' };
+  if (toDelta <= 0n) return { ok: false, reason: 'TOKEN_OUT_NOT_INCREASED' };
+
+  return { ok: true, tokenInDelta: fromDelta, tokenOutDelta: toDelta };
 };
 
-/** Open a CLMM position. MVP: tx-basic verification only. */
-export const verifySolanaOpenClmm = (input: VerifyClmmInput): Promise<VerifyClmmResult> =>
-  verifyTxBasicSolana(input);
+export type VerifyClmmOpenInput = {
+  signature: string;
+  expectedSigner: string;
+  token0Mint: string;
+  token1Mint: string;
+  positionMint: string;
+};
 
-/** Close a CLMM position. MVP: tx-basic verification only. */
-export const verifySolanaCloseClmm = (input: VerifyClmmInput): Promise<VerifyClmmResult> =>
-  verifyTxBasicSolana(input);
+export type VerifyClmmCloseInput = VerifyClmmOpenInput;
+
+export type VerifyClmmComprehensiveFailure =
+  | 'INVALID_SIGNATURE_FORMAT'
+  | 'INVALID_SIGNER'
+  | 'INVALID_MINT'
+  | 'TX_NOT_FOUND'
+  | 'TX_FAILED'
+  | 'WRONG_SIGNER'
+  | 'POSITION_NFT_NOT_MINTED'
+  | 'POSITION_NFT_NOT_BURNED'
+  | 'NO_TOKEN_OUTFLOW'
+  | 'NO_TOKEN_INFLOW';
+
+export type VerifyClmmComprehensiveResult = { ok: true } | { ok: false; reason: VerifyClmmComprehensiveFailure };
+
+const isValidMint = (s: string): boolean => isValidPubkey(s);
+
+export const verifySolanaClmmOpenTx = async (input: VerifyClmmOpenInput): Promise<VerifyClmmComprehensiveResult> => {
+  if (!isValidSignature(input.signature)) return { ok: false, reason: 'INVALID_SIGNATURE_FORMAT' };
+  if (!isValidPubkey(input.expectedSigner)) return { ok: false, reason: 'INVALID_SIGNER' };
+  if (!isValidMint(input.token0Mint) || !isValidMint(input.token1Mint) || !isValidMint(input.positionMint)) {
+    return { ok: false, reason: 'INVALID_MINT' };
+  }
+
+  const conn = getSolanaConnection();
+  const tx = await conn.getParsedTransaction(input.signature, {
+    commitment: 'confirmed',
+    maxSupportedTransactionVersion: 0,
+  });
+  if (!tx || !tx.meta) return { ok: false, reason: 'TX_NOT_FOUND' };
+  if (tx.meta.err !== null) return { ok: false, reason: 'TX_FAILED' };
+
+  const feePayer = tx.transaction.message.accountKeys[0]?.pubkey?.toBase58();
+  if (!feePayer) return { ok: false, reason: 'TX_FAILED' };
+  if (feePayer !== input.expectedSigner) return { ok: false, reason: 'WRONG_SIGNER' };
+
+  const posDelta = computeTokenDeltaByOwnerMint(tx, feePayer, input.positionMint);
+  if (posDelta <= 0n) return { ok: false, reason: 'POSITION_NFT_NOT_MINTED' };
+
+  const d0 = computeTokenDeltaByOwnerMint(tx, feePayer, input.token0Mint);
+  const d1 = computeTokenDeltaByOwnerMint(tx, feePayer, input.token1Mint);
+  if (d0 >= 0n && d1 >= 0n) return { ok: false, reason: 'NO_TOKEN_OUTFLOW' };
+
+  return { ok: true };
+};
+
+export const verifySolanaClmmCloseTx = async (input: VerifyClmmCloseInput): Promise<VerifyClmmComprehensiveResult> => {
+  if (!isValidSignature(input.signature)) return { ok: false, reason: 'INVALID_SIGNATURE_FORMAT' };
+  if (!isValidPubkey(input.expectedSigner)) return { ok: false, reason: 'INVALID_SIGNER' };
+  if (!isValidMint(input.token0Mint) || !isValidMint(input.token1Mint) || !isValidMint(input.positionMint)) {
+    return { ok: false, reason: 'INVALID_MINT' };
+  }
+
+  const conn = getSolanaConnection();
+  const tx = await conn.getParsedTransaction(input.signature, {
+    commitment: 'confirmed',
+    maxSupportedTransactionVersion: 0,
+  });
+  if (!tx || !tx.meta) return { ok: false, reason: 'TX_NOT_FOUND' };
+  if (tx.meta.err !== null) return { ok: false, reason: 'TX_FAILED' };
+
+  const feePayer = tx.transaction.message.accountKeys[0]?.pubkey?.toBase58();
+  if (!feePayer) return { ok: false, reason: 'TX_FAILED' };
+  if (feePayer !== input.expectedSigner) return { ok: false, reason: 'WRONG_SIGNER' };
+
+  const posDelta = computeTokenDeltaByOwnerMint(tx, feePayer, input.positionMint);
+  if (posDelta >= 0n) return { ok: false, reason: 'POSITION_NFT_NOT_BURNED' };
+
+  const d0 = computeTokenDeltaByOwnerMint(tx, feePayer, input.token0Mint);
+  const d1 = computeTokenDeltaByOwnerMint(tx, feePayer, input.token1Mint);
+  if (d0 <= 0n && d1 <= 0n) return { ok: false, reason: 'NO_TOKEN_INFLOW' };
+
+  return { ok: true };
+};

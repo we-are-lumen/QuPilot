@@ -124,7 +124,7 @@ Registered login — 200/201 Response:
 
 ## Quests — Provider
 
-Protocol enum: `byreal | bybit | sui`  
+Protocol: free text (contoh: `byreal`, `bybit`, `sui`)  
 Step type enum: `swap | clmm_open | clmm_close`
 
 ### POST /provider/quests
@@ -142,10 +142,8 @@ Body:
     {
       "step_type": "swap",
       "action_params": {
-        "token_in": "0xTokenIn",
-        "token_out": "0xTokenOut",
-        "amount_in": "1000000",
-        "min_amount_out": "990000"
+        "from_token_symbol": "USDC",
+        "to_token_symbol": "USDT"
       }
     }
   ],
@@ -158,6 +156,8 @@ Body:
 ```
 
 - `steps`: urutan step yang harus dieksekusi agent. Minimal 1 item. Bentuk `action_params` divalidasi berdasarkan `step_type`.
+  - `swap`: `from_token_symbol`, `to_token_symbol`
+  - `clmm_open` / `clmm_close`: `token0_mint`, `token1_mint`, `position_mint` (base58 Solana pubkey)
 - `total_reward_pool`: total reward (bigint) yang tersedia untuk quest ini — batas atas akumulasi distribusi.
 - `reward_per_user`: reward (bigint) yang diterima setiap user yang berhasil men-complete quest.
 - `reward_token`: address kontrak ERC-20 (0x...) yang dikirim dari treasury ke user saat claim.
@@ -174,9 +174,7 @@ Body:
     "title": "...",
     "description": "...",
     "protocol": "byreal",
-    "steps": [
-      { "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "token_in": "0x...", "token_out": "0x...", "amount_in": "1000000" } }
-    ],
+    "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_token_symbol": "USDC", "to_token_symbol": "USDT" } }],
     "total_reward_pool": "10000000",
     "reward_per_user": "1000000",
     "total_reward_distributed": "0",
@@ -202,9 +200,7 @@ Auth: Wallet JWT dengan role=user_provider
       "title": "...",
       "description": "...",
       "protocol": "byreal",
-      "steps": [
-        { "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "token_in": "0x...", "token_out": "0x...", "amount_in": "1000000" } }
-      ],
+      "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_token_symbol": "USDC", "to_token_symbol": "USDT" } }],
       "total_reward_pool": "10000000",
       "reward_per_user": "1000000",
       "total_reward_distributed": "5000000",
@@ -233,9 +229,7 @@ Auth: Wallet JWT dengan role=user_provider
     "title": "...",
     "description": "...",
     "protocol": "byreal",
-    "steps": [
-      { "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "token_in": "0x...", "token_out": "0x...", "amount_in": "1000000" } }
-    ],
+    "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_token_symbol": "USDC", "to_token_symbol": "USDT" } }],
     "total_reward_pool": "10000000",
     "reward_per_user": "1000000",
     "total_reward_distributed": "5000000",
@@ -264,7 +258,7 @@ Selalu 403 (immutable).
 
 Query:
 
-- `protocol` (optional): `byreal | bybit | sui`
+- `protocol` (optional): free text (exact match)
 - `type` (optional): `swap | clmm_open | clmm_close` (filter berdasarkan first step / `order_index = 0`)
 
 200 Response:
@@ -277,9 +271,7 @@ Query:
       "title": "...",
       "description": "...",
       "protocol": "byreal",
-      "steps": [
-        { "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "token_in": "0x...", "token_out": "0x...", "amount_in": "1000000" } }
-      ],
+      "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_token_symbol": "USDC", "to_token_symbol": "USDT" } }],
       "total_reward_pool": "10000000",
       "reward_per_user": "1000000",
       "total_reward_distributed": "5000000",
@@ -311,9 +303,7 @@ Public.
     "title": "...",
     "description": "...",
     "protocol": "byreal",
-    "steps": [
-      { "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "token_in": "0x...", "token_out": "0x...", "amount_in": "1000000" } }
-    ],
+    "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_token_symbol": "USDC", "to_token_symbol": "USDT" } }],
     "total_reward_pool": "10000000",
     "reward_per_user": "1000000",
     "total_reward_distributed": "5000000",
@@ -476,7 +466,7 @@ Auth: `x-api-key`
 Body:
 
 ```json
-{ "quest_uuid": "quest_uuid" }
+{ "quest_uuid": "quest_uuid", "agent_wallet_address": "Base58SolanaPubkey" }
 ```
 
 201 Response:
@@ -494,7 +484,7 @@ Body:
 ```json
 {
   "steps": [
-    { "step_uuid": "uuid", "tx_hash": "0xTxHash" }
+    { "step_uuid": "uuid", "tx_hash": "SolanaSignatureBase58" }
   ]
 }
 ```
