@@ -1,204 +1,154 @@
-# Quest → byreal CLI Mapping
+# Quest Step → byreal CLI Mapping
 
-Use this table when dispatching a claimed quest. Each row shows a quest `action` payload and the exact byreal CLI command(s) that satisfy it. Always run the CLI with `-o json` so the output stays parseable, and capture the field listed under "proof" to send back to `POST /agent/participations/:participation_uuid/complete`.
+Use this table when dispatching the steps of a joined quest. Each row shows a quest `steps[]` entry (matched on `step_type`) and the byreal CLI command(s) that satisfy it. Always run the CLI with `-o json` so the output stays parseable, and capture the Solana tx signature (base58) listed under "proof" to pair with the step's `uuid` when calling `POST /agent/participations/:participation-uuid/complete`.
 
-If a quest's `action.kind` isn't covered here, **stop and surface the kind to the user** rather than guessing. Extending coverage is a deliberate update to this file, not an inference.
+If a step's `step_type` isn't covered here, **stop and surface the type to the user** rather than guessing. Extending coverage is a deliberate update to this file, not an inference.
+
+The currently supported `step_type` values (per `references/qupilot-api.md`) are:
+
+- `swap`
+- `clmm_open`
+- `clmm_close`
+
+All three execute on Byreal via `byreal-cli`. There is no perp/Hyperliquid step type in the QuPilot API today — if you see one, treat it as unmapped and stop.
 
 ---
 
-## 1. `swap` — execute a token swap on Byreal CLMM
+## 1. `swap` — execute a token swap on Byreal
 
-**Quest action payload:**
+**Quest step payload (excerpt from `GET /quests/:uuid`):**
+
 ```json
 {
-  "kind": "swap",
-  "params": {
-    "from_token": "SOL",
-    "to_token": "USDC",
-    "min_notional_usd": 50,
-    "max_slippage_bps": 50
+  "uuid": "<step-uuid>",
+  "order_index": 0,
+  "step_type": "swap",
+  "action_params": {
+    "from_token_symbol": "USDC",
+    "to_token_symbol": "USDT"
   }
 }
 ```
 
 **Pre-flight:**
-1. `byreal-cli wallet balance -o json` — confirm `from_token` balance covers `min_notional_usd` + gas headroom.
-2. `byreal-cli swap quote --from SOL --to USDC --amount <calc> -o json` — verify the quote's notional ≥ `min_notional_usd` and slippage ≤ `max_slippage_bps`.
+
+1. `byreal-cli wallet balance -o json` — confirm the `from_token_symbol` balance covers the trade plus SOL gas headroom.
+2. `byreal-cli swap quote --from <from_token_symbol> --to <to_token_symbol> --amount <calc> -o json` — inspect the quote, slippage, and notional.
+3. If the estimated notional ≥ $1000, preview the trade and have the user confirm before submitting (hard constraint #5 in `SKILL.md`).
 
 **Execute:**
+
 ```bash
-byreal-cli swap execute --from SOL --to USDC --amount <calc> --slippage-bps 50 -o json
+byreal-cli swap execute \
+  --from <from_token_symbol> \
+  --to <to_token_symbol> \
+  --amount <calc> \
+  -o json
 ```
 
-**Proof to send back:** `tx_hash` (from `data.tx_hash` in the JSON response).
-
-**Complete curl:**
-```bash
-curl -sS -X POST -H "x-api-key: $QUPILOT_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "tx_hash": "<tx_hash>" }' \
-  "$QUPILOT_API_URL/agent/participations/<participation_uuid>/complete"
-```
+**Proof to send back:** the Solana signature (base58) from `data.tx_hash` in the JSON response. Pair it with the step's `uuid` as `{ "step_uuid": "<step-uuid>", "tx_hash": "<base58-sig>" }`.
 
 ---
 
-## 2. `provide-liquidity` — open a CLMM position
+## 2. `clmm_open` — open a Byreal CLMM position
 
-**Quest action payload:**
+**Quest step payload (excerpt):**
+
 ```json
 {
-  "kind": "provide-liquidity",
-  "params": {
-    "pool_id": "SOL-USDC-0.05%",
-    "min_notional_usd": 100,
-    "range_pct": 5
+  "uuid": "<step-uuid>",
+  "order_index": 0,
+  "step_type": "clmm_open",
+  "action_params": {
+    "token0_mint": "So11111111111111111111111111111111111111112",
+    "token1_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "position_mint": "<base58-position-mint>"
   }
 }
 ```
 
+`position_mint` is the NFT mint that will represent the CLMM position on-chain; the backend uses it during verification to confirm the position belongs to `QUPILOT_AGENT_WALLET`.
+
 **Pre-flight:**
-1. `byreal-cli pool show <pool_id> -o json` — confirm pool exists and current tick.
-2. `byreal-cli wallet balance -o json` — confirm token balances for both sides (or that Auto Swap can cover the gap).
-3. Preview the position with the dry-run flag the byreal-cli skill prescribes before committing.
+
+1. `byreal-cli pool show --token0 <token0_mint> --token1 <token1_mint> -o json` — confirm the pool exists and inspect the current tick.
+2. `byreal-cli wallet balance -o json` — confirm balances for both sides (or that Auto Swap can cover the gap).
+3. Preview the open with the dry-run flag the `byreal-cli` skill prescribes before committing.
 
 **Execute:**
+
 ```bash
-byreal-cli position open --pool <pool_id> --notional-usd 100 --range-pct 5 -o json
+byreal-cli position open \
+  --token0 <token0_mint> \
+  --token1 <token1_mint> \
+  --position-mint <position_mint> \
+  -o json
 ```
 
-**Proof to send back:** `tx_hash` (from `data.tx_hash` in the JSON response).
-
-**Complete curl:**
-```bash
-curl -sS -X POST -H "x-api-key: $QUPILOT_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "tx_hash": "<tx_hash>" }' \
-  "$QUPILOT_API_URL/agent/participations/<participation_uuid>/complete"
-```
+**Proof to send back:** the Solana signature (base58) from `data.tx_hash`. Pair with the step's `uuid` as `{ "step_uuid": "<step-uuid>", "tx_hash": "<base58-sig>" }`.
 
 ---
 
-## 3. `open-position` — open a perpetual on Hyperliquid
+## 3. `clmm_close` — close a Byreal CLMM position
 
-**Quest action payload:**
+**Quest step payload (excerpt):**
+
 ```json
 {
-  "kind": "open-position",
-  "params": {
-    "coin": "BTC",
-    "side": "long",
-    "size": 0.01,
-    "min_leverage": 5
+  "uuid": "<step-uuid>",
+  "order_index": 1,
+  "step_type": "clmm_close",
+  "action_params": {
+    "token0_mint": "So11111111111111111111111111111111111111112",
+    "token1_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "position_mint": "<base58-position-mint>"
   }
 }
 ```
 
+In multi-step quests the `position_mint` will usually match the `position_mint` of an earlier `clmm_open` step. Don't assume — read it from `action_params` and verify the position exists in the wallet before signing.
+
 **Pre-flight:**
-1. `byreal-perps-cli account info -o json` — confirm available collateral.
-2. If `min_leverage` is set and the current leverage is lower:
-   ```bash
-   byreal-perps-cli position leverage BTC <min_leverage> -o json
-   ```
+
+1. `byreal-cli position list -o json` — confirm a position with the given `position_mint` exists in `QUPILOT_AGENT_WALLET`.
+2. Preview the close so the user can see expected token returns before signing.
 
 **Execute:**
-```bash
-byreal-perps-cli order market buy 0.01 BTC -o json
-```
-(For `side: short`, use `sell` instead of `buy`.)
 
-**Proof to send back:** Use the Hyperliquid `order_id` as the `tx_hash` value — the backend stores this in the `tx_hash` field. Pass it as `{ "tx_hash": "<order_id>" }`.
-
-**Complete curl:**
 ```bash
-curl -sS -X POST -H "x-api-key: $QUPILOT_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "tx_hash": "<order_id>" }' \
-  "$QUPILOT_API_URL/agent/participations/<participation_uuid>/complete"
+byreal-cli position close \
+  --position-mint <position_mint> \
+  -o json
 ```
+
+**Proof to send back:** the Solana signature (base58) from `data.tx_hash`. Pair with the step's `uuid` as `{ "step_uuid": "<step-uuid>", "tx_hash": "<base58-sig>" }`.
 
 ---
 
-## 4. `close-position` — close an open perp
+## Submitting proof to `complete`
 
-**Quest action payload:**
-```json
-{ "kind": "close-position", "params": { "coin": "BTC" } }
-```
+After each step's tx is signed and confirmed, collect `{ step_uuid, tx_hash }` pairs and submit them together (or in batches) to the participation's `complete` endpoint. Verification is **synchronous** — `participation.status` in the response is the final state for the steps you submitted (`success | failed | inprogress`). No polling.
 
-**Pre-flight:** `byreal-perps-cli position list -o json` — confirm a non-zero position in `coin` exists, otherwise submit `complete` with the failed tx anyway (the backend will mark the participation as `failed`).
-
-**Execute:**
-```bash
-byreal-perps-cli position close-market BTC -o json
-```
-
-**Proof to send back:** Use the Hyperliquid `order_id` as the `tx_hash` value — the backend stores this in the `tx_hash` field. Pass it as `{ "tx_hash": "<order_id>" }`.
-
-**Complete curl:**
 ```bash
 curl -sS -X POST -H "x-api-key: $QUPILOT_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{ "tx_hash": "<order_id>" }' \
-  "$QUPILOT_API_URL/agent/participations/<participation_uuid>/complete"
+  -d '{
+        "steps": [
+          { "step_uuid": "<step-uuid-1>", "tx_hash": "<base58-sig-1>" },
+          { "step_uuid": "<step-uuid-2>", "tx_hash": "<base58-sig-2>" }
+        ]
+      }' \
+  "$QUPILOT_API_URL/agent/participations/<participation-uuid>/complete"
 ```
 
----
-
-## 5. `hold-position` — passive observation
-
-**Quest action payload:**
-```json
-{ "kind": "hold-position", "params": { "coin": "BTC", "min_duration_seconds": 3600 } }
-```
-
-This quest doesn't require sending a new transaction — it requires *not* closing an existing one for the duration. The skill should:
-
-1. Verify the position exists now: `byreal-perps-cli position list -o json`.
-2. Note `opened_at` from the position metadata (or use claim time as a fallback).
-3. Don't poll the QuPilot API in a tight loop — let the user resume the session after the hold window; on resume, re-check the position is still open and *then* call complete with the original position's `order_id` as `tx_hash`.
-
-**Proof to send back:** Use the Hyperliquid `order_id` of the held position as the `tx_hash` value. Pass it as `{ "tx_hash": "<order_id>" }`.
-
-**Complete curl:**
-```bash
-curl -sS -X POST -H "x-api-key: $QUPILOT_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "tx_hash": "<order_id>" }' \
-  "$QUPILOT_API_URL/agent/participations/<participation_uuid>/complete"
-```
-
----
-
-## 6. `trade-volume` — accumulate notional across many trades
-
-**Quest action payload:**
-```json
-{ "kind": "trade-volume", "params": { "min_volume_usd": 500, "venue": "byreal-perps" } }
-```
-
-Volume quests need composition. The skill should:
-
-1. Ask the user how to fulfill it — small market orders, a single bigger order, etc. Don't pick a strategy unilaterally; this affects risk.
-2. Run the chosen commands in sequence, summing notional from each JSON response's `data.notional_usd` (or equivalent).
-3. Stop as soon as the cumulative notional ≥ `min_volume_usd`.
-4. Collect every `order_id` along the way.
-
-**Proof to send back:** Use the Hyperliquid `order_id` of the final (or most significant) trade as the `tx_hash` value. The backend stores this in the `tx_hash` field. Pass it as `{ "tx_hash": "<order_id>" }`.
-
-**Complete curl:**
-```bash
-curl -sS -X POST -H "x-api-key: $QUPILOT_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "tx_hash": "<order_id>" }' \
-  "$QUPILOT_API_URL/agent/participations/<participation_uuid>/complete"
-```
+Participation stays `inprogress` until every step is verified, and flips to `failed` as soon as any submitted step fails verification.
 
 ---
 
 ## A note on partial fills and rejected orders
 
-Every byreal CLI returns `{ success: false, error: { code, message } }` on rejection. Treat rejection as a hard stop for that quest attempt:
+Every `byreal-cli` command returns `{ success: false, error: { code, message } }` on rejection. Treat rejection as a hard stop for that quest attempt:
 
-1. Submit `complete` with the failed tx_hash anyway. The backend's `verifyTxBasic` will mark the participation as `failed` automatically. No explicit abandon needed.
-2. Report the byreal error message verbatim to the user.
-3. Do not silently retry — quest-execution loops are exactly where runaway agents lose money.
+1. Submit `complete` with whatever `{ step_uuid, tx_hash }` pairs you did finish. The backend's verification will mark the participation `failed` if any submitted step (or any missing step at expiry) doesn't verify; there is **no** `abandon` endpoint.
+2. Report the byreal error message verbatim to the user — don't paraphrase.
+3. Do not silently retry — quest-execution loops are exactly where runaway agents lose money. The `byreal-cli` skill already retries its own RPC-level transients; if its final answer is failure, that's the answer.
