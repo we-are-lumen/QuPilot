@@ -10,17 +10,11 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 chars'),
   JWT_EXPIRES_IN: z.string().default('7d'),
 
-  EVM_RPC_URL: z.url(),
-  TREASURY_PRIVATE_KEY: z
+  SOLANA_RPC_URL: z.url().default('https://api.devnet.solana.com'),
+  SOLANA_TREASURY_SECRET_KEY: z
     .string()
     .trim()
-    .regex(/^(0x)?[a-fA-F0-9]{64}$/, 'TREASURY_PRIVATE_KEY must be a 32-byte hex string (64 chars), optional 0x')
-    .transform((v) => (v.startsWith('0x') ? v : `0x${v}`)),
-  CHAIN_ID: z.coerce.number().int().positive(), // Sepolia
-
-  // Solana RPC for on-chain verification of quest executions (e.g. Byreal swaps).
-  // Defaults to devnet so the MVP runs without extra config.
-  SOLANA_RPC_URL: z.url().default('https://api.devnet.solana.com'),
+    .min(1, 'SOLANA_TREASURY_SECRET_KEY is required (base58 secret key)'),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -1,58 +1,27 @@
-import { connect, disconnect, signMessage as wagmiSignMessage, sendTransaction as wagmiSendTransaction } from '@wagmi/core';
-import { wagmiConfig } from '@/lib/wagmi';
-import { injected } from 'wagmi/connectors';
-
 declare global {
   interface Window {
-    ethereum?: any;
+    solana?: any;
   }
 }
 
-/** Check whether an EVM wallet (like MetaMask) is installed in the browser */
-export function isEvmWalletInstalled(): boolean {
+export function isSolanaWalletInstalled(): boolean {
   if (typeof window === 'undefined') return false;
-  return !!window.ethereum;
+  return !!window.solana && (window.solana.isPhantom || typeof window.solana.connect === 'function');
 }
 
-/**
- * Connect to an EVM wallet using wagmi.
- * Returns the wallet address.
- */
 export async function connectWallet(): Promise<string> {
-  // If already connected, get the first account
-  const state = wagmiConfig.state;
-  const currentConnection = state.connections.get(state.current || '');
-  if (currentConnection?.accounts?.[0]) {
-    return currentConnection.accounts[0];
-  }
-
-  const result = await connect(wagmiConfig, {
-    connector: injected(),
-  });
-  
-  if (!result.accounts || result.accounts.length === 0) {
-    throw new Error('No accounts found after connecting.');
-  }
-  
-  return result.accounts[0];
+  if (!window.solana) throw new Error('Solana wallet not found');
+  const res = await window.solana.connect();
+  const pubkey = res?.publicKey ?? window.solana.publicKey;
+  if (!pubkey) throw new Error('No public key returned from wallet');
+  return typeof pubkey === 'string' ? pubkey : pubkey.toBase58();
 }
 
-/**
- * Disconnect the wallet.
- */
 export async function disconnectWallet(): Promise<void> {
-  const state = wagmiConfig.state;
-  const currentConnection = state.connections.get(state.current || '');
-  if (currentConnection) {
-    await disconnect(wagmiConfig, {
-      connector: currentConnection.connector,
-    });
-  }
+  if (!window.solana || typeof window.solana.disconnect !== 'function') return;
+  await window.solana.disconnect();
 }
 
-/**
- * Build the canonical sign-in message that will be signed by the wallet.
- */
 export function buildSignInMessage(walletAddress: string): string {
   return (
     `Sign in to QuPilot\n\n` +
@@ -62,35 +31,38 @@ export function buildSignInMessage(walletAddress: string): string {
   );
 }
 
-/**
- * Ask the connected wallet to sign a message and return the hex signature.
- */
 export async function signMessage(message: string): Promise<string> {
-  const signature = await wagmiSignMessage(wagmiConfig, {
-    message,
-  });
-  return signature;
+  if (!window.solana || typeof window.solana.signMessage !== 'function') {
+    throw new Error('Wallet does not support signMessage');
+  }
+  const encoded = new TextEncoder().encode(message);
+  const res = await window.solana.signMessage(encoded, 'utf8');
+  const sig = res?.signature ?? res;
+  const bs58 = (await import('bs58')).default;
+  return bs58.encode(sig);
 }
 
-/**
- * Send a 0-value transaction to the treasury address (or any valid EVM address)
- * to generate a valid, on-chain transaction hash (tx_hash) for quest creation.
- */
 export async function sendTreasuryDepositTx(toAddress?: string): Promise<string> {
-  // Make sure we have a connected wallet
-  const currentAddress = await connectWallet();
-  
-  // Use user-supplied address if it is not the zero address
-  const safeAddress = (toAddress && toAddress !== '0x0000000000000000000000000000000000000000') ? toAddress : undefined;
-  
-  // Use safeAddress, then environment variable, then fallback to currentAddress or valid checksummed address
-  const destination = safeAddress || process.env.NEXT_PUBLIC_TREASURY_ADDRESS || currentAddress || '0x71C7656EC7ab88b098defB751B7401B5f6d5976F';
+  if (!window.solana || typeof window.solana.signAndSendTransaction !== 'function') {
+    throw new Error('Wallet does not support signAndSendTransaction');
+  }
 
-  const hash = await wagmiSendTransaction(wagmiConfig, {
-    to: destination as `0x${string}`,
-    value: BigInt(0),
-  });
-  
-  return hash;
+  const { Connection, PublicKey, SystemProgram, Transaction } = await import('@solana/web3.js');
+  const rpc = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.devnet.solana.com';
+  const conn = new Connection(rpc, 'confirmed');
+
+  const wallet = await connectWallet();
+  const from = new PublicKey(wallet);
+
+  const destination =
+    (toAddress && toAddress.trim().length > 0 ? toAddress : undefined) || process.env.NEXT_PUBLIC_TREASURY_ADDRESS || wallet;
+  const to = new PublicKey(destination);
+
+  const { blockhash } = await conn.getLatestBlockhash('confirmed');
+  const tx = new Transaction({ recentBlockhash: blockhash, feePayer: from }).add(
+    SystemProgram.transfer({ fromPubkey: from, toPubkey: to, lamports: 1 }),
+  );
+
+  const res = await window.solana.signAndSendTransaction(tx);
+  return res?.signature ?? res;
 }
-

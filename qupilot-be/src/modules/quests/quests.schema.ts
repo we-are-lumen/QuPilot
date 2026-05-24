@@ -62,8 +62,13 @@ export const createQuestBodySchema = z
     steps: z.array(stepSchema).min(1, 'quest must have at least one step'),
     total_reward_pool: bigintAmount,
     reward_per_user: bigintAmount,
-    reward_token: z.string().trim().regex(/^0x[a-fA-F0-9]{40}$/, 'reward_token must be a 0x-prefixed ERC20 address'),
-    tx_hash: z.string().trim().regex(/^0x[a-fA-F0-9]+$/, 'tx_hash must be hex (0x...)'),
+    reward_token: z.literal('SOL'),
+    tx_hash: z
+      .string()
+      .trim()
+      .min(64)
+      .max(128)
+      .regex(/^[1-9A-HJ-NP-Za-km-z]+$/, 'tx_hash must be a base58 Solana signature'),
     expires_at: z
       .string()
       .trim()

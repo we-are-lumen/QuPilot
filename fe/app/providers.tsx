@@ -2,8 +2,6 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
-import { WagmiProvider } from 'wagmi';
-import { wagmiConfig } from '@/lib/wagmi';
 import { Toast } from '@heroui/react';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -33,13 +31,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <WagmiProvider config={wagmiConfig}>
-      <QueryClientProvider client={queryClient}>
-        <Toast.Provider />
-        {children}
-      </QueryClientProvider>
-    </WagmiProvider>
+    <QueryClientProvider client={queryClient}>
+      <Toast.Provider />
+      {children}
+    </QueryClientProvider>
   );
 }
-
 

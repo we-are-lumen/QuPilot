@@ -6,12 +6,11 @@ import { FiArrowRight, FiCompass } from "react-icons/fi";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getPublicQuests } from "@/lib/api/quests";
-import { formatUnits } from "viem";
 
 const formatReward = (rewardStr: string) => {
   try {
-    const formatted = formatUnits(BigInt(rewardStr), 18);
-    const parsed = parseFloat(formatted);
+    const lamports = BigInt(rewardStr);
+    const parsed = Number(lamports) / 1e9;
     return new Intl.NumberFormat("en-US", {
       notation: "compact",
       maximumFractionDigits: 2,

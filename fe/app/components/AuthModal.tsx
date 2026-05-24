@@ -7,7 +7,7 @@ import { FaWallet, FaRocket, FaUser, FaUserTie } from "react-icons/fa6";
 import { FiCheckCircle, FiLoader } from "react-icons/fi";
 import { useWalletLogin } from "@/lib/hooks/useWalletLogin";
 import {
-  isEvmWalletInstalled,
+  isSolanaWalletInstalled,
   connectWallet,
   buildSignInMessage,
   signMessage,
@@ -61,8 +61,8 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
   }, [isOpen]);
 
   const handleWalletLogin = useCallback(async () => {
-    if (!isEvmWalletInstalled()) {
-      toast.danger("MetaMask or an EVM wallet is not installed. Please install it to continue.");
+    if (!isSolanaWalletInstalled()) {
+      toast.danger("Phantom (atau wallet Solana yang kompatibel) belum terpasang. Silakan install dulu.");
       return;
     }
 

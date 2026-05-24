@@ -35,13 +35,13 @@ Setiap tabel memiliki dua jenis identifier:
 
 ### Tabel: `users`
 
-Menyimpan akun berbasis wallet address. Tidak ada password — autentikasi via EVM signature (recover address). Satu table ini menyimpan dua role: `user` dan `user_provider`.
+Menyimpan akun berbasis wallet address. Tidak ada password — autentikasi via Solana signature (ed25519 verify). Satu table ini menyimpan dua role: `user` dan `user_provider`.
 
 | Column | Type | Keterangan |
 |---|---|---|
 | id | bigint PK auto increment | Internal FK |
 | uuid | uuid UNIQUE default uuidv4 | ID publik untuk UI |
-| wallet_address | text UNIQUE | EVM address (0x...) |
+| wallet_address | text UNIQUE | Solana wallet address (base58) |
 | role | text | Enum: `user` / `user_provider` |
 | display_name | text | Nama tampil (khusus provider, nullable) |
 | logo_url | text | URL logo provider (nullable) |
@@ -82,12 +82,12 @@ Menyimpan quest yang dibuat oleh user provider. Quest langsung aktif dan publik 
 | provider_id | bigint FK | → users.id (row dengan `role='user_provider'`) |
 | title | text | Judul quest |
 | description | text | Deskripsi detail quest |
-| protocol | text | Enum: `byreal`, `bybit`, `sui` |
+| protocol | text | Free text (nama protocol, non-empty) |
 | total_reward_pool | bigint NOT NULL | Total reward (base units, bigint) yang tersedia untuk quest ini. Batas atas akumulasi distribusi. Immutable setelah quest dibuat. |
 | reward_per_user | bigint NOT NULL | Reward (base units) yang diterima setiap user yang berhasil men-complete quest. Immutable setelah quest dibuat. Constraint DB: `total_reward_pool >= reward_per_user`. |
 | total_reward_distributed | bigint NOT NULL DEFAULT 0 | Akumulasi reward yang sudah diberikan ke semua participation `status=success` quest ini. Di-increment server saat agent berhasil complete participation. Hanya kolom inilah di `quests` yang mutable. Constraint DB: `total_reward_distributed <= total_reward_pool`. |
-| reward_token | text | ERC-20 token address (0x...) |
-| tx_hash | text | Tx hash EVM (0x...) yang dikirim provider saat create quest (required) |
+| reward_token | text | `"SOL"` |
+| tx_hash | text | Tx signature Solana (base58) yang dikirim provider saat create quest (required) |
 | expires_at | timestamptz | Quest tidak muncul di listing publik setelah tanggal ini |
 | created_at | timestamptz | |
 
@@ -144,7 +144,7 @@ Menyimpan progress eksekusi per step untuk satu `quest_participations` + `quest_
 | participation_id | bigint FK | → quest_participations.id |
 | step_id | bigint FK | → quest_steps.id |
 | status | text | Enum: `inprogress` → `success` / `failed` |
-| tx_hash | text | Tx hash EVM untuk step ini |
+| tx_hash | text | Tx signature Solana (base58) untuk step ini |
 | started_at | timestamptz | |
 | completed_at | timestamptz | |
 
@@ -157,7 +157,7 @@ Semua JWT mengandung field `role` untuk membedakan aktor di middleware.
 |---|---|
 | `sub` | uuid provider |
 | `role` | `user_provider` |
-| `wallet_address` | EVM address |
+| `wallet_address` | Solana wallet address (base58) |
 | `exp` | 7 hari |
 
 **User:**
@@ -165,7 +165,7 @@ Semua JWT mengandung field `role` untuk membedakan aktor di middleware.
 |---|---|
 | `sub` | uuid user |
 | `role` | `user` |
-| `wallet_address` | EVM address |
+| `wallet_address` | Solana wallet address (base58) |
 | `exp` | 7 hari |
 
 Middleware auth membaca field `role` untuk menentukan hak akses endpoint — satu middleware dapat mendukung multiple role jika diperlukan.
@@ -180,7 +180,7 @@ Middleware auth membaca field `role` untuk menentukan hak akses endpoint — sat
 
 **Login**
 - Input: `wallet_address`, `signature`, `message`
-- Flow: FE minta user sign pesan arbitrary, BE verify signature dengan cara recover address (EVM) dan harus match dengan `wallet_address`.
+- Flow: FE minta user sign pesan arbitrary, BE verify signature (ed25519) dan harus match dengan `wallet_address`.
 
 **Register gate**
 - Jika wallet address belum ada di tabel `users` dan request tidak menyertakan `role` → response `{ registered: false }` (client harus minta user memilih role).
@@ -308,7 +308,7 @@ AI agent mengakses API menggunakan API key via header `x-api-key`. Key di-genera
 **Complete Quest**
 - Mengirimkan `steps: [{ step_uuid, tx_hash }]` dari transaksi on-chain yang sudah dieksekusi per step
 - Validasi ownership: participation yang dirujuk harus milik user yang sama dengan owner API key — agent tidak bisa complete participation milik user lain (return 403)
-- Backend **wajib memverifikasi `tx_hash` ke EVM RPC** sebelum mengubah status — tidak bisa langsung percaya input dari agent
+- Backend **wajib memverifikasi `tx_hash` ke Solana RPC** sebelum mengubah status — tidak bisa langsung percaya input dari agent
 - Jika transaksi valid: update `quest_step_participations.status=success` untuk step tsb.
 - Jika transaksi tidak valid: update `quest_step_participations.status=failed` untuk step tsb.
 - Participation quest dianggap `success` kalau semua step `success`, dan dianggap `failed` kalau ada minimal satu step `failed`.
@@ -321,7 +321,7 @@ AI agent mengakses API menggunakan API key via header `x-api-key`. Key di-genera
 **Claim Reward (Agent-triggered)**
 - Endpoint: `POST /agent/claim` (auth via `x-api-key`)
 - Agent boleh men-trigger claim semua reward milik user pemilik API key — `user_id` di-resolve dari API key, tidak perlu di body
-- Sama persis dengan logika `POST /me/claim`: loop semua participation `status=success` & `reward_claimed=false` milik user tersebut, transfer ERC-20 on-chain ke `users.wallet_address`, set `reward_claimed=true`
+- Sama persis dengan logika `POST /me/claim`: loop semua participation `status=success` & `reward_claimed=false` milik user tersebut, transfer SOL on-chain ke `users.wallet_address`, set `reward_claimed=true`
 - Reward selalu masuk ke wallet user — agent tidak pernah jadi destination address
 - Idempotent: aman dipanggil berulang, dan aman kalau user juga manual claim dari dashboard (DB constraint `reward_claimed=true` mencegah double-spend)
 
@@ -335,7 +335,7 @@ AI agent mengakses API menggunakan API key via header `x-api-key`. Key di-genera
 | Tidak ada status quest | Visibilitas quest dikontrol murni oleh `expires_at` — quest expired tidak muncul di listing publik |
 | Eksekusi hanya oleh AI Agent | Hanya AI Agent yang bisa join dan complete quest — endpoint ini tidak bisa diakses dengan JWT user maupun user_provider |
 | User hanya view | User dengan role `user` hanya bisa membaca data partisipasi mereka dan claim reward |
-| Verifikasi tx wajib | Status tidak boleh diubah ke `success` tanpa verifikasi `tx_hash` ke EVM RPC |
+| Verifikasi tx wajib | Status tidak boleh diubah ke `success` tanpa verifikasi `tx_hash` ke Solana RPC |
 | Register gate wallet | Wallet baru tidak otomatis dibuat tanpa `role`; request pertama tanpa `role` return `{ registered:false }`, lalu client pilih role dan hit ulang |
 | Partisipasi unik | AI Agent tidak bisa membuat dua record `inprogress` untuk kombinasi user + quest yang sama |
 | UUID untuk publik | Semua identifier yang diekspos ke UI dan API response menggunakan `uuid` — bigint `id` tidak pernah diekspos |
