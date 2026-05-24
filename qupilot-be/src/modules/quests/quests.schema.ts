@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const protocolSchema = z.enum(['byreal', 'bybit', 'sui']);
+export const protocolSchema = z.string().trim().min(1).max(50);
 export type Protocol = z.infer<typeof protocolSchema>;
 
 export const stepTypeSchema = z.enum(['swap', 'clmm_open', 'clmm_close']);
@@ -12,31 +12,32 @@ const bigintAmount = z
   .nonnegative()
   .transform((v) => v.toString());
 
-const evmAddress = z.string().trim().regex(/^0x[a-fA-F0-9]{40}$/, 'must be a 0x-prefixed EVM address');
-
 const swapParams = z.object({
-  router: evmAddress.optional(),
-  token_in: evmAddress,
-  token_out: evmAddress,
-  amount_in: z.string().trim().min(1),
-  min_amount_out: z.string().trim().min(1).optional(),
-  max_slippage_bps: z.number().int().min(0).max(10_000).optional(),
+  from_token_symbol: z.string().trim().min(1).max(16),
+  to_token_symbol: z.string().trim().min(1).max(16),
 });
 
+const solanaPubkey = z
+  .string()
+  .trim()
+  .min(32)
+  .max(64)
+  .regex(/^[1-9A-HJ-NP-Za-km-z]+$/, 'must be a base58 Solana pubkey');
+
 const clmmOpenParams = z.object({
-  pool: evmAddress,
-  token0: evmAddress,
-  token1: evmAddress,
-  amount0_desired: z.string().trim().min(1),
-  amount1_desired: z.string().trim().min(1),
+  pool: solanaPubkey,
+  token0_mint: solanaPubkey,
+  token1_mint: solanaPubkey,
+  position_mint: solanaPubkey,
   tick_lower: z.number().int(),
   tick_upper: z.number().int(),
-  max_slippage_bps: z.number().int().min(0).max(10_000).optional(),
 });
 
 const clmmCloseParams = z.object({
-  pool: evmAddress,
-  position_id: z.string().trim().min(1).optional(),
+  pool: solanaPubkey,
+  token0_mint: solanaPubkey,
+  token1_mint: solanaPubkey,
+  position_mint: solanaPubkey,
 });
 
 const stepSchema = z.discriminatedUnion('step_type', [
