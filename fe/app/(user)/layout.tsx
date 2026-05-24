@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Button } from "@heroui/react";
+import { Button, Avatar, Popover } from "@heroui/react";
 import {
   FaWallet,
   FaUserPlus,
@@ -13,6 +13,7 @@ import {
   FaRocket,
 } from "react-icons/fa6";
 import { FiLayout, FiUser, FiAward, FiCompass } from "react-icons/fi";
+import { LuLogOut } from "react-icons/lu";
 import { getUserData, getAuthToken, clearAuth } from "@/lib/utils/auth";
 import type { IUser } from "@/lib/types/auth";
 
@@ -35,10 +36,17 @@ export default function UserLayout({
     }
   }, []);
 
+  // Derive initials from display_name or wallet address
+  const initials = user?.display_name
+    ? user.display_name.slice(0, 2).toUpperCase()
+    : user?.wallet_address
+    ? user.wallet_address.slice(0, 2).toUpperCase()
+    : "??";
+
   // Format wallet address for display
   const shortWallet = user?.wallet_address
     ? `${user.wallet_address.slice(0, 4)}…${user.wallet_address.slice(-4)}`
-    : null;
+    : "";
 
   const handleConnectWallet = useCallback(() => {
     setIsConnecting(true);
@@ -67,7 +75,7 @@ export default function UserLayout({
                 className="inline-block animate-pulse text-[#a63420]"
                 size={22}
               />
-              <span className="font-extrabold tracking-tight">Pilot</span>
+              <span className="font-extrabold tracking-tight">QuPilot</span>
             </span>
           </Link>
 
@@ -125,19 +133,46 @@ export default function UserLayout({
           {/* Actions */}
           <div className="flex items-center gap-4">
             {user ? (
-              <div className="flex items-center gap-2">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#fff8f6] border border-[#f5ddd9] rounded-full text-xs font-mono text-[#a63420] font-bold hover:shadow-sm transition-all">
-                  <FaCircle size={8} className="text-[#008282] animate-pulse" />
-                  {shortWallet}
-                </div>
-                <button
-                  onClick={handleDisconnectWallet}
-                  title="Disconnect"
-                  className="text-xs font-bold text-[#6b6560] hover:text-red-600 hover:scale-110 transition-all px-1.5"
-                >
-                  ✕
-                </button>
-              </div>
+              <Popover>
+                <Popover.Trigger>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#f5ddd9] hover:shadow-sm transition-all cursor-pointer">
+                    <Avatar size="sm" className="bg-[#a63420] text-white font-bold">
+                      <Avatar.Fallback>{initials}</Avatar.Fallback>
+                    </Avatar>
+                    <div className="hidden lg:flex flex-col text-left">
+                      <span className="text-xs font-bold leading-none text-[#1f1b18]">
+                        {user?.display_name ?? shortWallet}
+                      </span>
+                      <span className="text-[10px] text-[#6b6560] font-mono">
+                        {shortWallet}
+                      </span>
+                    </div>
+                  </div>
+                </Popover.Trigger>
+                <Popover.Content placement="bottom" offset={8}>
+                  <Popover.Dialog className="w-52 p-2">
+                    <div className="flex flex-col w-full gap-1">
+                      {/* Profile info */}
+                      <div className="px-3 py-2 border-b border-[#f5ddd9] mb-1">
+                        <p className="text-xs font-bold text-[#1f1b18] truncate">
+                          {user?.display_name ?? "User"}
+                        </p>
+                        <p className="text-[10px] text-[#6b6560] font-mono truncate">
+                          {shortWallet}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={handleDisconnectWallet}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-[#a63420] hover:bg-[#ffe9e5] rounded-md transition-colors w-full text-left font-medium cursor-pointer"
+                      >
+                        <LuLogOut size={16} />
+                        <span>Disconnect Wallet</span>
+                      </button>
+                    </div>
+                  </Popover.Dialog>
+                </Popover.Content>
+              </Popover>
             ) : (
               <Button
                 onClick={handleConnectWallet}
@@ -161,7 +196,7 @@ export default function UserLayout({
       <footer className="bg-[#f8f4ef] border-t border-[#f5ddd9] py-8 text-sm text-[#6b6560]">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="font-extrabold text-[#a63420] text-lg">Pilot</span>
+            <span className="font-extrabold text-[#a63420] text-lg">QuPilot</span>
             <span>© 2026 QuPilot Web3 Quests. Explore the stars.</span>
           </div>
 

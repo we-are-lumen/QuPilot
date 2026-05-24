@@ -1,6 +1,6 @@
 ---
 version: alpha
-name: Pilot — Fun AF
+name: QuPilot — Fun AF
 description: Warm, bubbly, bouncy. Space explorer vibes with a friendly companion.
   Playful like a game UI but built for real degens who want to feel powerful.
 colors:

@@ -23,7 +23,7 @@ import type { DateValue } from "@internationalized/date";
 import { FiTarget, FiGift, FiSliders, FiPlus, FiTrash2, FiClock, FiCopy, FiCheck } from "react-icons/fi";
 import { LuRocket } from "react-icons/lu";
 import { createQuest } from "@/lib/api/quests";
-import type { ICreateQuestPayload, Protocol, QuestType } from "@/lib/types/quests";
+import type { ICreateQuestPayload, Protocol, StepType } from "@/lib/types/quests";
 
 interface StepParam {
   key: string;
@@ -32,6 +32,7 @@ interface StepParam {
 
 interface ActionStep {
   step: number;
+  stepType: StepType;
   params: StepParam[];
 }
 
@@ -40,9 +41,8 @@ export default function CreateQuestPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   
-  // Protocol & Type selection
+  // Protocol selection
   const [protocol, setProtocol] = useState<Key>("byreal");
-  const [questType, setQuestType] = useState<Key>("swap");
   
   // Rewards & Configuration
   const [totalRewardPool, setTotalRewardPool] = useState("");
@@ -61,11 +61,29 @@ export default function CreateQuestPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [statusText, setStatusText] = useState("");
 
+  // Helper to pre-populate required keys based on StepType to prevent backend validation errors
+  const getDefaultParamsForStepType = (stepType: StepType): StepParam[] => {
+    if (stepType === "swap") {
+      return [
+        { key: "from_token_symbol", value: "" },
+        { key: "to_token_symbol", value: "" },
+      ];
+    } else if (stepType === "clmm_open" || stepType === "clmm_close") {
+      return [
+        { key: "token0_mint", value: "" },
+        { key: "token1_mint", value: "" },
+        { key: "position_mint", value: "" },
+      ];
+    }
+    return [];
+  };
+
   // Dynamic Step Builder state
   const [steps, setSteps] = useState<ActionStep[]>([
     {
       step: 1,
-      params: [{ key: "action", value: "swap" }],
+      stepType: "swap",
+      params: getDefaultParamsForStepType("swap"),
     },
   ]);
 
@@ -104,9 +122,17 @@ export default function CreateQuestPage() {
       ...steps,
       {
         step: steps.length + 1,
-        params: [],
+        stepType: "swap",
+        params: getDefaultParamsForStepType("swap"),
       },
     ]);
+  };
+
+  const updateStepType = (index: number, val: StepType) => {
+    const newSteps = [...steps];
+    newSteps[index].stepType = val;
+    newSteps[index].params = getDefaultParamsForStepType(val);
+    setSteps(newSteps);
   };
 
   const removeStep = (index: number) => {
@@ -186,21 +212,44 @@ export default function CreateQuestPage() {
     setIsLoading(true);
     setStatusText("Creating quest...");
 
-    // Format action_params array for the API payload
-    const formattedActionParams = steps.map((s) => {
-      const stepObj: Record<string, any> = { step: s.step };
+    // Format steps array for the API payload
+    const formattedSteps = steps.map((s) => {
+      const stepObj: Record<string, any> = {};
       s.params.forEach((p) => {
         const key = p.key.trim();
         const rawVal = p.value.trim();
-        if (key && key !== "step") {
-          // Coerce boolean or number values if possible, otherwise string
-          if (rawVal === "true") stepObj[key] = true;
-          else if (rawVal === "false") stepObj[key] = false;
-          else if (!isNaN(Number(rawVal)) && rawVal !== "") stepObj[key] = Number(rawVal);
-          else stepObj[key] = rawVal;
+        if (key) {
+          // Keep known string-only fields as strings, preventing unwanted number coercion
+          const stringOnlyFields = [
+            "from_token_symbol",
+            "to_token_symbol",
+            "token0_mint",
+            "token1_mint",
+            "position_mint",
+          ];
+          
+          const isStringField = 
+            stringOnlyFields.includes(key) || 
+            key.endsWith("_symbol") || 
+            key.endsWith("_mint") || 
+            key.endsWith("_address") || 
+            key.endsWith("_hash");
+
+          if (isStringField) {
+            stepObj[key] = rawVal;
+          } else {
+            // Coerce boolean or number values if possible, otherwise string
+            if (rawVal === "true") stepObj[key] = true;
+            else if (rawVal === "false") stepObj[key] = false;
+            else if (!isNaN(Number(rawVal)) && rawVal !== "") stepObj[key] = Number(rawVal);
+            else stepObj[key] = rawVal;
+          }
         }
       });
-      return stepObj;
+      return {
+        step_type: s.stepType,
+        action_params: stepObj,
+      };
     });
 
     // Construct expires_at ISO string (end of the chosen day in UTC to be safe)
@@ -210,8 +259,7 @@ export default function CreateQuestPage() {
       title,
       description,
       protocol: protocol as Protocol,
-      quest_type: questType as QuestType,
-      action_params: formattedActionParams,
+      steps: formattedSteps,
       total_reward_pool: totalRewardPool,
       reward_per_user: rewardPerUser,
       reward_token: rewardToken,
@@ -302,7 +350,7 @@ export default function CreateQuestPage() {
                 isDisabled={isLoading}
                 value={protocol}
                 onChange={(key) => key && setProtocol(key)}
-                className="w-full flex flex-col"
+                className="w-full flex flex-col md:col-span-2"
               >
                 <Label className="text-[#1f1b18] text-sm font-bold tracking-wide mb-1.5">Target Protocol</Label>
                 <Select.Trigger className="rounded-md border border-[#dfbfb9] bg-white px-3 py-2.5 text-base shadow-sm focus-visible:border-[#a63420] flex items-center justify-between min-h-10.5 cursor-pointer">
@@ -326,36 +374,6 @@ export default function CreateQuestPage() {
                   </ListBox>
                 </Select.Popover>
               </Select>
-
-              <Select
-                isRequired
-                isDisabled={isLoading}
-                value={questType}
-                onChange={(key) => key && setQuestType(key)}
-                className="w-full flex flex-col"
-              >
-                <Label className="text-[#1f1b18] text-sm font-bold tracking-wide mb-1.5">Quest Execution Type</Label>
-                <Select.Trigger className="rounded-md border border-[#dfbfb9] bg-white px-3 py-2.5 text-base shadow-sm focus-visible:border-[#a63420] flex items-center justify-between min-h-10.5 cursor-pointer">
-                  <Select.Value />
-                  <Select.Indicator className="ml-2" />
-                </Select.Trigger>
-                <Select.Popover className="bg-white border border-[#dfbfb9] rounded-md shadow-lg">
-                  <ListBox className="p-1">
-                    <ListBox.Item id="swap" textValue="Token Swap" className="px-3 py-2 text-base text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
-                      Token Swap
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                    <ListBox.Item id="lp" textValue="Add Liquidity" className="px-3 py-2 text-base text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
-                      Add Liquidity (LP)
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                    <ListBox.Item id="stake" textValue="Staking" className="px-3 py-2 text-base text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
-                      Staking
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  </ListBox>
-                </Select.Popover>
-              </Select>
             </div>
           </div>
 
@@ -372,7 +390,7 @@ export default function CreateQuestPage() {
 
             <div className="flex flex-col gap-6">
               {steps.map((step, sIdx) => (
-                <div key={step.step} className="bg-[#f8f4ef]/50 border border-[#dfbfb9]/40 rounded-2xl p-6 flex flex-col gap-4">
+                <div key={step.step} className="bg-[#f8f4ef]/50 border border-[#dfbfb9]/40 rounded-2xl p-6 flex flex-col gap-5">
                   <div className="flex items-center justify-between border-b border-[#dfbfb9]/30 pb-2">
                     <span className="font-nunito font-extrabold text-sm text-[#a63420] tracking-wider uppercase">
                       Step {step.step}
@@ -389,8 +407,42 @@ export default function CreateQuestPage() {
                     )}
                   </div>
 
+                  {/* Step Type Selection */}
+                  <div className="w-full">
+                    <Select
+                      isRequired
+                      isDisabled={isLoading}
+                      value={step.stepType}
+                      onChange={(key) => key && updateStepType(sIdx, key as StepType)}
+                      className="w-full flex flex-col"
+                    >
+                      <Label className="text-[#1f1b18] text-xs font-bold tracking-wide mb-1.5">Step Type</Label>
+                      <Select.Trigger className="rounded-md border border-[#dfbfb9] bg-white px-3 py-2 text-sm shadow-sm focus-visible:border-[#a63420] flex items-center justify-between min-h-10 cursor-pointer">
+                        <Select.Value />
+                        <Select.Indicator className="ml-2" />
+                      </Select.Trigger>
+                      <Select.Popover className="bg-white border border-[#dfbfb9] rounded-md shadow-lg">
+                        <ListBox className="p-1">
+                          <ListBox.Item id="swap" textValue="Token Swap" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                            Token Swap (swap)
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="clmm_open" textValue="Open CLMM Position" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                            Open CLMM Position (clmm_open)
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="clmm_close" textValue="Close CLMM Position" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                            Close CLMM Position (clmm_close)
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
+
                   {/* Step Parameter rows */}
                   <div className="flex flex-col gap-3">
+                    <span className="text-[#1f1b18] text-xs font-bold tracking-wide">Action Parameters</span>
                     {step.params.map((p, pIdx) => (
                       <div key={pIdx} className="flex flex-wrap items-center gap-3">
                         <div className="flex-1 min-w-37.5">

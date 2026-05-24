@@ -1,13 +1,19 @@
 export type Protocol = 'byreal' | 'bybit' | 'sui';
-export type QuestType = 'swap' | 'lp' | 'stake';
+export type StepType = 'swap' | 'clmm_open' | 'clmm_close';
+
+export interface IQuestStep {
+  uuid: string;
+  order_index: number;
+  step_type: StepType;
+  action_params: Record<string, any>;
+}
 
 export interface IQuest {
   uuid: string;
   title: string;
   description: string;
   protocol: Protocol;
-  quest_type: QuestType;
-  action_params: Array<Record<string, any>>;
+  steps: IQuestStep[];
   total_reward_pool: string;
   reward_per_user: string;
   total_reward_distributed: string;
@@ -22,12 +28,16 @@ export interface IProviderQuestsResponse {
   quests: IQuest[];
 }
 
+export interface ICreateQuestStep {
+  step_type: StepType;
+  action_params: Record<string, any>;
+}
+
 export interface ICreateQuestPayload {
   title: string;
   description: string;
   protocol: Protocol;
-  quest_type: QuestType;
-  action_params: Array<Record<string, any>>;
+  steps: ICreateQuestStep[];
   total_reward_pool: string;
   reward_per_user: string;
   reward_token: string;
@@ -46,5 +56,23 @@ export interface IProviderQuestDetailResponse {
   quest: IQuest;
   analytics: IQuestAnalytics;
 }
+
+export interface IPublicQuest extends IQuest {
+  provider: {
+    uuid: string;
+    display_name: string;
+    logo_url: string | null;
+  };
+}
+
+export interface IPublicQuestsResponse {
+  quests: IPublicQuest[];
+}
+
+export interface IPublicQuestDetailResponse {
+  quest: IPublicQuest;
+}
+
+
 
 

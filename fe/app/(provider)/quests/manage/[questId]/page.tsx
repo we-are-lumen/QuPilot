@@ -189,7 +189,7 @@ export default function ProviderQuestDetailPage() {
               <Chip.Label>{quest.protocol}</Chip.Label>
             </Chip>
             <Chip variant="soft" className="bg-surface-raised text-text-secondary font-bold border border-border capitalize">
-              <Chip.Label>{quest.quest_type}</Chip.Label>
+              <Chip.Label>{quest.steps?.[0]?.step_type}</Chip.Label>
             </Chip>
             <Chip variant="soft" className="bg-surface-raised text-text-secondary font-bold border border-border flex items-center gap-1.5">
               <FiClock className="text-xs shrink-0" />
@@ -252,7 +252,7 @@ export default function ProviderQuestDetailPage() {
                   <span>Agent Configuration Details</span>
                 </span>
                 <div className="bg-surface-raised border border-outline-variant rounded-lg p-4 font-mono text-xs text-text-secondary overflow-x-auto shadow-inner max-h-60">
-                  <pre>{JSON.stringify(quest.action_params, null, 2)}</pre>
+                  <pre>{JSON.stringify(quest.steps, null, 2)}</pre>
                 </div>
               </div>
             </Card.Content>

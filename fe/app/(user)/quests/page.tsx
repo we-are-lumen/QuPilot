@@ -1,69 +1,43 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, Button } from "@heroui/react";
-import { FiGlobe, FiUsers, FiCode, FiActivity, FiArrowRight } from "react-icons/fi";
+import { Card, Button, Spinner, Skeleton } from "@heroui/react";
+import { FiArrowRight, FiCompass } from "react-icons/fi";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { getPublicQuests } from "@/lib/api/quests";
+import { formatUnits } from "viem";
 
-const QUESTS = [
-  {
-    id: 1,
-    provider: "Nova Network",
-    timeAgo: "2 hours ago",
-    tag: "Beginner",
-    title: "Bridge to Nova",
-    description: "Complete your first cross-chain transfer to the Nova testnet and secure your early adopter role.",
-    reward: "100 NVT",
-    rewardColor: "text-[#f59e0b]",
-    icon: FiGlobe,
-    iconBg: "bg-[#e8ddff]",
-    iconColor: "text-[#20005e]"
-  },
-  {
-    id: 2,
-    provider: "Cosmic DAO",
-    timeAgo: "5 hours ago",
-    tag: "Social",
-    title: "Community Vanguard",
-    description: "Join the Discord, participate in the town hall, and vote on the latest governance proposal.",
-    reward: "Special NFT",
-    rewardColor: "text-[#6746c5]",
-    icon: FiUsers,
-    iconBg: "bg-[#85f4f4]",
-    iconColor: "text-[#002020]"
-  },
-  {
-    id: 3,
-    provider: "AstroFi Labs",
-    timeAgo: "1 day ago",
-    tag: "Advanced",
-    title: "Testnet Stress Test",
-    description: "Help us find bugs in the v2 contracts. High rewards for critical vulnerability reports.",
-    reward: "Up to $5k",
-    rewardColor: "text-[#ef4444]",
-    icon: FiCode,
-    iconBg: "bg-[#ffdad6]",
-    iconColor: "text-[#93000a]"
-  },
-  {
-    id: 4,
-    provider: "Stellar DEX",
-    timeAgo: "2 days ago",
-    tag: "DeFi",
-    title: "Liquidity Provision Run",
-    description: "Provide liquidity to the new StarDEX pools and earn exclusive cosmic badges alongside yield multipliers.",
-    reward: "500 XP + Badge",
-    rewardColor: "text-[#9d7eff]",
-    icon: FiActivity,
-    iconBg: "bg-[#ffb4a5]",
-    iconColor: "text-[#891e0c]"
+const formatReward = (rewardStr: string) => {
+  try {
+    const formatted = formatUnits(BigInt(rewardStr), 18);
+    const parsed = parseFloat(formatted);
+    return new Intl.NumberFormat("en-US", {
+      notation: "compact",
+      maximumFractionDigits: 2,
+    }).format(parsed);
+  } catch (error) {
+    return rewardStr;
   }
-];
-
-const FILTERS = ["All Quests", "AstroFi Labs", "Nova Network", "Cosmic DAO"];
+};
 
 export default function QuestExplorerPage() {
   const [activeFilter, setActiveFilter] = useState("All Quests");
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["public-quests"],
+    queryFn: () => getPublicQuests(),
+  });
+
+  const quests = data?.quests || [];
+
+  // Extract unique protocols for filters dynamically
+  const protocols = Array.from(new Set(quests.map((q) => q.protocol).filter(Boolean)));
+  const FILTERS = ["All Quests", ...protocols];
+
+  const filteredQuests = activeFilter === "All Quests"
+    ? quests
+    : quests.filter((q) => q.protocol === activeFilter);
 
   return (
     <div className="flex flex-col gap-10">
@@ -79,65 +53,139 @@ export default function QuestExplorerPage() {
       {/* Filters Section */}
       <section className="flex flex-wrap items-center justify-between gap-6">
         <h2 className="text-2xl font-bold text-[#a63420]">Active Missions</h2>
-        <div className="flex flex-wrap items-center gap-2 p-1 bg-white border border-[#dfbfb94d] rounded-full">
-          {FILTERS.map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
-                activeFilter === filter
-                  ? "bg-[#ffdad3] text-[#3f0400]"
-                  : "text-[#6b6560] hover:bg-[#f8f4ef]"
-              }`}
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
+        {!isLoading && !error && FILTERS.length > 1 && (
+          <div className="flex flex-wrap items-center gap-2 p-1 bg-white border border-[#dfbfb94d] rounded-full">
+            {FILTERS.map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap capitalize ${
+                  activeFilter === filter
+                    ? "bg-[#ffdad3] text-[#3f0400]"
+                    : "text-[#6b6560] hover:bg-[#f8f4ef]"
+                }`}
+              >
+                {filter}
+              </button>
+            ))}
+          </div>
+        )}
       </section>
+
+      {/* Loading State (Skeletons) */}
+      {isLoading && (
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="p-5 border border-transparent shadow-sm rounded-2xl flex flex-col gap-4">
+              <Card.Header className="flex justify-between items-start p-0">
+                <div className="flex items-center gap-3 w-full">
+                  <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+                  <div className="flex flex-col gap-2 w-1/2">
+                    <Skeleton className="h-3 w-2/3 rounded" />
+                    <Skeleton className="h-3 w-1/2 rounded" />
+                  </div>
+                </div>
+                <Skeleton className="h-6 w-16 rounded-full shrink-0" />
+              </Card.Header>
+              <Card.Content className="p-0 flex flex-col gap-2.5 grow">
+                <Skeleton className="h-5 w-3/4 rounded animate-pulse" />
+                <div className="flex flex-col gap-1.5 mt-1">
+                  <Skeleton className="h-3 w-full rounded" />
+                  <Skeleton className="h-3 w-full rounded" />
+                  <Skeleton className="h-3 w-4/5 rounded" />
+                </div>
+              </Card.Content>
+              <Card.Footer className="p-0 pt-4 mt-auto border-t border-[#f5ddd9] flex justify-between items-center">
+                <Skeleton className="h-4 w-16 rounded" />
+                <Skeleton className="h-4 w-12 rounded" />
+              </Card.Footer>
+            </Card>
+          ))}
+        </section>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#fff5f5] border border-[#ffc1c1] rounded-2xl">
+          <p className="text-lg font-bold text-[#e53e3e]">Failed to load quests</p>
+          <p className="text-sm text-[#6b6560] max-w-md">
+            We encountered an error while retrieving the active missions. Please try again later.
+          </p>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && !error && filteredQuests.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#fcfbfa] border border-[#dfbfb94d] rounded-2xl">
+          <FiCompass className="text-4xl text-[#dfbfb9]" />
+          <p className="text-lg font-bold text-[#a63420]">No missions found</p>
+          <p className="text-sm text-[#6b6560] max-w-md">
+            There are currently no active quests for this category. Check back later for new updates!
+          </p>
+        </div>
+      )}
 
       {/* Quests Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {QUESTS.map((quest) => (
-          <Card key={quest.id} className="p-5 border border-transparent hover:border-[#dfbfb94d] shadow-sm hover:shadow-md transition-all rounded-2xl flex flex-col gap-4">
-            <Card.Header className="flex justify-between items-start p-0">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${quest.iconBg} ${quest.iconColor}`}>
-                  <quest.icon size={20} />
+      {!isLoading && !error && filteredQuests.length > 0 && (
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredQuests.map((quest) => (
+            <Card key={quest.uuid} className="p-5 border border-transparent hover:border-[#dfbfb94d] shadow-sm hover:shadow-md transition-all rounded-2xl flex flex-col gap-4">
+              <Card.Header className="flex justify-between items-start p-0">
+                <div className="flex items-center gap-3">
+                  {quest.provider?.logo_url ? (
+                    <img
+                      src={quest.provider.logo_url}
+                      alt={quest.provider?.display_name || "Provider"}
+                      className="w-10 h-10 rounded-full object-cover bg-[#f8f4ef]"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#ffdad3] text-[#a63420] font-bold">
+                      {(quest.provider?.display_name || "P").charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="flex flex-col">
+                    <span className="font-bold text-sm text-[#1f1b18]">
+                      {quest.provider?.display_name || "Unknown Provider"}
+                    </span>
+                    <span className="text-xs text-[#6b6560] capitalize">
+                      Protocol: {quest.protocol}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-bold text-sm text-[#1f1b18]">{quest.provider}</span>
-                  <span className="text-xs text-[#6b6560]">{quest.timeAgo}</span>
-                </div>
-              </div>
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#f8f4ef] text-[#6b6560] border border-[#dfbfb94d]">
-                {quest.tag}
-              </span>
-            </Card.Header>
-            <Card.Content className="p-0 flex flex-col gap-1.5 grow">
-              <h3 className="text-lg font-bold text-[#a63420]">{quest.title}</h3>
-              <p className="text-[13px] text-[#6b6560] leading-relaxed">
-                {quest.description}
-              </p>
-            </Card.Content>
-            <Card.Footer className="p-0 pt-4 mt-auto border-t border-[#f5ddd9] flex justify-between items-center">
-              <span className={`font-bold font-mono text-[13px] ${quest.rewardColor}`}>
-                {quest.reward}
-              </span>
-              <Link href="#" className="flex items-center gap-1 text-xs font-bold text-[#a63420] hover:text-[#891e0c] transition-colors group">
-                Join <FiArrowRight className="transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Card.Footer>
-          </Card>
-        ))}
-      </section>
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#f8f4ef] text-[#6b6560] border border-[#dfbfb94d] capitalize">
+                  {quest.steps[0]?.step_type || "General"}
+                </span>
+              </Card.Header>
+              <Card.Content className="p-0 flex flex-col gap-1.5 grow">
+                <h3 className="text-lg font-bold text-[#a63420]">{quest.title}</h3>
+                <p className="text-[13px] text-[#6b6560] leading-relaxed line-clamp-3">
+                  {quest.description}
+                </p>
+              </Card.Content>
+              <Card.Footer className="p-0 pt-4 mt-auto border-t border-[#f5ddd9] flex justify-between items-center">
+                <span className="font-bold font-mono text-[13px] text-[#f59e0b]">
+                  {formatReward(quest.reward_per_user)} QPL
+                </span>
+                <Link
+                  href={`/quests/${quest.uuid}`}
+                  className="flex items-center gap-1 text-xs font-bold text-[#a63420] hover:text-[#891e0c] transition-colors group"
+                >
+                  Join <FiArrowRight className="transition-transform group-hover:translate-x-1" />
+                </Link>
+              </Card.Footer>
+            </Card>
+          ))}
+        </section>
+      )}
 
-      {/* Load More Button */}
-      <div className="flex justify-center mt-4">
-        <Button className="bg-white border border-[#dfbfb9] text-[#a63420] font-bold px-8 py-3 rounded-full hover:bg-[#fffbf5] transition-colors shadow-sm">
-          Load More Missions
-        </Button>
-      </div>
+      {/* Load More Button (static placeholder for future pagination) */}
+      {/* {!isLoading && !error && filteredQuests.length > 0 && (
+        <div className="flex justify-center mt-4">
+          <Button className="bg-white border border-[#dfbfb9] text-[#a63420] font-bold px-8 py-3 rounded-full hover:bg-[#fffbf5] transition-colors shadow-sm">
+            Load More Missions
+          </Button>
+        </div>
+      )} */}
     </div>
   );
 }
