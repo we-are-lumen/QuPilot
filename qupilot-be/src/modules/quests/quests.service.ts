@@ -1,5 +1,6 @@
 import { supabase } from '../../config/supabase';
-import { throw404 } from '../../lib/errors';
+import { throw400, throw403, throw404, throw409 } from '../../lib/errors';
+import { verifyCreateQuestTx } from '../../lib/solana/verify-create-quest';
 import type { CreateQuestBody, ListPublicQuery, Protocol, QuestStepInput, StepType } from './quests.schema';
 
 // ---------------------------------------------------------------------------
@@ -24,6 +25,8 @@ export type QuestPublic = {
   total_reward_distributed: number | string;
   reward_token: string;
   tx_hash: string;
+  quest_pool_pda: string | null;
+  quest_id_onchain: string | null;
   expires_at: string;
   created_at: string;
 };
@@ -58,7 +61,7 @@ type QuestRawRow = Omit<QuestPublic, 'steps'> & {
 };
 
 const QUEST_BASE_COLS =
-  'uuid, title, description, protocol, total_reward_pool, reward_per_user, total_reward_distributed, reward_token, tx_hash, expires_at, created_at';
+  'uuid, title, description, protocol, total_reward_pool, reward_per_user, total_reward_distributed, reward_token, tx_hash, quest_pool_pda, quest_id_onchain, expires_at, created_at';
 
 // Used everywhere we want quest + its ordered steps. Postgrest nested-select.
 const QUEST_PUBLIC_COLS = `${QUEST_BASE_COLS}, quest_steps(uuid, order_index, step_type, action_params)`;
@@ -89,13 +92,35 @@ const resolveProviderId = async (providerUuid: string): Promise<number> => {
 // Create
 // ---------------------------------------------------------------------------
 
-export const create = async (providerUuid: string, body: CreateQuestBody): Promise<QuestPublic> => {
+export const create = async (providerUuid: string, providerWallet: string, body: CreateQuestBody): Promise<QuestPublic> => {
   const provider_id = await resolveProviderId(providerUuid);
+
+  const verification = await verifyCreateQuestTx({
+    txSignature: body.tx_hash,
+    expected: {
+      providerWallet,
+      questUuid: body.quest_uuid,
+      totalRewardPoolLamports: BigInt(body.total_reward_pool),
+      rewardPerUserLamports: BigInt(body.reward_per_user),
+      expiresAt: new Date(body.expires_at),
+    },
+  });
+
+  if (!verification.ok) {
+    if (verification.reason === 'provider mismatch') {
+      throw403('DEPOSIT_TX_SIGNER_MISMATCH', "Deposit transaction signer doesn't match your wallet");
+    }
+    throw400('INVALID_DEPOSIT_TX', verification.reason);
+  }
+
+  const okVerification = verification as { ok: true; questPoolPda: string; questIdBytes: Buffer };
+  const questIdOnchain = `\\x${okVerification.questIdBytes.toString('hex')}`;
 
   // Insert the quest parent row.
   const { data: inserted, error: insertErr } = await supabase
     .from('quests')
     .insert({
+      uuid: body.quest_uuid,
       provider_id,
       title: body.title,
       description: body.description,
@@ -104,12 +129,20 @@ export const create = async (providerUuid: string, body: CreateQuestBody): Promi
       reward_per_user: body.reward_per_user,
       reward_token: body.reward_token,
       tx_hash: body.tx_hash,
+      quest_pool_pda: okVerification.questPoolPda,
+      quest_id_onchain: questIdOnchain,
       expires_at: body.expires_at,
     })
     .select('id')
     .single();
 
-  if (insertErr) throw insertErr;
+  if (insertErr) {
+    const err = insertErr as unknown as { code?: string; message?: string };
+    if (err.code === '23505') {
+      throw409('DUPLICATE_QUEST', err.message ?? 'Quest already exists');
+    }
+    throw insertErr;
+  }
   const questId = (inserted as { id: number }).id;
 
   // Bulk-insert the steps in order.

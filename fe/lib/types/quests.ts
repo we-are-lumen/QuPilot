@@ -1,4 +1,4 @@
-export type Protocol = 'byreal' | 'bybit' | 'sui';
+export type Protocol = string;
 export type StepType = 'swap' | 'clmm_open' | 'clmm_close';
 
 export interface IQuestStep {
@@ -18,7 +18,9 @@ export interface IQuest {
   reward_per_user: string;
   total_reward_distributed: string;
   reward_token: string;
-  tx_hash?: string;
+  tx_hash: string;
+  quest_pool_pda?: string | null;
+  quest_id_onchain?: string | null;
   expires_at: string;
   created_at: string;
   participation_count: number;
@@ -34,6 +36,7 @@ export interface ICreateQuestStep {
 }
 
 export interface ICreateQuestPayload {
+  quest_uuid: string;
   title: string;
   description: string;
   protocol: Protocol;
@@ -72,7 +75,5 @@ export interface IPublicQuestsResponse {
 export interface IPublicQuestDetailResponse {
   quest: IPublicQuest;
 }
-
-
 
 

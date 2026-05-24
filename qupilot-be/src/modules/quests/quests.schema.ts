@@ -54,6 +54,7 @@ export type QuestStepInput = z.infer<typeof stepSchema>;
 
 export const createQuestBodySchema = z
   .object({
+    quest_uuid: z.uuid(),
     title: z.string().trim().min(1).max(200),
     description: z.string().trim().min(1).max(5000),
     protocol: protocolSchema,
