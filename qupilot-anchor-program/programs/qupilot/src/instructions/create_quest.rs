@@ -26,6 +26,7 @@ pub struct CreateQuest<'info> {
 pub fn handler(
     ctx: Context<CreateQuest>,
     quest_id: [u8; 32],
+    verifier: Pubkey,
     total_reward_pool: u64,
     reward_per_user: u64,
     expires_at: i64,
@@ -52,9 +53,11 @@ pub fn handler(
     let pool = &mut ctx.accounts.quest_pool;
     pool.version = QuestPool::CURRENT_VERSION;
     pool.provider = ctx.accounts.provider.key();
+    pool.verifier = verifier;
     pool.quest_id = quest_id;
     pool.total_reward_pool = total_reward_pool;
     pool.reward_per_user = reward_per_user;
+    pool.allocated_amount = 0;
     pool.claimed_amount = 0;
     pool.created_at = now;
     pool.expires_at = expires_at;
@@ -64,6 +67,7 @@ pub fn handler(
     emit!(QuestCreated {
         quest_pool: pool.key(),
         provider: pool.provider,
+        verifier,
         quest_id,
         total_reward_pool,
         reward_per_user,

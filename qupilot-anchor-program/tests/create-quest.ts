@@ -52,6 +52,7 @@ describe("create_quest", () => {
 
   it("happy path: creates quest, transfers SOL, emits event", async () => {
     const providerKp = await freshProvider();
+    const verifierKp = Keypair.generate();
     const questId = randomQuestId();
     const [poolPda] = deriveQuestPool(
       program.programId,
@@ -72,7 +73,13 @@ describe("create_quest", () => {
     });
 
     await program.methods
-      .createQuest([...questId] as any, total, perUser, expires)
+      .createQuest(
+        [...questId] as any,
+        verifierKp.publicKey,
+        total,
+        perUser,
+        expires,
+      )
       .accounts({
         provider: providerKp.publicKey,
         questPool: poolPda,
@@ -86,11 +93,13 @@ describe("create_quest", () => {
     await program.removeEventListener(listener);
 
     const pool = await program.account.questPool.fetch(poolPda);
-    expect(pool.version).to.equal(1);
+    expect(pool.version).to.equal(2);
     expect(pool.provider.toBase58()).to.equal(providerKp.publicKey.toBase58());
+    expect(pool.verifier.toBase58()).to.equal(verifierKp.publicKey.toBase58());
     expect(Buffer.from(pool.questId).equals(questId)).to.equal(true);
     expect(pool.totalRewardPool.toString()).to.equal(total.toString());
     expect(pool.rewardPerUser.toString()).to.equal(perUser.toString());
+    expect(pool.allocatedAmount.toString()).to.equal("0");
     expect(pool.claimedAmount.toString()).to.equal("0");
     expect(pool.status).to.equal(0);
     expect(pool.expiresAt.toString()).to.equal(expires.toString());
@@ -107,11 +116,13 @@ describe("create_quest", () => {
 
     expect(captured, "questCreated event not captured").to.not.be.null;
     expect(captured.questPool.toBase58()).to.equal(poolPda.toBase58());
+    expect(captured.verifier.toBase58()).to.equal(verifierKp.publicKey.toBase58());
     expect(captured.totalRewardPool.toString()).to.equal(total.toString());
   });
 
   it("rejects total_reward_pool = 0", async () => {
     const providerKp = await freshProvider();
+    const verifierKp = Keypair.generate();
     const questId = randomQuestId();
     const [poolPda] = deriveQuestPool(
       program.programId,
@@ -122,6 +133,7 @@ describe("create_quest", () => {
       await program.methods
         .createQuest(
           [...questId] as any,
+          verifierKp.publicKey,
           new BN(0),
           new BN(1),
           new BN(Math.floor(Date.now() / 1000) + 60),
@@ -141,6 +153,7 @@ describe("create_quest", () => {
 
   it("rejects reward_per_user > total_reward_pool", async () => {
     const providerKp = await freshProvider();
+    const verifierKp = Keypair.generate();
     const questId = randomQuestId();
     const [poolPda] = deriveQuestPool(
       program.programId,
@@ -151,6 +164,7 @@ describe("create_quest", () => {
       await program.methods
         .createQuest(
           [...questId] as any,
+          verifierKp.publicKey,
           new BN(100),
           new BN(200),
           new BN(Math.floor(Date.now() / 1000) + 60),
@@ -170,6 +184,7 @@ describe("create_quest", () => {
 
   it("rejects expires_at in the past", async () => {
     const providerKp = await freshProvider();
+    const verifierKp = Keypair.generate();
     const questId = randomQuestId();
     const [poolPda] = deriveQuestPool(
       program.programId,
@@ -180,6 +195,7 @@ describe("create_quest", () => {
       await program.methods
         .createQuest(
           [...questId] as any,
+          verifierKp.publicKey,
           new BN(1000),
           new BN(100),
           new BN(1),
@@ -199,6 +215,7 @@ describe("create_quest", () => {
 
   it("rejects duplicate (provider, quest_id)", async () => {
     const providerKp = await freshProvider();
+    const verifierKp = Keypair.generate();
     const questId = randomQuestId();
     const [poolPda] = deriveQuestPool(
       program.programId,
@@ -213,7 +230,13 @@ describe("create_quest", () => {
     };
 
     await program.methods
-      .createQuest([...questId] as any, args.total, args.per, args.expires)
+      .createQuest(
+        [...questId] as any,
+        verifierKp.publicKey,
+        args.total,
+        args.per,
+        args.expires,
+      )
       .accounts({
         provider: providerKp.publicKey,
         questPool: poolPda,
@@ -226,6 +249,7 @@ describe("create_quest", () => {
       await program.methods
         .createQuest(
           [...questId] as any,
+          verifierKp.publicKey,
           args.total,
           args.per,
           args.expires,
@@ -247,6 +271,7 @@ describe("create_quest", () => {
   it("two providers can use the same quest_id (different PDA)", async () => {
     const p1 = await freshProvider();
     const p2 = await freshProvider();
+    const verifierKp = Keypair.generate();
     const questId = randomQuestId();
     const [pda1] = deriveQuestPool(program.programId, p1.publicKey, questId);
     const [pda2] = deriveQuestPool(program.programId, p2.publicKey, questId);
@@ -259,7 +284,13 @@ describe("create_quest", () => {
     };
 
     await program.methods
-      .createQuest([...questId] as any, common.total, common.per, common.expires)
+      .createQuest(
+        [...questId] as any,
+        verifierKp.publicKey,
+        common.total,
+        common.per,
+        common.expires,
+      )
       .accounts({
         provider: p1.publicKey,
         questPool: pda1,
@@ -269,7 +300,13 @@ describe("create_quest", () => {
       .rpc();
 
     await program.methods
-      .createQuest([...questId] as any, common.total, common.per, common.expires)
+      .createQuest(
+        [...questId] as any,
+        verifierKp.publicKey,
+        common.total,
+        common.per,
+        common.expires,
+      )
       .accounts({
         provider: p2.publicKey,
         questPool: pda2,

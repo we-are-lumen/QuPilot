@@ -8,6 +8,68 @@
   },
   "instructions": [
     {
+      "name": "claim_reward",
+      "discriminator": [
+        149,
+        95,
+        181,
+        242,
+        94,
+        90,
+        158,
+        162
+      ],
+      "accounts": [
+        {
+          "name": "claimer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "quest_pool",
+          "writable": true,
+          "relations": [
+            "participation"
+          ]
+        },
+        {
+          "name": "participation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  114,
+                  116,
+                  105,
+                  99,
+                  105,
+                  112,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "quest_pool"
+              },
+              {
+                "kind": "account",
+                "path": "claimer"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "create_quest",
       "discriminator": [
         112,
@@ -67,6 +129,10 @@
           }
         },
         {
+          "name": "verifier",
+          "type": "pubkey"
+        },
+        {
           "name": "total_reward_pool",
           "type": "u64"
         },
@@ -79,9 +145,227 @@
           "type": "i64"
         }
       ]
+    },
+    {
+      "name": "join_quest",
+      "discriminator": [
+        179,
+        5,
+        14,
+        3,
+        119,
+        119,
+        118,
+        89
+      ],
+      "accounts": [
+        {
+          "name": "verifier",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "quest_pool",
+          "writable": true
+        },
+        {
+          "name": "participation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  114,
+                  116,
+                  105,
+                  99,
+                  105,
+                  112,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "quest_pool"
+              },
+              {
+                "kind": "arg",
+                "path": "user_wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "participation_uuid",
+          "type": {
+            "array": [
+              "u8",
+              16
+            ]
+          }
+        },
+        {
+          "name": "user_wallet",
+          "type": "pubkey"
+        },
+        {
+          "name": "agent_wallet",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "mark_participation_complete",
+      "discriminator": [
+        106,
+        221,
+        4,
+        87,
+        115,
+        149,
+        251,
+        12
+      ],
+      "accounts": [
+        {
+          "name": "verifier",
+          "signer": true
+        },
+        {
+          "name": "quest_pool",
+          "writable": true,
+          "relations": [
+            "participation"
+          ]
+        },
+        {
+          "name": "participation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  114,
+                  116,
+                  105,
+                  99,
+                  105,
+                  112,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "quest_pool"
+              },
+              {
+                "kind": "account",
+                "path": "participation.user_wallet",
+                "account": "Participation"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "mark_participation_failed",
+      "discriminator": [
+        52,
+        89,
+        219,
+        124,
+        140,
+        112,
+        166,
+        47
+      ],
+      "accounts": [
+        {
+          "name": "verifier",
+          "signer": true
+        },
+        {
+          "name": "quest_pool",
+          "writable": true,
+          "relations": [
+            "participation"
+          ]
+        },
+        {
+          "name": "participation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  114,
+                  116,
+                  105,
+                  99,
+                  105,
+                  112,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "quest_pool"
+              },
+              {
+                "kind": "account",
+                "path": "participation.user_wallet",
+                "account": "Participation"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
+    {
+      "name": "Participation",
+      "discriminator": [
+        237,
+        154,
+        142,
+        46,
+        143,
+        63,
+        189,
+        18
+      ]
+    },
     {
       "name": "QuestPool",
       "discriminator": [
@@ -98,6 +382,32 @@
   ],
   "events": [
     {
+      "name": "ParticipationCompleted",
+      "discriminator": [
+        137,
+        239,
+        186,
+        71,
+        127,
+        10,
+        35,
+        60
+      ]
+    },
+    {
+      "name": "ParticipationFailed",
+      "discriminator": [
+        35,
+        234,
+        144,
+        79,
+        132,
+        235,
+        30,
+        160
+      ]
+    },
+    {
       "name": "QuestCreated",
       "discriminator": [
         179,
@@ -108,6 +418,32 @@
         69,
         73,
         67
+      ]
+    },
+    {
+      "name": "QuestJoined",
+      "discriminator": [
+        190,
+        194,
+        37,
+        10,
+        206,
+        62,
+        43,
+        162
+      ]
+    },
+    {
+      "name": "RewardClaimed",
+      "discriminator": [
+        49,
+        28,
+        87,
+        84,
+        158,
+        48,
+        229,
+        175
       ]
     }
   ],
@@ -131,9 +467,153 @@
       "code": 6003,
       "name": "ExpiresAtInPast",
       "msg": "expires_at must be in the future"
+    },
+    {
+      "code": 6004,
+      "name": "QuestNotActive",
+      "msg": "quest pool is not active"
+    },
+    {
+      "code": 6005,
+      "name": "QuestExpired",
+      "msg": "quest has expired"
+    },
+    {
+      "code": 6006,
+      "name": "RewardPoolExhausted",
+      "msg": "reward pool capacity exhausted"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidParticipationStatus",
+      "msg": "invalid participation status for this operation"
+    },
+    {
+      "code": 6008,
+      "name": "RewardAmountMismatch",
+      "msg": "reward amount on participation doesn't match quest pool"
+    },
+    {
+      "code": 6009,
+      "name": "NotClaimable",
+      "msg": "participation is not in claimable state"
+    },
+    {
+      "code": 6010,
+      "name": "InsufficientPoolLamports",
+      "msg": "insufficient pool lamports after transfer"
     }
   ],
   "types": [
+    {
+      "name": "Participation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "quest_pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "user_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "agent_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "participation_uuid",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "type": "u8"
+          },
+          {
+            "name": "reward_amount",
+            "type": "u64"
+          },
+          {
+            "name": "joined_at",
+            "type": "i64"
+          },
+          {
+            "name": "completed_at",
+            "type": "i64"
+          },
+          {
+            "name": "claimed_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ParticipationCompleted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "quest_pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "participation",
+            "type": "pubkey"
+          },
+          {
+            "name": "user_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "reward_amount",
+            "type": "u64"
+          },
+          {
+            "name": "completed_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ParticipationFailed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "quest_pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "participation",
+            "type": "pubkey"
+          },
+          {
+            "name": "user_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "failed_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
     {
       "name": "QuestCreated",
       "type": {
@@ -145,6 +625,10 @@
           },
           {
             "name": "provider",
+            "type": "pubkey"
+          },
+          {
+            "name": "verifier",
             "type": "pubkey"
           },
           {
@@ -176,6 +660,43 @@
       }
     },
     {
+      "name": "QuestJoined",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "quest_pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "participation",
+            "type": "pubkey"
+          },
+          {
+            "name": "user_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "agent_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "participation_uuid",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "joined_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "QuestPool",
       "type": {
         "kind": "struct",
@@ -186,6 +707,10 @@
           },
           {
             "name": "provider",
+            "type": "pubkey"
+          },
+          {
+            "name": "verifier",
             "type": "pubkey"
           },
           {
@@ -203,6 +728,10 @@
           },
           {
             "name": "reward_per_user",
+            "type": "u64"
+          },
+          {
+            "name": "allocated_amount",
             "type": "u64"
           },
           {
@@ -224,6 +753,34 @@
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RewardClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "quest_pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "participation",
+            "type": "pubkey"
+          },
+          {
+            "name": "user_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "claimed_at",
+            "type": "i64"
           }
         ]
       }

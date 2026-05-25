@@ -1,12 +1,15 @@
 import { apiClient } from './client';
-import type { IUserParticipationsResponse, IClaimResponse } from '@/lib/types/participations';
+import type { ISyncClaimResponse, IUserParticipationsResponse } from '@/lib/types/participations';
 
 export async function getUserParticipations(): Promise<IUserParticipationsResponse> {
   const response = await apiClient.get<IUserParticipationsResponse>('/me/participations');
   return response.data;
 }
 
-export async function claimRewards(): Promise<IClaimResponse> {
-  const response = await apiClient.post<IClaimResponse>('/me/claim');
+export async function syncClaimReward(participation_uuid: string, claim_tx_hash: string): Promise<ISyncClaimResponse> {
+  const response = await apiClient.post<ISyncClaimResponse>('/me/participations/sync-claim', {
+    participation_uuid,
+    claim_tx_hash,
+  });
   return response.data;
 }

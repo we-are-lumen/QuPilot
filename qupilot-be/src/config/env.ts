@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
-const envSchema = z.object({
+const envSchemaBase = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
 
   SUPABASE_URL: z.url(),
@@ -18,11 +18,18 @@ const envSchema = z.object({
     .max(64)
     .regex(/^[1-9A-HJ-NP-Za-km-z]+$/, 'QUPILOT_PROGRAM_ID must be a base58 Solana pubkey')
     .default('2auiCCwYy8pj6LpDnMomZRqKs49Gb5oRjtVkYDYRVmm3'),
-  SOLANA_TREASURY_SECRET_KEY: z
-    .string()
-    .trim()
-    .min(1, 'SOLANA_TREASURY_SECRET_KEY is required (base58 secret key)'),
+
+  QUPILOT_ADMIN_KEYPAIR_BASE64: z.string().trim().min(1).optional(),
+  QUPILOT_ADMIN_KEYPAIR_PATH: z.string().trim().min(1).optional(),
 });
+
+const envSchema = envSchemaBase.refine(
+  (v) => Boolean(v.QUPILOT_ADMIN_KEYPAIR_BASE64 || v.QUPILOT_ADMIN_KEYPAIR_PATH),
+  {
+    path: ['QUPILOT_ADMIN_KEYPAIR_BASE64'],
+    message: 'Either QUPILOT_ADMIN_KEYPAIR_BASE64 or QUPILOT_ADMIN_KEYPAIR_PATH must be set',
+  },
+);
 
 const parsed = envSchema.safeParse(process.env);
 

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authUser } from '../../middlewares/auth-user';
 import { validate } from '../../middlewares/validate';
-import { participationQuestUuidParamsSchema } from './participations.schema';
+import { participationQuestUuidParamsSchema, syncClaimBodySchema } from './participations.schema';
 import * as controller from './participations.controller';
 
 export const participationsRouter = Router();
@@ -14,5 +14,4 @@ participationsRouter.get(
   validate(participationQuestUuidParamsSchema, 'params'),
   controller.getMineDetail,
 );
-
-participationsRouter.post('/me/claim', controller.claimMine);
+participationsRouter.post('/me/participations/sync-claim', validate(syncClaimBodySchema), controller.syncClaimMine);

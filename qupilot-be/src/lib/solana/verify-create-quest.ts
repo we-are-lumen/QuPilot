@@ -4,6 +4,7 @@ import { createHash } from 'crypto';
 import qupilotIdl from '../solana/idl/qupilot.json';
 import { getSolanaConnection } from '../solana';
 import { env } from '../../config/env';
+import { getAdminPubkey } from './client';
 
 export type VerifyCreateQuestInput = {
   txSignature: string;
@@ -84,6 +85,20 @@ export const verifyCreateQuestTx = async (input: VerifyCreateQuestInput): Promis
   }
   if (providerStr !== input.expected.providerWallet) {
     return { ok: false, reason: `provider mismatch (expected ${input.expected.providerWallet}, got ${providerStr})` };
+  }
+
+  const eventVerifier = data.verifier;
+  const verifierStr =
+    typeof eventVerifier === 'string'
+      ? eventVerifier
+      : typeof eventVerifier === 'object' && eventVerifier !== null && 'toBase58' in eventVerifier
+        ? (eventVerifier as { toBase58: () => string }).toBase58()
+        : null;
+
+  const expectedVerifier = getAdminPubkey().toBase58();
+  if (!verifierStr) return { ok: false, reason: `verifier mismatch (expected ${expectedVerifier}, got <unparsed>)` };
+  if (verifierStr !== expectedVerifier) {
+    return { ok: false, reason: `verifier mismatch (expected ${expectedVerifier}, got ${verifierStr})` };
   }
 
   const questIdBytes = uuidToBytes32(input.expected.questUuid);

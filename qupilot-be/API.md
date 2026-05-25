@@ -392,18 +392,20 @@ Auth: User JWT
 }
 ```
 
-### POST /me/claim
+### POST /me/participations/sync-claim
 
-Auth: User JWT  
-Claim semua participation yang `status=success` dan `reward_claimed=false`.
+Auth: User JWT
+
+Body:
+
+```json
+{ "participation_uuid": "uuid", "claim_tx_hash": "SolanaSignatureBase58" }
+```
 
 200 Response:
 
 ```json
-{
-  "claimed": [{ "quest_uuid": "uuid", "tx_hash": "SolanaSignatureBase58", "amount": "1000000", "token": "SOL" }],
-  "failed": [{ "quest_uuid": "uuid", "reason": "..." }]
-}
+{ "ok": true }
 ```
 
 ## API Key — User (untuk Agent)
@@ -476,7 +478,16 @@ Body:
 201 Response:
 
 ```json
-{ "participation": { "uuid": "uuid", "status": "inprogress", "started_at": "..." } }
+{
+  "participation": {
+    "uuid": "uuid",
+    "status": "inprogress",
+    "started_at": "...",
+    "quest_pool_pda": "Base58Pda",
+    "participation_pda": "Base58Pda",
+    "join_tx_hash": "SolanaSignatureBase58"
+  }
+}
 ```
 
 ### POST /agent/participations/:uuid/complete
@@ -500,7 +511,10 @@ Body:
   "participation": {
     "uuid": "uuid",
     "status": "success",
-    "completed_at": "..."
+    "completed_at": "...",
+    "quest_pool_pda": "Base58Pda",
+    "participation_pda": "Base58Pda",
+    "complete_tx_hash": "SolanaSignatureBase58"
   }
 }
 ```
@@ -509,28 +523,7 @@ Catatan:
 - `steps[].step_uuid` diambil dari `quest.steps[].uuid` (lihat `GET /quests/:uuid`).
 - Request boleh mengirim sebagian step; response bisa tetap `status=inprogress` sampai semua step berhasil / ada step yang gagal.
 
-Saat status berubah ke `success` (semua step success):
-- `quests.total_reward_distributed` di-increment sebesar `quests.reward_per_user`.
-- Kalau `total_reward_distributed + reward_per_user > total_reward_pool` → 409 `REWARD_POOL_EXHAUSTED` (pool sudah habis untuk quest ini).
-
-Saat status `failed` (ada step failed): `total_reward_distributed` tidak berubah.
-
-### POST /agent/claim
-
-Auth: `x-api-key`
-
-Claim semua participation milik user yang `status=success` dan `reward_claimed=false`. Agent bertindak atas nama user yang punya API key — reward dikirim ke `wallet_address` user tersebut, bukan ke agent. Idempotent: aman dipanggil berulang (yang sudah claimed otomatis dilewat).
-
-Body: (kosong)
-
-200 Response:
-
-```json
-{
-  "claimed": [{ "quest_uuid": "uuid", "tx_hash": "SolanaSignatureBase58", "amount": "1000000", "token": "SOL" }],
-  "failed": [{ "quest_uuid": "uuid", "reason": "..." }]
-}
-```
+Claim reward adalah user-only dan dilakukan lewat website (user connect wallet dan sign tx `claim_reward`). Tidak ada endpoint `POST /agent/claim`.
 
 ## Leaderboard (Public)
 

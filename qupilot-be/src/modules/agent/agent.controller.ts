@@ -28,15 +28,3 @@ export const complete: RequestHandler = async (req, res, next) => {
     next(err);
   }
 };
-
-export const claim: RequestHandler = async (req, res, next) => {
-  try {
-    if (!req.auth || req.auth.role !== 'agent') {
-      throw new AppError(403, 'FORBIDDEN', 'Requires agent role');
-    }
-    const result = await service.claim(req.auth.user_id);
-    res.json(result);
-  } catch (err) {
-    next(err);
-  }
-};

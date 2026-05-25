@@ -1,5 +1,4 @@
-import { Connection, Keypair, PublicKey, SystemProgram, Transaction, type ParsedTransactionWithMeta } from '@solana/web3.js';
-import bs58 from 'bs58';
+import { Connection, PublicKey, type ParsedTransactionWithMeta } from '@solana/web3.js';
 import { env } from '../config/env';
 
 // ---------------------------------------------------------------------------
@@ -7,42 +6,12 @@ import { env } from '../config/env';
 // ---------------------------------------------------------------------------
 
 let connection: Connection | null = null;
-let treasuryKeypair: Keypair | null = null;
 
 export const getSolanaConnection = (): Connection => {
   if (!connection) {
     connection = new Connection(env.SOLANA_RPC_URL, 'confirmed');
   }
   return connection;
-};
-
-export const getTreasuryKeypair = (): Keypair => {
-  if (!treasuryKeypair) {
-    const secret = bs58.decode(env.SOLANA_TREASURY_SECRET_KEY);
-    treasuryKeypair = Keypair.fromSecretKey(secret);
-  }
-  return treasuryKeypair;
-};
-
-export const transferSol = async (toWallet: string, lamports: number | string): Promise<string> => {
-  const to = new PublicKey(toWallet);
-  const value = BigInt(String(lamports));
-  if (value < 0n) throw new Error('Invalid amount');
-  if (value > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error('Amount too large');
-
-  const payer = getTreasuryKeypair();
-  const tx = new Transaction().add(
-    SystemProgram.transfer({
-      fromPubkey: payer.publicKey,
-      toPubkey: to,
-      lamports: Number(value),
-    }),
-  );
-
-  const conn = getSolanaConnection();
-  const signature = await conn.sendTransaction(tx, [payer]);
-  await conn.confirmTransaction(signature, 'confirmed');
-  return signature;
 };
 
 // ---------------------------------------------------------------------------
