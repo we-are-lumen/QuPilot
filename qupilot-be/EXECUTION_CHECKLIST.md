@@ -5,7 +5,7 @@ Step-by-step buat execute `quest-api-BE-requirements-v2.md`. Setiap step dipecah
 > **Keputusan teknis (sudah dikonfirmasi):**
 > - Schema DB: SQL migration files di `supabase/migrations/`, dijalanin manual via Supabase SQL editor / CLI.
 > - Verifikasi tx_hash: via Solana RPC (`getParsedTransaction`) dan divalidasi sesuai `step_type` (swap / clmm_open / clmm_close) dengan expected signer dari `quest_participations.agent_wallet_address`.
-> - Claim reward: **real on-chain** transfer SOL dari treasury, simpan tx signature hasil claim.
+> - Claim reward: user claim langsung di website (user sign tx `claim_reward`), BE hanya sync status claim via tx signature.
 > - API Key Agent: di-generate oleh **user (wallet)** dari dashboard via JWT user. **Satu key aktif per user** (regenerate me-revoke yang lama). Simpan **SHA-256 hash + 8-char prefix**, plaintext cuma muncul sekali saat generate. Endpoint agent resolve `user_id` dari key — body `user_uuid` dihapus.
 
 > **Cara apply migrations manual:**
@@ -18,13 +18,13 @@ Step-by-step buat execute `quest-api-BE-requirements-v2.md`. Setiap step dipecah
 ## Phase 0 — Foundation
 
 - [x] **0.1** Tambah folder structure: `src/config/`, `src/lib/`, `src/middlewares/`, `src/modules/`, `src/types/`, `supabase/migrations/` (`.gitkeep` boleh kalau masih kosong).
-- [x] **0.2** `src/config/env.ts` — load + validate env pakai zod: `PORT`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `SOLANA_RPC_URL`, `SOLANA_TREASURY_SECRET_KEY` (base58 secretKey). Fail fast saat boot.
+- [x] **0.2** `src/config/env.ts` — load + validate env pakai zod: `PORT`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `SOLANA_RPC_URL`, `QUPILOT_PROGRAM_ID`, `QUPILOT_ADMIN_KEYPAIR_BASE64|PATH`. Fail fast saat boot.
 - [x] **0.3** `src/config/supabase.ts` — export single supabase client pakai service role key.
 - [x] **0.4** `src/lib/errors.ts` — class `AppError(status, code, message)` + helper `throw404/409/403/401/400`.
 - [x] **0.5** `src/middlewares/error-handler.ts` — central error middleware, format response konsisten `{ error: { code, message } }`.
 - [x] **0.6** `src/middlewares/validate.ts` — generic zod validator untuk `body` / `query` / `params`.
 - [x] **0.7** `src/types/express.d.ts` — augment `Request` dengan `auth?: { role, sub, ... }`.
-- [x] **0.8** `src/app.ts` — extract express setup dari `src/index.ts`, pasang error handler di akhir. Update `.env.example` tambahin `SOLANA_TREASURY_SECRET_KEY` + `SOLANA_RPC_URL`.
+- [x] **0.8** `src/app.ts` — extract express setup dari `src/index.ts`, pasang error handler di akhir. Update `.env.example` tambahin `QUPILOT_ADMIN_KEYPAIR_BASE64|PATH` + `SOLANA_RPC_URL`.
 
 ## Phase 1 — Database Schema (SQL migrations)
 
@@ -104,10 +104,8 @@ User yang sudah login wallet bisa generate / revoke API key untuk dipakai AI Age
 
 ## Phase 10 — Module: Claim Reward (on-chain)
 
-- [x] **10.1** `src/lib/solana.ts` — `getTreasuryKeypair()` dari `SOLANA_TREASURY_SECRET_KEY`, `transferSol(toWallet, lamports)` return tx signature.
-- [x] **10.2** `participations.service.ts` — `claimAll(userId)`: select participations `status='success' AND reward_claimed=false`; loop transfer SOL (lamports) ke wallet user; update `reward_claimed=true` per row sukses; handle partial failure.
-- [x] **10.3** Controller + route: `POST /me/claim` (user-only). Response: `{ claimed: [{ quest_uuid, tx_hash, amount, token }], failed: [...] }`.
-- [x] **10.4** Refactor `participations.service.ts`: extract `claimAllByUserId(userId, walletAddress)` + `resolveUserWalletById(userId)` agar bisa dipakai ulang oleh agent module. Wrapper `claimAll(userUuid, wallet)` tetap dipertahankan untuk endpoint user.
+- [x] **10.1** On-chain claim (`claim_reward`) hanya bisa dilakukan oleh user (website). BE tidak mengirim tx claim.
+- [x] **10.2** BE menyediakan endpoint sync claim via `RewardClaimed` event + `claim_tx_hash` untuk set `reward_claimed=true` dan bump `quests.total_reward_distributed`.
 
 ## Phase 11 — Module: AI Agent (join + complete)
 
@@ -116,8 +114,7 @@ User yang sudah login wallet bisa generate / revoke API key untuk dipakai AI Age
 - [x] **11.3** `agent.service.ts` — `join(userId, questUuid)`: resolve quest by uuid (cek belum expired), insert participation status `inprogress` (partial unique handle race → 409 kalau sudah ada).
 - [x] **11.4** `agent.service.ts` — `complete(userId, participationUuid, steps)`: update `quest_step_participations` per step + `tx_hash`, set participation `success` jika semua step sukses atau `failed` jika ada step gagal, lalu bump `quests.total_reward_distributed` saat `success`.
 - [x] **11.5** Controller + routes (agent-only via `authAgent`): `POST /agent/participations` (join), `POST /agent/participations/:uuid/complete`.
-- [x] **11.6** Tambah `agent.service.claim(userId)` — resolve `wallet_address` via `resolveUserWalletById`, panggil `claimAllByUserId` (re-use logic dari `participations.service`). Destination tetap wallet user, bukan agent.
-- [x] **11.7** Controller + route: `POST /agent/claim` (agent-only). Response shape sama dengan `POST /me/claim`. Idempotent — aman dipanggil berulang & co-existence dengan claim manual user.
+- [x] **11.6** Tidak ada endpoint claim untuk agent. Agent hanya mengarahkan user untuk claim di website.
 
 ## Phase 14 — Reward Bigint (pool + per-user + distributed)
 

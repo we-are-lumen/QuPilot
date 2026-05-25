@@ -24,13 +24,15 @@ import {
   FaChevronRight,
   FaGift
 } from "react-icons/fa6";
-import { useUserParticipations, useClaimRewards } from "@/lib/hooks/useParticipations";
+import { useUserParticipations, useSyncClaimReward } from "@/lib/hooks/useParticipations";
 import { useLeaderboard } from "@/lib/hooks/useLeaderboard";
+import { claimRewardTx } from "@/lib/utils/wallet";
 
 export default function UserProfilePage() {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("active");
   const [user, setUser] = useState<IUser | null>(null);
+  const [isClaiming, setIsClaiming] = useState(false);
 
   useEffect(() => {
     setUser(getUserData());
@@ -40,12 +42,33 @@ export default function UserProfilePage() {
 
   const { data: participationsData, isLoading: isLoadingParticipations } = useUserParticipations();
   const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useLeaderboard();
-  const { mutate: claimRewards, isPending: isClaiming } = useClaimRewards();
+  const { mutateAsync: syncClaim } = useSyncClaimReward();
 
   const participations = participationsData?.participations || [];
   const activeQuests = participations.filter(p => p.status === 'inprogress');
   const completedQuests = participations.filter(p => p.status === 'success');
   const unclaimedQuests = completedQuests.filter(p => !p.reward_claimed);
+
+  const handleClaimRewards = async () => {
+    if (isClaiming) return;
+    setIsClaiming(true);
+    try {
+      for (const participation of unclaimedQuests) {
+        const questPoolPda =
+          participation.quest_pool_pda ||
+          participation.quest.quest_pool_pda ||
+          null;
+        const participationPda = participation.participation_pda;
+        if (!questPoolPda || !participationPda) {
+          throw new Error("Missing on-chain participation references");
+        }
+        const sig = await claimRewardTx({ questPoolPda, participationPda });
+        await syncClaim({ participation_uuid: participation.uuid, claim_tx_hash: sig });
+      }
+    } finally {
+      setIsClaiming(false);
+    }
+  };
 
   const questsDone = completedQuests.length;
   
@@ -338,7 +361,7 @@ export default function UserProfilePage() {
                     {/* Claim Rewards Button above tabs */}
                     {unclaimedQuests.length > 0 && (
                       <Button
-                        onPress={() => claimRewards()}
+                        onPress={handleClaimRewards}
                         isDisabled={isClaiming}
                         className="bg-[#10b981] hover:bg-[#0ea5e9] text-white font-bold py-1.5 px-4 rounded-full text-xs shadow-md transition-colors flex items-center gap-1.5 cursor-pointer font-sans"
                       >

@@ -14,6 +14,68 @@ export type Qupilot = {
   },
   "instructions": [
     {
+      "name": "claimReward",
+      "discriminator": [
+        149,
+        95,
+        181,
+        242,
+        94,
+        90,
+        158,
+        162
+      ],
+      "accounts": [
+        {
+          "name": "claimer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "questPool",
+          "writable": true,
+          "relations": [
+            "participation"
+          ]
+        },
+        {
+          "name": "participation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  114,
+                  116,
+                  105,
+                  99,
+                  105,
+                  112,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "questPool"
+              },
+              {
+                "kind": "account",
+                "path": "claimer"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "createQuest",
       "discriminator": [
         112,
@@ -73,6 +135,10 @@ export type Qupilot = {
           }
         },
         {
+          "name": "verifier",
+          "type": "pubkey"
+        },
+        {
           "name": "totalRewardPool",
           "type": "u64"
         },
@@ -85,9 +151,227 @@ export type Qupilot = {
           "type": "i64"
         }
       ]
+    },
+    {
+      "name": "joinQuest",
+      "discriminator": [
+        179,
+        5,
+        14,
+        3,
+        119,
+        119,
+        118,
+        89
+      ],
+      "accounts": [
+        {
+          "name": "verifier",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "questPool",
+          "writable": true
+        },
+        {
+          "name": "participation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  114,
+                  116,
+                  105,
+                  99,
+                  105,
+                  112,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "questPool"
+              },
+              {
+                "kind": "arg",
+                "path": "userWallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "participationUuid",
+          "type": {
+            "array": [
+              "u8",
+              16
+            ]
+          }
+        },
+        {
+          "name": "userWallet",
+          "type": "pubkey"
+        },
+        {
+          "name": "agentWallet",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "markParticipationComplete",
+      "discriminator": [
+        106,
+        221,
+        4,
+        87,
+        115,
+        149,
+        251,
+        12
+      ],
+      "accounts": [
+        {
+          "name": "verifier",
+          "signer": true
+        },
+        {
+          "name": "questPool",
+          "writable": true,
+          "relations": [
+            "participation"
+          ]
+        },
+        {
+          "name": "participation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  114,
+                  116,
+                  105,
+                  99,
+                  105,
+                  112,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "questPool"
+              },
+              {
+                "kind": "account",
+                "path": "participation.user_wallet",
+                "account": "participation"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "markParticipationFailed",
+      "discriminator": [
+        52,
+        89,
+        219,
+        124,
+        140,
+        112,
+        166,
+        47
+      ],
+      "accounts": [
+        {
+          "name": "verifier",
+          "signer": true
+        },
+        {
+          "name": "questPool",
+          "writable": true,
+          "relations": [
+            "participation"
+          ]
+        },
+        {
+          "name": "participation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  114,
+                  116,
+                  105,
+                  99,
+                  105,
+                  112,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "questPool"
+              },
+              {
+                "kind": "account",
+                "path": "participation.user_wallet",
+                "account": "participation"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
+    {
+      "name": "participation",
+      "discriminator": [
+        237,
+        154,
+        142,
+        46,
+        143,
+        63,
+        189,
+        18
+      ]
+    },
     {
       "name": "questPool",
       "discriminator": [
@@ -104,6 +388,32 @@ export type Qupilot = {
   ],
   "events": [
     {
+      "name": "participationCompleted",
+      "discriminator": [
+        137,
+        239,
+        186,
+        71,
+        127,
+        10,
+        35,
+        60
+      ]
+    },
+    {
+      "name": "participationFailed",
+      "discriminator": [
+        35,
+        234,
+        144,
+        79,
+        132,
+        235,
+        30,
+        160
+      ]
+    },
+    {
       "name": "questCreated",
       "discriminator": [
         179,
@@ -114,6 +424,32 @@ export type Qupilot = {
         69,
         73,
         67
+      ]
+    },
+    {
+      "name": "questJoined",
+      "discriminator": [
+        190,
+        194,
+        37,
+        10,
+        206,
+        62,
+        43,
+        162
+      ]
+    },
+    {
+      "name": "rewardClaimed",
+      "discriminator": [
+        49,
+        28,
+        87,
+        84,
+        158,
+        48,
+        229,
+        175
       ]
     }
   ],
@@ -137,9 +473,153 @@ export type Qupilot = {
       "code": 6003,
       "name": "expiresAtInPast",
       "msg": "expires_at must be in the future"
+    },
+    {
+      "code": 6004,
+      "name": "questNotActive",
+      "msg": "quest pool is not active"
+    },
+    {
+      "code": 6005,
+      "name": "questExpired",
+      "msg": "quest has expired"
+    },
+    {
+      "code": 6006,
+      "name": "rewardPoolExhausted",
+      "msg": "reward pool capacity exhausted"
+    },
+    {
+      "code": 6007,
+      "name": "invalidParticipationStatus",
+      "msg": "invalid participation status for this operation"
+    },
+    {
+      "code": 6008,
+      "name": "rewardAmountMismatch",
+      "msg": "reward amount on participation doesn't match quest pool"
+    },
+    {
+      "code": 6009,
+      "name": "notClaimable",
+      "msg": "participation is not in claimable state"
+    },
+    {
+      "code": 6010,
+      "name": "insufficientPoolLamports",
+      "msg": "insufficient pool lamports after transfer"
     }
   ],
   "types": [
+    {
+      "name": "participation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "questPool",
+            "type": "pubkey"
+          },
+          {
+            "name": "userWallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "agentWallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "participationUuid",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "type": "u8"
+          },
+          {
+            "name": "rewardAmount",
+            "type": "u64"
+          },
+          {
+            "name": "joinedAt",
+            "type": "i64"
+          },
+          {
+            "name": "completedAt",
+            "type": "i64"
+          },
+          {
+            "name": "claimedAt",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "participationCompleted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "questPool",
+            "type": "pubkey"
+          },
+          {
+            "name": "participation",
+            "type": "pubkey"
+          },
+          {
+            "name": "userWallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "rewardAmount",
+            "type": "u64"
+          },
+          {
+            "name": "completedAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "participationFailed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "questPool",
+            "type": "pubkey"
+          },
+          {
+            "name": "participation",
+            "type": "pubkey"
+          },
+          {
+            "name": "userWallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "failedAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
     {
       "name": "questCreated",
       "type": {
@@ -151,6 +631,10 @@ export type Qupilot = {
           },
           {
             "name": "provider",
+            "type": "pubkey"
+          },
+          {
+            "name": "verifier",
             "type": "pubkey"
           },
           {
@@ -182,6 +666,43 @@ export type Qupilot = {
       }
     },
     {
+      "name": "questJoined",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "questPool",
+            "type": "pubkey"
+          },
+          {
+            "name": "participation",
+            "type": "pubkey"
+          },
+          {
+            "name": "userWallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "agentWallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "participationUuid",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "joinedAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "questPool",
       "type": {
         "kind": "struct",
@@ -192,6 +713,10 @@ export type Qupilot = {
           },
           {
             "name": "provider",
+            "type": "pubkey"
+          },
+          {
+            "name": "verifier",
             "type": "pubkey"
           },
           {
@@ -209,6 +734,10 @@ export type Qupilot = {
           },
           {
             "name": "rewardPerUser",
+            "type": "u64"
+          },
+          {
+            "name": "allocatedAmount",
             "type": "u64"
           },
           {
@@ -230,6 +759,34 @@ export type Qupilot = {
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "rewardClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "questPool",
+            "type": "pubkey"
+          },
+          {
+            "name": "participation",
+            "type": "pubkey"
+          },
+          {
+            "name": "userWallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "claimedAt",
+            "type": "i64"
           }
         ]
       }

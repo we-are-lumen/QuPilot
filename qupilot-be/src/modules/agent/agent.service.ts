@@ -1,18 +1,21 @@
 import { supabase } from '../../config/supabase';
 import { AppError, throw404 } from '../../lib/errors';
 import { verifySolanaClmmCloseTx, verifySolanaClmmOpenTx, verifySolanaSwapTxBasic } from '../../lib/solana';
-import {
-  claimAllByUserId,
-  resolveUserWalletById,
-  type ClaimResult,
-} from '../participations/participations.service';
+import { PublicKey } from '@solana/web3.js';
+import { resolveUserWalletById } from '../participations/participations.service';
+import { buildJoinQuestTx, buildMarkParticipationCompleteTx, buildMarkParticipationFailedTx, sendAdminTx } from '../../lib/solana/tx-builder';
+import { parseAnchorErrorCode } from '../../lib/solana/anchor-error';
 
-type QuestRow = { id: number; expires_at: string };
+type QuestRow = { id: number; expires_at: string; quest_pool_pda: string | null };
 
 const nowIso = (): string => new Date().toISOString();
 
 const resolveQuestId = async (questUuid: string): Promise<QuestRow> => {
-  const { data, error } = await supabase.from('quests').select('id, expires_at').eq('uuid', questUuid).maybeSingle();
+  const { data, error } = await supabase
+    .from('quests')
+    .select('id, expires_at, quest_pool_pda')
+    .eq('uuid', questUuid)
+    .maybeSingle();
   if (error) throw error;
   if (!data) throw404('QUEST_NOT_FOUND', 'Quest not found');
   return data as QuestRow;
@@ -22,10 +25,20 @@ export const join = async (
   userId: number,
   questUuid: string,
   agentWalletAddress: string,
-): Promise<{ uuid: string; status: 'inprogress'; started_at: string }> => {
+): Promise<{
+  uuid: string;
+  status: 'inprogress';
+  started_at: string;
+  quest_pool_pda: string;
+  participation_pda: string;
+  join_tx_hash: string;
+}> => {
   const quest = await resolveQuestId(questUuid);
   if (Date.parse(quest.expires_at) <= Date.now()) {
     throw new AppError(400, 'QUEST_EXPIRED', 'Quest has expired');
+  }
+  if (!quest.quest_pool_pda) {
+    throw new AppError(409, 'QUEST_POOL_NOT_INITIALIZED', 'Quest has no on-chain reward pool');
   }
 
   // Pre-check to return a precise error code.
@@ -102,8 +115,55 @@ export const join = async (
   const stepPartRes = await supabase.from('quest_step_participations').insert(stepPartRows);
   if (stepPartRes.error) throw stepPartRes.error;
 
-  const { id: _id, ...resp } = participation;
-  return resp;
+  const userWallet = await resolveUserWalletById(userId);
+  const questPoolPda = new PublicKey(quest.quest_pool_pda);
+  const userWalletPk = new PublicKey(userWallet);
+  const agentWalletPk = new PublicKey(agentWalletAddress);
+
+  try {
+    const { tx, participationPda } = await buildJoinQuestTx({
+      questPoolPda,
+      userWallet: userWalletPk,
+      agentWallet: agentWalletPk,
+      participationUuid: participation.uuid,
+    });
+    const sig = await sendAdminTx(tx);
+
+    const updated = await supabase
+      .from('quest_participations')
+      .update({
+        join_tx_hash: sig,
+        participation_pda: participationPda.toBase58(),
+        requires_onchain_sync: false,
+      })
+      .eq('id', participation.id)
+      .select('uuid, status, started_at, join_tx_hash, participation_pda')
+      .single();
+    if (updated.error) throw updated.error;
+
+    return {
+      uuid: updated.data.uuid,
+      status: 'inprogress',
+      started_at: updated.data.started_at,
+      quest_pool_pda: quest.quest_pool_pda,
+      participation_pda: updated.data.participation_pda,
+      join_tx_hash: updated.data.join_tx_hash,
+    };
+  } catch (err) {
+    await supabase.from('quest_participations').delete().eq('id', participation.id);
+
+    const code = parseAnchorErrorCode(err);
+    if (code === 'RewardPoolExhausted') {
+      throw new AppError(409, 'REWARD_POOL_EXHAUSTED', 'Reward pool exhausted — all slots taken');
+    }
+    if (code === 'QuestNotActive') {
+      throw new AppError(409, 'QUEST_NOT_ACTIVE', 'Quest is not active');
+    }
+    if (code === 'QuestExpired') {
+      throw new AppError(400, 'QUEST_EXPIRED', 'Quest has expired');
+    }
+    throw err;
+  }
 };
 
 type ParticipationRow = {
@@ -113,21 +173,11 @@ type ParticipationRow = {
   quest_id: number;
   status: 'inprogress' | 'success' | 'failed';
   agent_wallet_address: string | null;
-};
-
-type QuestRewardRow = {
-  id: number;
-  reward_per_user: number | string;
-  total_reward_pool: number | string;
-  total_reward_distributed: number | string;
+  participation_pda: string | null;
+  quest_pool_pda: string | null;
 };
 
 type CompleteStepInput = { step_uuid: string; tx_hash: string };
-
-const toBigIntSafe = (v: number | string): bigint => {
-  if (typeof v === 'number') return BigInt(Math.trunc(v));
-  return BigInt(v);
-};
 
 type StepType = 'swap' | 'clmm_open' | 'clmm_close';
 
@@ -140,13 +190,36 @@ type StepRow = {
 const resolveParticipationForComplete = async (participationUuid: string): Promise<ParticipationRow> => {
   const { data, error } = await supabase
     .from('quest_participations')
-    .select('id, uuid, user_id, quest_id, status, agent_wallet_address')
+    .select('id, uuid, user_id, quest_id, status, agent_wallet_address, participation_pda, quests(quest_pool_pda)')
     .eq('uuid', participationUuid)
     .maybeSingle();
 
   if (error) throw error;
   if (!data) throw404('PARTICIPATION_NOT_FOUND', 'Participation not found');
-  return data as unknown as ParticipationRow;
+  const raw = data as unknown as {
+    id: number;
+    uuid: string;
+    user_id: number;
+    quest_id: number;
+    status: 'inprogress' | 'success' | 'failed';
+    agent_wallet_address: string | null;
+    participation_pda: string | null;
+    quests:
+      | { quest_pool_pda: string | null }
+      | { quest_pool_pda: string | null }[]
+      | null;
+  };
+  const q = Array.isArray(raw.quests) ? raw.quests[0] ?? null : raw.quests;
+  return {
+    id: raw.id,
+    uuid: raw.uuid,
+    user_id: raw.user_id,
+    quest_id: raw.quest_id,
+    status: raw.status,
+    agent_wallet_address: raw.agent_wallet_address,
+    participation_pda: raw.participation_pda,
+    quest_pool_pda: q?.quest_pool_pda ?? null,
+  };
 };
 
 const getExpectedSigner = (row: ParticipationRow, userId: number): string => {
@@ -262,47 +335,6 @@ const computeFinalStatus = async (
   return 'inprogress';
 };
 
-const bumpRewardDistributed = async (questId: number): Promise<void> => {
-  const questRes = await supabase
-    .from('quests')
-    .select('id, reward_per_user, total_reward_pool, total_reward_distributed')
-    .eq('id', questId)
-    .maybeSingle();
-  if (questRes.error) throw questRes.error;
-  if (!questRes.data) throw404('QUEST_NOT_FOUND', 'Quest not found');
-  const quest = questRes.data as unknown as QuestRewardRow;
-
-  const perUser = toBigIntSafe(quest.reward_per_user);
-  const pool = toBigIntSafe(quest.total_reward_pool);
-  const distributed = toBigIntSafe(quest.total_reward_distributed);
-  const newDistributed = distributed + perUser;
-
-  if (newDistributed > pool) {
-    throw new AppError(409, 'REWARD_POOL_EXHAUSTED', 'Quest reward pool has been exhausted');
-  }
-
-  const bumpRes = await supabase
-    .from('quests')
-    .update({ total_reward_distributed: newDistributed.toString() })
-    .eq('id', quest.id);
-  if (bumpRes.error) throw bumpRes.error;
-};
-
-const finalizeParticipation = async (
-  rowId: number,
-  status: 'success' | 'failed',
-  completedAt: string,
-): Promise<{ uuid: string; status: 'success' | 'failed'; completed_at: string }> => {
-  const updatedPart = await supabase
-    .from('quest_participations')
-    .update({ status, completed_at: completedAt })
-    .eq('id', rowId)
-    .select('uuid, status, completed_at')
-    .single();
-  if (updatedPart.error) throw updatedPart.error;
-  return updatedPart.data as unknown as { uuid: string; status: 'success' | 'failed'; completed_at: string };
-};
-
 export const complete = async (
   userId: number,
   participationUuid: string,
@@ -311,6 +343,9 @@ export const complete = async (
   uuid: string;
   status: 'inprogress' | 'success' | 'failed';
   completed_at: string | null;
+  quest_pool_pda?: string;
+  participation_pda?: string;
+  complete_tx_hash?: string | null;
 }> => {
   const row = await resolveParticipationForComplete(participationUuid);
   const expectedSigner = getExpectedSigner(row, userId);
@@ -332,16 +367,56 @@ export const complete = async (
     return { uuid: row.uuid, status: 'inprogress', completed_at: null };
   }
 
-  const completed_at = nowIso();
-  if (finalStatus === 'success') {
-    await bumpRewardDistributed(row.quest_id);
+  if (!row.quest_pool_pda) {
+    throw new AppError(500, 'QUEST_POOL_NOT_INITIALIZED', 'Quest has no on-chain reward pool');
   }
 
-  const out = await finalizeParticipation(row.id, finalStatus, completed_at);
-  return { uuid: out.uuid, status: out.status, completed_at: out.completed_at };
-};
+  const questPoolPda = new PublicKey(row.quest_pool_pda);
+  const participationPda = row.participation_pda ? new PublicKey(row.participation_pda) : null;
+  if (!participationPda) {
+    throw new AppError(500, 'PARTICIPATION_PDA_MISSING', 'Participation missing on-chain PDA reference');
+  }
 
-export const claim = async (userId: number): Promise<ClaimResult> => {
-  const wallet = await resolveUserWalletById(userId);
-  return claimAllByUserId(userId, wallet);
+  const completed_at = nowIso();
+  const delaysMs = [0, 1000, 2000];
+
+  const sendWithRetry = async (): Promise<string | null> => {
+    for (const d of delaysMs) {
+      if (d > 0) await new Promise((r) => setTimeout(r, d));
+      try {
+        if (finalStatus === 'success') {
+          const tx = await buildMarkParticipationCompleteTx({ questPoolPda, participationPda });
+          return await sendAdminTx(tx);
+        }
+        const tx = await buildMarkParticipationFailedTx({ questPoolPda, participationPda });
+        return await sendAdminTx(tx);
+      } catch {
+      }
+    }
+    return null;
+  };
+
+  const completeTxHash = await sendWithRetry();
+
+  const updatedPart = await supabase
+    .from('quest_participations')
+    .update({
+      status: finalStatus,
+      completed_at,
+      complete_tx_hash: completeTxHash,
+      requires_onchain_sync: completeTxHash === null,
+    })
+    .eq('id', row.id)
+    .select('uuid, status, completed_at, complete_tx_hash, participation_pda')
+    .single();
+  if (updatedPart.error) throw updatedPart.error;
+
+  return {
+    uuid: updatedPart.data.uuid,
+    status: updatedPart.data.status,
+    completed_at: updatedPart.data.completed_at,
+    quest_pool_pda: row.quest_pool_pda,
+    participation_pda: updatedPart.data.participation_pda ?? participationPda.toBase58(),
+    complete_tx_hash: updatedPart.data.complete_tx_hash,
+  };
 };

@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express';
 import { AppError } from '../../lib/errors';
 import * as service from './participations.service';
+import type { SyncClaimBody } from './participations.schema';
 
 export const listMine: RequestHandler = async (req, res, next) => {
   try {
@@ -27,12 +28,12 @@ export const getMineDetail: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const claimMine: RequestHandler = async (req, res, next) => {
+export const syncClaimMine: RequestHandler = async (req, res, next) => {
   try {
     if (!req.auth || req.auth.role !== 'user') {
       throw new AppError(403, 'FORBIDDEN', 'Requires user role');
     }
-    const result = await service.claimAll(req.auth.sub, req.auth.wallet_address);
+    const result = await service.syncClaimByUserId(req.auth.sub, req.auth.wallet_address, req.body as SyncClaimBody);
     res.json(result);
   } catch (err) {
     next(err);
