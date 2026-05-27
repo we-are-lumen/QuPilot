@@ -139,7 +139,7 @@ export default function UserLayout({
             {user ? (
               <Popover>
                 <Popover.Trigger>
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#f5ddd9] hover:shadow-sm transition-all cursor-pointer">
+                  <button type="button" className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#f5ddd9] hover:shadow-sm transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#a63420]">
                     <Avatar size="sm" className="bg-[#a63420] text-white font-bold">
                       <Avatar.Fallback>{initials}</Avatar.Fallback>
                     </Avatar>
@@ -151,9 +151,9 @@ export default function UserLayout({
                         {shortWallet}
                       </span>
                     </div>
-                  </div>
+                  </button>
                 </Popover.Trigger>
-                <Popover.Content placement="bottom" offset={8}>
+                <Popover.Content placement="bottom" offset={8} isNonModal={true}>
                   <Popover.Dialog className="w-52 p-2">
                     <div className="flex flex-col w-full gap-1">
                       {/* Profile info */}

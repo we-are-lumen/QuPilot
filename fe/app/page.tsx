@@ -1,69 +1,50 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Button, Card, ProgressBar, toast } from "@heroui/react";
-import { FaRocket, FaCoins, FaDiscord, FaXTwitter, FaComments, FaBolt, FaWallet } from "react-icons/fa6";
+import { Button, Card, ProgressBar, toast, Skeleton } from "@heroui/react";
+import { FaRocket, FaCoins, FaDiscord, FaXTwitter, FaComments, FaBolt, FaWallet, FaBuilding } from "react-icons/fa6";
 import { FiUsers, FiTrendingUp, FiX, FiCpu } from "react-icons/fi";
-import { SiSui } from "react-icons/si";
 import { getUserData, clearAuth } from "@/lib/utils/auth";
 import { disconnectWallet } from "@/lib/utils/wallet";
+import { usePublicQuests } from "@/lib/hooks/useQuests";
 import AuthModal from "./components/AuthModal";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
-const PROVIDERS = [
-  {
-    id: "sui",
-    name: "Sui Network",
-    description: "High-speed L1 blockchain quests.",
-    accentColor: "#3898FF",
-    accentBg: "rgba(56,152,255,0.1)",
-    icon: <SiSui className="text-3xl" style={{ color: "#3898FF" }} />,
-    stats: { activeQuests: 12, totalPool: "5,000 SUI" },
-    quests: [
-      {
-        id: "q-sui-1",
-        title: "Liquidity Provisioning Alpha",
-        description:
-          "Provide liquidity to the main pool and hold for 7 days to earn your reward.",
-        agents: "1,204 Agents",
-        reward: "+50 SUI",
-        progress: 65,
-      },
-      {
-        id: "q-sui-2",
-        title: "First Swap Journey",
-        description:
-          "Complete your first decentralized swap on the Sui ecosystem.",
-        agents: "850 Agents",
-        reward: "+20 SUI",
-        progress: 30,
-      },
-    ],
-  },
-  {
-    id: "bybit",
-    name: "ByBit",
-    description: "Exchange trading challenges.",
-    accentColor: "#F7A600",
-    accentBg: "rgba(247,166,0,0.1)",
-    icon: <FaBolt className="text-3xl" style={{ color: "#F7A600" }} />,
-    stats: { activeQuests: 8, totalPool: "$25,000" },
-    quests: [
-      {
-        id: "q-bybit-1",
-        title: "Derivatives Rookie",
-        description:
-          "Open your first derivatives position with a minimum volume of $100.",
-        agents: "5,432 Agents",
-        reward: "$10 USDT",
-        progress: 85,
-      },
-    ],
-  },
+// ─── Interfaces ───────────────────────────────────────────────────────────────
+
+interface IMappedQuest {
+  id: string;
+  title: string;
+  description: string;
+  agents: string;
+  reward: string;
+  progress: number;
+}
+
+interface IMappedProvider {
+  id: string;
+  name: string;
+  description: string;
+  accentColor: string;
+  accentBg: string;
+  icon: React.ReactNode;
+  stats: {
+    activeQuests: number;
+    totalPool: string;
+  };
+  quests: IMappedQuest[];
+}
+
+const THEME_COLORS = [
+  { accentColor: "#3898FF", accentBg: "rgba(56,152,255,0.1)" }, // Sui Blue
+  { accentColor: "#F7A600", accentBg: "rgba(247,166,0,0.1)" }, // Bybit Orange
+  { accentColor: "#A63420", accentBg: "rgba(166,52,32,0.1)" }, // QuPilot Red
+  { accentColor: "#10B981", accentBg: "rgba(16,185,129,0.1)" }, // Emerald Green
+  { accentColor: "#8B5CF6", accentBg: "rgba(139,92,246,0.1)" }, // Violet
 ];
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
@@ -95,7 +76,7 @@ function QuestCard({
   accentColor,
   accentBg,
 }: {
-  quest: (typeof PROVIDERS)[0]["quests"][0];
+  quest: IMappedQuest;
   accentColor: string;
   accentBg: string;
 }) {
@@ -156,7 +137,7 @@ function QuestCard({
 function ProviderSection({
   provider,
 }: {
-  provider: (typeof PROVIDERS)[0];
+  provider: IMappedProvider;
 }) {
   return (
     <Card
@@ -238,6 +219,63 @@ function ProviderSection({
   );
 }
 
+// ─── Skeleton Component ───────────────────────────────────────────────────────
+
+function ProviderSkeleton() {
+  return (
+    <Card
+      className="flex flex-col gap-8 p-8 rounded-[32px] border"
+      style={{
+        background: "rgba(255,255,255,0.85)",
+        borderColor: "rgba(223,191,185,0.3)",
+        boxShadow: "0px 8px 32px 0px rgba(166,52,32,0.05)",
+      }}
+    >
+      {/* Header Skeleton */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Skeleton className="w-16 h-16 rounded-2xl" />
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-6 w-48 rounded-lg" />
+            <Skeleton className="h-4 w-64 rounded-lg" />
+          </div>
+        </div>
+        <Skeleton className="w-44 h-12 rounded-xl" />
+      </div>
+
+      {/* Cards Skeleton */}
+      <div className="flex gap-4">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <Card
+            key={i}
+            className="flex flex-col gap-3 p-5 rounded-xl border flex-1"
+            style={{
+              background: "#FFF8F6",
+              borderColor: "rgba(223,191,185,0.3)",
+              height: "220px",
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-20 rounded-md" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+            <Skeleton className="h-6 w-3/4 rounded-lg mt-2" />
+            <Skeleton className="h-4 w-full rounded-lg" />
+            <Skeleton className="h-4 w-5/6 rounded-lg" />
+            <div className="flex flex-col gap-2 mt-auto">
+              <div className="flex justify-between">
+                <Skeleton className="h-3 w-12 rounded-lg" />
+                <Skeleton className="h-3 w-16 rounded-lg" />
+              </div>
+              <Skeleton className="h-2 w-full rounded-full" />
+            </div>
+          </Card>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 function LandingPageContent() {
@@ -248,6 +286,81 @@ function LandingPageContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [scrollProgress, setScrollProgress] = useState(0);
+
+  const { data: questsData, isLoading: isLoadingQuests } = usePublicQuests();
+
+  const groupedProviders = useMemo<IMappedProvider[]>(() => {
+    if (!questsData?.quests) return [];
+
+    const groups: Record<string, typeof questsData.quests> = {};
+    questsData.quests.forEach((quest) => {
+      const providerUuid = quest.provider?.uuid;
+      if (!providerUuid) return;
+      if (!groups[providerUuid]) {
+        groups[providerUuid] = [];
+      }
+      groups[providerUuid].push(quest);
+    });
+
+    return Object.entries(groups).map(([providerUuid, providerQuests], idx) => {
+      const sampleQuest = providerQuests[0];
+      const provider = sampleQuest.provider;
+      const colors = THEME_COLORS[idx % THEME_COLORS.length];
+
+      const poolMap: Record<string, number> = {};
+      providerQuests.forEach((q) => {
+        const amount = parseFloat(q.total_reward_pool) || 0;
+        const token = q.reward_token || "USDT";
+        poolMap[token] = (poolMap[token] || 0) + amount;
+      });
+      const totalPool = Object.entries(poolMap)
+        .map(([token, amount]) => `${amount.toLocaleString()} ${token}`)
+        .join(", ");
+
+      const icon = provider.logo_url ? (
+        <img
+          src={provider.logo_url}
+          alt={provider.display_name}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <FaBuilding className="text-3xl" style={{ color: colors.accentColor }} />
+      );
+
+      const quests: IMappedQuest[] = providerQuests.map((q) => {
+        const pool = parseFloat(q.total_reward_pool) || 0;
+        const distributed = parseFloat(q.total_reward_distributed) || 0;
+        const progress = pool > 0 ? Math.min(Math.round((distributed / pool) * 100), 100) : 0;
+
+        const formattedReward = q.reward_per_user
+          ? `+${(parseFloat(q.reward_per_user) || 0).toLocaleString()} ${q.reward_token}`
+          : "Free";
+
+        return {
+          id: q.uuid,
+          title: q.title,
+          description: q.description,
+          agents: `${q.participation_count} Agents`,
+          reward: formattedReward,
+          progress,
+        };
+      });
+
+      return {
+        id: providerUuid,
+        name: provider.display_name,
+        description: "Verified DeFi protocol",
+        accentColor: colors.accentColor,
+        accentBg: colors.accentBg,
+        icon,
+        stats: {
+          activeQuests: providerQuests.length,
+          totalPool: totalPool || "0 USDT",
+        },
+        quests,
+      };
+    });
+  }, [questsData]);
 
   // Track page scroll progress for header progress bar
   useEffect(() => {
@@ -636,9 +749,28 @@ function LandingPageContent() {
 
         {/* Provider blocks */}
         <div className="flex flex-col gap-3xl">
-          {PROVIDERS.map((provider) => (
-            <ProviderSection key={provider.id} provider={provider} />
-          ))}
+          {isLoadingQuests ? (
+            Array.from({ length: 2 }).map((_, idx) => (
+              <ProviderSkeleton key={idx} />
+            ))
+          ) : groupedProviders.length > 0 ? (
+            groupedProviders.map((provider) => (
+              <ProviderSection key={provider.id} provider={provider} />
+            ))
+          ) : (
+            <Card
+              className="flex items-center justify-center p-12 text-center rounded-[32px]"
+              style={{
+                background: "rgba(255,255,255,0.85)",
+                border: "1px solid rgba(223,191,185,0.3)",
+                boxShadow: "0px 8px 32px 0px rgba(166,52,32,0.05)",
+              }}
+            >
+              <p className="text-base font-semibold" style={{ color: "#6B6560" }}>
+                No active quests found. Check back later!
+              </p>
+            </Card>
+          )}
         </div>
       </main>
 

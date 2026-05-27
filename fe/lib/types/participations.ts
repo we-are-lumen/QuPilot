@@ -11,12 +11,16 @@ export interface IParticipation {
   join_tx_hash: string | null;
   complete_tx_hash: string | null;
   claim_tx_hash: string | null;
-  reward_amount: string;
+  can_claim?: boolean;
   quest: IPublicQuest;
 }
 
 export interface IUserParticipationsResponse {
   participations: IParticipation[];
+}
+
+export interface IParticipationDetailResponse {
+  participation: IParticipation;
 }
 
 export interface ISyncClaimResponse {

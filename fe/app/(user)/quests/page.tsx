@@ -107,7 +107,7 @@ export default function QuestExplorerPage() {
       {error && (
         <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#fff5f5] border border-[#ffc1c1] rounded-2xl">
           <p className="text-lg font-bold text-[#e53e3e]">Failed to load quests</p>
-          <p className="text-sm text-[#6b6560] max-w-md">
+          <p className="text-sm text-[#6b6560] w-full">
             We encountered an error while retrieving the active missions. Please try again later.
           </p>
         </div>
@@ -129,7 +129,7 @@ export default function QuestExplorerPage() {
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredQuests.map((quest) => (
             <Card key={quest.uuid} className="p-5 border border-transparent hover:border-[#dfbfb94d] shadow-sm hover:shadow-md transition-all rounded-2xl flex flex-col gap-4">
-              <Card.Header className="flex justify-between items-start p-0">
+              <Card.Header className="flex flex-col gap-y-3 items-start p-0">
                 <div className="flex items-center gap-3">
                   {quest.provider?.logo_url ? (
                     <img
@@ -151,6 +151,7 @@ export default function QuestExplorerPage() {
                     </span>
                   </div>
                 </div>
+                
                 <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#f8f4ef] text-[#6b6560] border border-[#dfbfb94d] capitalize">
                   {quest.steps[0]?.step_type || "General"}
                 </span>
@@ -163,7 +164,7 @@ export default function QuestExplorerPage() {
               </Card.Content>
               <Card.Footer className="p-0 pt-4 mt-auto border-t border-[#f5ddd9] flex justify-between items-center">
                 <span className="font-bold font-mono text-[13px] text-[#f59e0b]">
-                  {formatReward(quest.reward_per_user)} QPL
+                  {formatReward(quest.reward_per_user)} SOL
                 </span>
                 <Link
                   href={`/quests/${quest.uuid}`}

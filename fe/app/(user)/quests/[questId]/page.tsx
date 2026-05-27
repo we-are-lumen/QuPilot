@@ -4,7 +4,16 @@ import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Card, Button, Spinner } from "@heroui/react";
-import { FiArrowLeft, FiCopy, FiCheck, FiBookOpen, FiCpu, FiAward, FiClock, FiTerminal } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiCopy,
+  FiCheck,
+  FiBookOpen,
+  FiCpu,
+  FiAward,
+  FiClock,
+  FiTerminal,
+} from "react-icons/fi";
 import { FaCoins } from "react-icons/fa6";
 import { useQuery } from "@tanstack/react-query";
 import { getPublicQuestDetail } from "@/lib/api/quests";
@@ -15,10 +24,12 @@ const formatReward = (rewardStr?: string) => {
   try {
     const lamports = BigInt(rewardStr);
     const parsed = Number(lamports) / 1e9;
-    return new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 6,
-    }).format(parsed) + " SOL";
+    return (
+      new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 6,
+      }).format(parsed) + " SOL"
+    );
   } catch (error) {
     return rewardStr || "0 SOL";
   }
@@ -26,7 +37,7 @@ const formatReward = (rewardStr?: string) => {
 
 export default function UserQuestDetailPage() {
   const { questId } = useParams();
-  
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["public-quest-detail", questId],
     queryFn: () => getPublicQuestDetail(questId as string),
@@ -46,7 +57,10 @@ export default function UserQuestDetailPage() {
         navigator.clipboard.writeText(quest.uuid);
       }
     } catch (err) {
-      console.warn("Clipboard copy failed, state will still update visually", err);
+      console.warn(
+        "Clipboard copy failed, state will still update visually",
+        err,
+      );
     }
     setCopiedId(true);
     setTimeout(() => setCopiedId(false), 2000);
@@ -58,7 +72,10 @@ export default function UserQuestDetailPage() {
         navigator.clipboard.writeText(jsonText);
       }
     } catch (err) {
-      console.warn("Clipboard copy failed, state will still update visually", err);
+      console.warn(
+        "Clipboard copy failed, state will still update visually",
+        err,
+      );
     }
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
@@ -80,17 +97,20 @@ export default function UserQuestDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <Spinner color="danger" size="lg" />
-        <p className="text-sm text-[#6b6560] font-medium">Retrieving quest operational files...</p>
+        <p className="text-sm text-[#6b6560] font-medium">
+          Retrieving quest operational files...
+        </p>
       </div>
     );
   }
 
   if (error || !quest) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center gap-4 bg-[#fff5f5] border border-[#ffc1c1] rounded-2xl max-w-2xl mx-auto my-10 p-10">
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center gap-4 bg-[#fff5f5] border border-[#ffc1c1] rounded-2xl mx-auto my-10 p-10">
         <p className="text-lg font-bold text-[#e53e3e]">Failed to load quest</p>
-        <p className="text-sm text-[#6b6560] max-w-md">
-          We encountered an error while retrieving the active mission parameters. Please verify the Quest ID or try again later.
+        <p className="text-sm text-[#6b6560]">
+          We encountered an error while retrieving the active mission
+          parameters. Please verify the Quest ID or try again later.
         </p>
         <Link
           href="/quests"
@@ -113,7 +133,9 @@ export default function UserQuestDetailPage() {
         year: "numeric",
         month: "long",
         day: "numeric",
-      }) + " at " + new Date(quest.expires_at).toLocaleTimeString("en-US", {
+      }) +
+      " at " +
+      new Date(quest.expires_at).toLocaleTimeString("en-US", {
         hour: "2-digit",
         minute: "2-digit",
       })
@@ -147,7 +169,8 @@ export default function UserQuestDetailPage() {
               {quest.title}
             </h1>
             <p className="text-body-md text-[#6b6560] leading-relaxed mt-1">
-              Use this Quest ID in your OpenClaw system to configure your agent's deployment parameters.
+              Use this Quest ID in your OpenClaw system to configure your
+              agent's deployment parameters.
             </p>
           </div>
 
@@ -188,12 +211,15 @@ export default function UserQuestDetailPage() {
             <Card.Content className="p-0 flex flex-col gap-4">
               {briefingParagraphs.length > 0 ? (
                 briefingParagraphs.map((paragraph, index) => (
-                  <p key={index} className="text-body-md text-[#6b6560] leading-relaxed">
+                  <p
+                    key={index}
+                    className="text-body-lg font-medium text-[#6b6560] leading-relaxed"
+                  >
                     {paragraph}
                   </p>
                 ))
               ) : (
-                <p className="text-body-md text-[#6b6560] leading-relaxed italic">
+                <p className="text-body-lg font-medium text-[#6b6560] leading-relaxed italic">
                   No briefing available for this mission.
                 </p>
               )}
@@ -208,37 +234,6 @@ export default function UserQuestDetailPage() {
                 Mission Control: Deployment Config
               </h3>
             </div>
-
-            {/* Enhanced Quest ID Display */}
-            <Card className="bg-white/90 border border-[#dfbfb9] rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-1.5 text-label font-bold text-[#a63420]">
-                  <FiCpu className="w-3.5 h-3.5" />
-                  INITIALIZATION KEY
-                </div>
-                <p className="text-body-sm text-[#6b6560]">
-                  Use this unique identifier to initialize the OpenClaw system for this specific operation.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 bg-[#fbe3df] border border-[#dfbfb94d] rounded-xl px-4 py-2 w-full md:w-auto justify-between">
-                <span className="text-mono font-bold text-[#251916]">
-                  {quest.uuid}
-                </span>
-                <Button
-                  isIconOnly
-                  onPress={handleCopyId}
-                  className="w-7 h-7 rounded-lg bg-white/50 hover:bg-white transition-all flex items-center justify-center p-0"
-                  aria-label="Copy Initialization Key"
-                >
-                  {copiedId ? (
-                    <FiCheck className="w-3.5 h-3.5 text-[#10B981]" />
-                  ) : (
-                    <FiCopy className="w-3.5 h-3.5 text-[#a63420]" />
-                  )}
-                </Button>
-              </div>
-            </Card>
 
             {/* Agent Prompt (copy → paste into Claude / any agent that has the qupilot-quest-runner skill) */}
             <div className="flex flex-col gap-3">
@@ -273,8 +268,8 @@ export default function UserQuestDetailPage() {
                 <span className="font-mono font-bold">byreal-cli</span> on your behalf.
               </p>
 
-              <div className="bg-[#251916f2] border border-[#dfbfb9] rounded-xl p-4 overflow-x-auto shadow-inner max-h-[28rem] overflow-y-auto">
-                <pre className="text-mono text-[#ffdad3] leading-relaxed select-all whitespace-pre-wrap break-words">
+              <div className="bg-[#251916f2] border border-[#dfbfb9] rounded-xl p-4 overflow-x-auto shadow-inner max-h-112 overflow-y-auto">
+                <pre className="text-mono text-[#ffdad3] leading-relaxed select-all whitespace-pre-wrap wrap-break-word">
                   <code>{agentPrompt}</code>
                 </pre>
               </div>
@@ -356,19 +351,25 @@ export default function UserQuestDetailPage() {
                   </span>
                 </div>
               </div>
+            </Card.Content>
+          </Card>
 
-              {/* Expiration Condition */}
-              <div className="border border-[#dfbfb9] rounded-2xl p-5 flex flex-col gap-2 mt-2 bg-white">
-                <div className="flex items-center gap-1.5 text-label font-bold text-[#6b6560]">
-                  <FiClock className="w-4 h-4 text-[#6b6560]" />
-                  MISSION TIMELINE
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs text-[#6b6560] uppercase font-semibold">Expires At</p>
-                  <p className="text-body-sm text-[#1f1b18] leading-relaxed font-bold">
-                    {formattedExpiresAt}
-                  </p>
-                </div>
+          <Card className="bg-white border border-[#f8f4ef] rounded-xl p-8 shadow-soft">
+            <Card.Header className="flex items-center gap-2.5 p-0 mb-6 border-b border-[#f8f4ef] pb-4">
+              <FiClock className="w-6 h-6 text-[#f59e0b]" />
+              <Card.Title className="text-h2 text-[#1f1b18] font-bold">
+                Mission Timeline
+              </Card.Title>
+            </Card.Header>
+
+            <Card.Content className="p-0 flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <p className="text-xs text-[#6b6560] uppercase font-semibold">
+                  Expires At
+                </p>
+                <p className="text-body-sm text-[#1f1b18] leading-relaxed font-bold">
+                  {formattedExpiresAt}
+                </p>
               </div>
             </Card.Content>
           </Card>
