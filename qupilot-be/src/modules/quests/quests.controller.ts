@@ -73,3 +73,12 @@ export const getPublicDetail: RequestHandler = async (req, res, next) => {
     next(err);
   }
 };
+
+export const publicHighlights: RequestHandler = async (_req, res, next) => {
+  try {
+    const result = await service.getPublicHighlights();
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};

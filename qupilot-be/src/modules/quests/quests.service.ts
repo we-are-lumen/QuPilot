@@ -48,6 +48,10 @@ export type QuestAnalytics = {
   success_rate: number;
 };
 
+export type ProviderDepositHighlights = ProviderSummary & {
+  total_deposit_reward_pool: string;
+};
+
 type ProviderRow = { id: number };
 
 // Raw row shape returned from Supabase before we normalize quest_steps.
@@ -337,4 +341,45 @@ export const getPublicDetail = async (questUuid: string): Promise<{ quest: Publi
   };
 
   return { quest };
+};
+
+export const getPublicHighlights = async (): Promise<{
+  top_quests: PublicQuestListItem[];
+  top_providers: ProviderDepositHighlights[];
+}> => {
+  // 1) Top quests by biggest total reward pool (only active / not expired).
+  const { data: questData, error: questErr } = await supabase
+    .from('quests')
+    .select(`${QUEST_PUBLIC_COLS}, users(uuid, display_name, logo_url), quest_participations(count)`)
+    .gt('expires_at', nowIso())
+    .order('total_reward_pool', { ascending: false })
+    .limit(3);
+
+  if (questErr) throw questErr;
+
+  const questRows = (questData ?? []) as Array<
+    QuestRawRow & {
+      users: ProviderSummary | ProviderSummary[] | null;
+      quest_participations?: Array<{ count: number }>;
+    }
+  >;
+
+  const top_quests: PublicQuestListItem[] = questRows.map((row) => ({
+    ...normalizeQuest(row),
+    provider: Array.isArray(row.users) ? row.users[0] ?? null : row.users,
+    participation_count: row.quest_participations?.[0]?.count ?? 0,
+  }));
+
+  // 2) Top providers by biggest TOTAL deposited reward pool.
+  // Delegated to SQL function so DB directly returns sorted top 3.
+  const { data: topProviderData, error: topProviderErr } = await supabase.rpc(
+    'get_top_providers_by_deposit_reward_pool',
+  );
+  if (topProviderErr) {
+    throw topProviderErr;
+  }
+
+  const top_providers = (topProviderData ?? []) as ProviderDepositHighlights[];
+
+  return { top_quests, top_providers };
 };

@@ -321,6 +321,46 @@ Public.
 }
 ```
 
+### GET /public/highlights
+
+Public. Untuk homepage/landing: ambil **3 quest dengan total reward pool terbesar** dan **3 provider dengan total deposit reward pool terbesar**.
+
+200 Response:
+
+```json
+{
+  "top_quests": [
+    {
+      "uuid": "uuid",
+      "title": "...",
+      "description": "...",
+      "protocol": "byreal",
+      "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_token_symbol": "USDC", "to_token_symbol": "USDT" } }],
+      "total_reward_pool": "10000000",
+      "reward_per_user": "1000000",
+      "total_reward_distributed": "5000000",
+      "reward_token": "SOL",
+      "tx_hash": "SolanaSignatureBase58",
+      "expires_at": "...",
+      "created_at": "...",
+      "participation_count": 0,
+      "provider": { "uuid": "uuid", "display_name": "Byreal", "logo_url": "https://..." }
+    }
+  ],
+  "top_providers": [
+    {
+      "uuid": "uuid",
+      "display_name": "Byreal",
+      "logo_url": "https://...",
+      "total_deposit_reward_pool": "25000000"
+    }
+  ]
+}
+```
+
+- `top_quests`: hanya quest yang belum expired.
+- `total_deposit_reward_pool`: provider diambil dari `users` dengan `role=user_provider`, lalu di-sum dari semua `quests.total_reward_pool` yang dibuat provider tsb (bigint sebagai string).
+
 ## Participations — User
 
 ### GET /me/participations

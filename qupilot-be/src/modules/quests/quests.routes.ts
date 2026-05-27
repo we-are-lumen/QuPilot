@@ -17,6 +17,7 @@ providerQuestsRouter.put('/:uuid', validate(questUuidParamsSchema, 'params'), co
 export const publicQuestsRouter = Router();
 
 publicQuestsRouter.get('/quests', validate(listPublicQuerySchema, 'query'), controller.listPublic);
+publicQuestsRouter.get('/public/highlights', controller.publicHighlights);
 publicQuestsRouter.get(
   '/providers/:uuid/quests',
   validate(questUuidParamsSchema, 'params'),
