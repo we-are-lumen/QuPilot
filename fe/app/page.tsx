@@ -309,8 +309,9 @@ function LandingPageContent() {
 
       const poolMap: Record<string, number> = {};
       providerQuests.forEach((q) => {
-        const amount = parseFloat(q.total_reward_pool) || 0;
+        let amount = parseFloat(q.total_reward_pool) || 0;
         const token = q.reward_token || "USDT";
+        if (token === "SOL") amount /= 1e6;
         poolMap[token] = (poolMap[token] || 0) + amount;
       });
       const totalPool = Object.entries(poolMap)
@@ -328,12 +329,20 @@ function LandingPageContent() {
       );
 
       const quests: IMappedQuest[] = providerQuests.map((q) => {
-        const pool = parseFloat(q.total_reward_pool) || 0;
-        const distributed = parseFloat(q.total_reward_distributed) || 0;
+        let pool = parseFloat(q.total_reward_pool) || 0;
+        let distributed = parseFloat(q.total_reward_distributed) || 0;
+        let rewardPerUser = parseFloat(q.reward_per_user) || 0;
+
+        if (q.reward_token === "SOL") {
+          pool /= 1e6;
+          distributed /= 1e6;
+          rewardPerUser /= 1e6;
+        }
+
         const progress = pool > 0 ? Math.min(Math.round((distributed / pool) * 100), 100) : 0;
 
         const formattedReward = q.reward_per_user
-          ? `+${(parseFloat(q.reward_per_user) || 0).toLocaleString()} ${q.reward_token}`
+          ? `+${rewardPerUser.toLocaleString()} ${q.reward_token}`
           : "Free";
 
         return {

@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { Card, Button, Spinner, Skeleton } from "@heroui/react";
 import { FiArrowRight, FiCompass } from "react-icons/fi";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { getPublicQuests } from "@/lib/api/quests";
 
 const formatReward = (rewardStr: string) => {
@@ -20,8 +21,10 @@ const formatReward = (rewardStr: string) => {
   }
 };
 
-export default function QuestExplorerPage() {
-  const [activeFilter, setActiveFilter] = useState("All Quests");
+function QuestExplorerPageContent() {
+  const searchParams = useSearchParams();
+  const providerParam = searchParams.get("provider");
+  const [activeFilter, setActiveFilter] = useState(providerParam || "All Quests");
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["public-quests"],
@@ -30,13 +33,17 @@ export default function QuestExplorerPage() {
 
   const quests = data?.quests || [];
 
-  // Extract unique protocols for filters dynamically
+  // Extract unique protocols and providers for filters dynamically
   const protocols = Array.from(new Set(quests.map((q) => q.protocol).filter(Boolean)));
-  const FILTERS = ["All Quests", ...protocols];
+  const providers = Array.from(new Set(quests.map((q) => q.provider?.display_name).filter(Boolean)));
+  const FILTERS = ["All Quests", ...Array.from(new Set([...protocols, ...providers]))];
 
   const filteredQuests = activeFilter === "All Quests"
     ? quests
-    : quests.filter((q) => q.protocol === activeFilter);
+    : quests.filter((q) => 
+        q.protocol?.toLowerCase() === activeFilter.toLowerCase() || 
+        q.provider?.display_name?.toLowerCase() === activeFilter.toLowerCase()
+      );
 
   return (
     <div className="flex flex-col gap-10">
@@ -187,5 +194,19 @@ export default function QuestExplorerPage() {
         </div>
       )} */}
     </div>
+  );
+}
+
+export default function QuestExplorerPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col gap-10">
+        <section className="flex flex-col gap-3">
+          <h1 className="text-4xl font-extrabold text-[#a63420] tracking-tight animate-pulse">Loading Quests...</h1>
+        </section>
+      </div>
+    }>
+      <QuestExplorerPageContent />
+    </Suspense>
   );
 }

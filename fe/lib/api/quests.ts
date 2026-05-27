@@ -5,7 +5,8 @@ import type {
   IQuest, 
   IProviderQuestDetailResponse,
   IPublicQuestsResponse,
-  IPublicQuestDetailResponse
+  IPublicQuestDetailResponse,
+  IPublicHighlightsResponse
 } from '@/lib/types/quests';
 
 /**
@@ -57,6 +58,16 @@ export async function getProviderQuestDetail(uuid: string): Promise<IProviderQue
  */
 export async function getPublicQuestDetail(uuid: string): Promise<IPublicQuestDetailResponse> {
   const response = await apiClient.get<IPublicQuestDetailResponse>(`/quests/${uuid}`);
+  return response.data;
+}
+
+/**
+ * GET /public/highlights
+ * 
+ * Fetches top quests and top providers.
+ */
+export async function getPublicHighlights(): Promise<IPublicHighlightsResponse> {
+  const response = await apiClient.get<IPublicHighlightsResponse>('/public/highlights');
   return response.data;
 }
 
