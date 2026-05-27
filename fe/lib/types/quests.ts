@@ -76,4 +76,16 @@ export interface IPublicQuestDetailResponse {
   quest: IPublicQuest;
 }
 
+export interface ITopProvider {
+  uuid: string;
+  display_name: string;
+  logo_url: string | null;
+  total_deposit_reward_pool: string;
+}
+
+export interface IPublicHighlightsResponse {
+  top_quests: IPublicQuest[];
+  top_providers: ITopProvider[];
+}
+
 
