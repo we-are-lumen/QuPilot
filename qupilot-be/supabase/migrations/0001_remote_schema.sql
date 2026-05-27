@@ -1,7 +1,7 @@
 drop extension if exists "pg_net";
 
 
-  create table "public"."agent_api_keys" (
+  create table if not exists "public"."agent_api_keys" (
     "id" bigint generated always as identity not null,
     "uuid" uuid not null default gen_random_uuid(),
     "user_id" bigint not null,
@@ -17,7 +17,7 @@ drop extension if exists "pg_net";
 alter table "public"."agent_api_keys" enable row level security;
 
 
-  create table "public"."quest_participations" (
+  create table if not exists "public"."quest_participations" (
     "id" bigint generated always as identity not null,
     "uuid" uuid not null default gen_random_uuid(),
     "user_id" bigint not null,
@@ -38,7 +38,7 @@ alter table "public"."agent_api_keys" enable row level security;
 alter table "public"."quest_participations" enable row level security;
 
 
-  create table "public"."quest_step_participations" (
+  create table if not exists "public"."quest_step_participations" (
     "id" bigint generated always as identity not null,
     "uuid" uuid not null default gen_random_uuid(),
     "participation_id" bigint not null,
@@ -51,7 +51,7 @@ alter table "public"."quest_participations" enable row level security;
 
 
 
-  create table "public"."quest_steps" (
+  create table if not exists "public"."quest_steps" (
     "id" bigint generated always as identity not null,
     "uuid" uuid not null default gen_random_uuid(),
     "quest_id" bigint not null,
@@ -63,7 +63,7 @@ alter table "public"."quest_participations" enable row level security;
 
 
 
-  create table "public"."quests" (
+  create table if not exists "public"."quests" (
     "id" bigint generated always as identity not null,
     "uuid" uuid not null default gen_random_uuid(),
     "provider_id" bigint not null,
@@ -85,7 +85,7 @@ alter table "public"."quest_participations" enable row level security;
 alter table "public"."quests" enable row level security;
 
 
-  create table "public"."user_providers" (
+  create table if not exists "public"."user_providers" (
     "id" bigint generated always as identity not null,
     "uuid" uuid not null default gen_random_uuid(),
     "username" text not null,
@@ -97,7 +97,7 @@ alter table "public"."quests" enable row level security;
 
 
 
-  create table "public"."users" (
+  create table if not exists "public"."users" (
     "id" bigint generated always as identity not null,
     "uuid" uuid not null default gen_random_uuid(),
     "wallet_address" text not null,
@@ -110,97 +110,97 @@ alter table "public"."quests" enable row level security;
 
 alter table "public"."users" enable row level security;
 
-CREATE INDEX agent_api_keys_key_prefix_idx ON public.agent_api_keys USING btree (key_prefix);
+CREATE INDEX if not exists agent_api_keys_key_prefix_idx ON public.agent_api_keys USING btree (key_prefix);
 
-CREATE UNIQUE INDEX agent_api_keys_one_active_per_user_uidx ON public.agent_api_keys USING btree (user_id) WHERE (revoked_at IS NULL);
+CREATE UNIQUE INDEX if not exists agent_api_keys_one_active_per_user_uidx ON public.agent_api_keys USING btree (user_id) WHERE (revoked_at IS NULL);
 
-CREATE UNIQUE INDEX agent_api_keys_pkey ON public.agent_api_keys USING btree (id);
+CREATE UNIQUE INDEX if not exists agent_api_keys_pkey ON public.agent_api_keys USING btree (id);
 
-CREATE INDEX agent_api_keys_user_id_idx ON public.agent_api_keys USING btree (user_id);
+CREATE INDEX if not exists agent_api_keys_user_id_idx ON public.agent_api_keys USING btree (user_id);
 
-CREATE INDEX agent_api_keys_uuid_idx ON public.agent_api_keys USING btree (uuid);
+CREATE INDEX if not exists agent_api_keys_uuid_idx ON public.agent_api_keys USING btree (uuid);
 
-CREATE UNIQUE INDEX agent_api_keys_uuid_key ON public.agent_api_keys USING btree (uuid);
+CREATE UNIQUE INDEX if not exists agent_api_keys_uuid_key ON public.agent_api_keys USING btree (uuid);
 
-CREATE UNIQUE INDEX quest_participations_claim_tx_hash_uidx ON public.quest_participations USING btree (claim_tx_hash) WHERE (claim_tx_hash IS NOT NULL);
+CREATE UNIQUE INDEX if not exists quest_participations_claim_tx_hash_uidx ON public.quest_participations USING btree (claim_tx_hash) WHERE (claim_tx_hash IS NOT NULL);
 
-CREATE UNIQUE INDEX quest_participations_join_tx_hash_uidx ON public.quest_participations USING btree (join_tx_hash) WHERE (join_tx_hash IS NOT NULL);
+CREATE UNIQUE INDEX if not exists quest_participations_join_tx_hash_uidx ON public.quest_participations USING btree (join_tx_hash) WHERE (join_tx_hash IS NOT NULL);
 
-CREATE UNIQUE INDEX quest_participations_one_inprogress_uidx ON public.quest_participations USING btree (user_id, quest_id) WHERE (status = 'inprogress'::text);
+CREATE UNIQUE INDEX if not exists quest_participations_one_inprogress_uidx ON public.quest_participations USING btree (user_id, quest_id) WHERE (status = 'inprogress'::text);
 
-CREATE UNIQUE INDEX quest_participations_one_success_uidx ON public.quest_participations USING btree (user_id, quest_id) WHERE (status = 'success'::text);
+CREATE UNIQUE INDEX if not exists quest_participations_one_success_uidx ON public.quest_participations USING btree (user_id, quest_id) WHERE (status = 'success'::text);
 
-CREATE INDEX quest_participations_participation_pda_idx ON public.quest_participations USING btree (participation_pda);
+CREATE INDEX if not exists quest_participations_participation_pda_idx ON public.quest_participations USING btree (participation_pda);
 
-CREATE UNIQUE INDEX quest_participations_pkey ON public.quest_participations USING btree (id);
+CREATE UNIQUE INDEX if not exists quest_participations_pkey ON public.quest_participations USING btree (id);
 
-CREATE INDEX quest_participations_quest_id_idx ON public.quest_participations USING btree (quest_id);
+CREATE INDEX if not exists quest_participations_quest_id_idx ON public.quest_participations USING btree (quest_id);
 
-CREATE INDEX quest_participations_status_idx ON public.quest_participations USING btree (status);
+CREATE INDEX if not exists quest_participations_status_idx ON public.quest_participations USING btree (status);
 
-CREATE INDEX quest_participations_user_id_idx ON public.quest_participations USING btree (user_id);
+CREATE INDEX if not exists quest_participations_user_id_idx ON public.quest_participations USING btree (user_id);
 
-CREATE INDEX quest_participations_uuid_idx ON public.quest_participations USING btree (uuid);
+CREATE INDEX if not exists quest_participations_uuid_idx ON public.quest_participations USING btree (uuid);
 
-CREATE UNIQUE INDEX quest_participations_uuid_key ON public.quest_participations USING btree (uuid);
+CREATE UNIQUE INDEX if not exists quest_participations_uuid_key ON public.quest_participations USING btree (uuid);
 
-CREATE INDEX quest_step_participations_participation_id_idx ON public.quest_step_participations USING btree (participation_id);
+CREATE INDEX if not exists quest_step_participations_participation_id_idx ON public.quest_step_participations USING btree (participation_id);
 
-CREATE UNIQUE INDEX quest_step_participations_participation_id_step_id_key ON public.quest_step_participations USING btree (participation_id, step_id);
+CREATE UNIQUE INDEX if not exists quest_step_participations_participation_id_step_id_key ON public.quest_step_participations USING btree (participation_id, step_id);
 
-CREATE UNIQUE INDEX quest_step_participations_pkey ON public.quest_step_participations USING btree (id);
+CREATE UNIQUE INDEX if not exists quest_step_participations_pkey ON public.quest_step_participations USING btree (id);
 
-CREATE INDEX quest_step_participations_status_idx ON public.quest_step_participations USING btree (status);
+CREATE INDEX if not exists quest_step_participations_status_idx ON public.quest_step_participations USING btree (status);
 
-CREATE INDEX quest_step_participations_step_id_idx ON public.quest_step_participations USING btree (step_id);
+CREATE INDEX if not exists quest_step_participations_step_id_idx ON public.quest_step_participations USING btree (step_id);
 
-CREATE INDEX quest_step_participations_uuid_idx ON public.quest_step_participations USING btree (uuid);
+CREATE INDEX if not exists quest_step_participations_uuid_idx ON public.quest_step_participations USING btree (uuid);
 
-CREATE UNIQUE INDEX quest_step_participations_uuid_key ON public.quest_step_participations USING btree (uuid);
+CREATE UNIQUE INDEX if not exists quest_step_participations_uuid_key ON public.quest_step_participations USING btree (uuid);
 
-CREATE UNIQUE INDEX quest_steps_pkey ON public.quest_steps USING btree (id);
+CREATE UNIQUE INDEX if not exists quest_steps_pkey ON public.quest_steps USING btree (id);
 
-CREATE INDEX quest_steps_quest_id_idx ON public.quest_steps USING btree (quest_id);
+CREATE INDEX if not exists quest_steps_quest_id_idx ON public.quest_steps USING btree (quest_id);
 
-CREATE INDEX quest_steps_quest_id_order_idx ON public.quest_steps USING btree (quest_id, order_index);
+CREATE INDEX if not exists quest_steps_quest_id_order_idx ON public.quest_steps USING btree (quest_id, order_index);
 
-CREATE UNIQUE INDEX quest_steps_quest_id_order_index_key ON public.quest_steps USING btree (quest_id, order_index);
+CREATE UNIQUE INDEX if not exists quest_steps_quest_id_order_index_key ON public.quest_steps USING btree (quest_id, order_index);
 
-CREATE INDEX quest_steps_uuid_idx ON public.quest_steps USING btree (uuid);
+CREATE INDEX if not exists quest_steps_uuid_idx ON public.quest_steps USING btree (uuid);
 
-CREATE UNIQUE INDEX quest_steps_uuid_key ON public.quest_steps USING btree (uuid);
+CREATE UNIQUE INDEX if not exists quest_steps_uuid_key ON public.quest_steps USING btree (uuid);
 
-CREATE INDEX quests_expires_at_idx ON public.quests USING btree (expires_at);
+CREATE INDEX if not exists quests_expires_at_idx ON public.quests USING btree (expires_at);
 
-CREATE UNIQUE INDEX quests_pkey ON public.quests USING btree (id);
+CREATE UNIQUE INDEX if not exists quests_pkey ON public.quests USING btree (id);
 
-CREATE INDEX quests_protocol_idx ON public.quests USING btree (protocol);
+CREATE INDEX if not exists quests_protocol_idx ON public.quests USING btree (protocol);
 
-CREATE INDEX quests_provider_id_idx ON public.quests USING btree (provider_id);
+CREATE INDEX if not exists quests_provider_id_idx ON public.quests USING btree (provider_id);
 
-CREATE UNIQUE INDEX quests_quest_pool_pda_uniq ON public.quests USING btree (quest_pool_pda) WHERE (quest_pool_pda IS NOT NULL);
+CREATE UNIQUE INDEX if not exists quests_quest_pool_pda_uniq ON public.quests USING btree (quest_pool_pda) WHERE (quest_pool_pda IS NOT NULL);
 
-CREATE UNIQUE INDEX quests_tx_hash_uniq ON public.quests USING btree (tx_hash) WHERE (tx_hash <> repeat('1'::text, 64));
+CREATE UNIQUE INDEX if not exists quests_tx_hash_uniq ON public.quests USING btree (tx_hash) WHERE (tx_hash <> repeat('1'::text, 64));
 
-CREATE INDEX quests_uuid_idx ON public.quests USING btree (uuid);
+CREATE INDEX if not exists quests_uuid_idx ON public.quests USING btree (uuid);
 
-CREATE UNIQUE INDEX quests_uuid_key ON public.quests USING btree (uuid);
+CREATE UNIQUE INDEX if not exists quests_uuid_key ON public.quests USING btree (uuid);
 
-CREATE UNIQUE INDEX user_providers_pkey ON public.user_providers USING btree (id);
+CREATE UNIQUE INDEX if not exists user_providers_pkey ON public.user_providers USING btree (id);
 
-CREATE UNIQUE INDEX user_providers_username_key ON public.user_providers USING btree (username);
+CREATE UNIQUE INDEX if not exists user_providers_username_key ON public.user_providers USING btree (username);
 
-CREATE INDEX user_providers_uuid_idx ON public.user_providers USING btree (uuid);
+CREATE INDEX if not exists user_providers_uuid_idx ON public.user_providers USING btree (uuid);
 
-CREATE UNIQUE INDEX user_providers_uuid_key ON public.user_providers USING btree (uuid);
+CREATE UNIQUE INDEX if not exists user_providers_uuid_key ON public.user_providers USING btree (uuid);
 
-CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id);
+CREATE UNIQUE INDEX if not exists users_pkey ON public.users USING btree (id);
 
-CREATE INDEX users_uuid_idx ON public.users USING btree (uuid);
+CREATE INDEX if not exists users_uuid_idx ON public.users USING btree (uuid);
 
-CREATE UNIQUE INDEX users_uuid_key ON public.users USING btree (uuid);
+CREATE UNIQUE INDEX if not exists users_uuid_key ON public.users USING btree (uuid);
 
-CREATE UNIQUE INDEX users_wallet_address_key ON public.users USING btree (wallet_address);
+CREATE UNIQUE INDEX if not exists users_wallet_address_key ON public.users USING btree (wallet_address);
 
 alter table "public"."agent_api_keys" add constraint "agent_api_keys_pkey" PRIMARY KEY using index "agent_api_keys_pkey";
 
