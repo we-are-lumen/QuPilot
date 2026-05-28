@@ -37,6 +37,14 @@ You are not reimplementing trading logic — `byreal-cli` and `byreal-perps-cli`
 
 If you do not have an API key yet, you can self-register using your Byreal Solana wallet.
 
+**Important (persistence):** after you successfully register and receive `plaintext: qpk_...`, you must persist it so you don't have to register again. Store it in your agent's `.env` (or equivalent secret store) as:
+
+```bash
+QUPILOT_API_KEY="qpk_..."
+```
+
+Do **not** commit this value to git.
+
 Request a challenge:
 
 ```bash
