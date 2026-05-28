@@ -193,11 +193,9 @@ export async function connectWallet(walletType?: WalletType): Promise<string> {
       localStorage.removeItem("qupilot_metamask_sandbox_active");
       return res.publicKey;
     } catch (err: any) {
-      console.error("MetaMask Solana Snap connection failed:", err);
-
-      // Sandbox Fallback
+      // Sandbox Fallback — snap always rejects localhost; this is expected, not a real error
       if (isLocalEnvironment()) {
-        console.warn("[QuPilot Sandbox Mode] MetaMask Solana Snap failed. Activating Sandbox Fallback.");
+        console.warn("[QuPilot Sandbox Mode] MetaMask Solana Snap failed (expected on localhost). Activating Sandbox Fallback.", err);
         localStorage.setItem("qupilot_metamask_sandbox_active", "true");
         const keypair = await getOrCreateSandboxKeypair();
         const address = keypair.publicKey.toBase58();
@@ -210,6 +208,8 @@ export async function connectWallet(walletType?: WalletType): Promise<string> {
         return address;
       }
 
+      console.error("MetaMask Solana Snap connection failed:", err);
+
       let errorMsg =
         err?.message ||
         "MetaMask Solana Snap connection failed. Please approve the snap request.";
@@ -218,7 +218,7 @@ export async function connectWallet(walletType?: WalletType): Promise<string> {
           'The Solana Wallet snap is disabled in MetaMask. To fix this: open MetaMask → Settings → Snaps → find "Solana Wallet" → toggle it on. If you don\'t see it, remove and reconnect to reinstall.';
       } else if (errorMsg.includes("Invalid origin")) {
         errorMsg =
-          'MetaMask Solana Snap "Invalid origin" error. To fix this, please go to MetaMask Settings -> Snaps, remove the "Solana Wallet" snap, and reconnect.';
+          "MetaMask Snap login is not supported on this domain. Please use Phantom, Solflare, or Backpack to sign in.";
       }
       throw new Error(errorMsg);
     }
@@ -297,7 +297,7 @@ export async function signMessage(
         "MetaMask Solana Snap signing failed. Please approve the signing request.";
       if (errorMsg.includes("Invalid origin")) {
         errorMsg =
-          'MetaMask Solana Snap "Invalid origin" error. To fix this, please go to MetaMask Settings -> Snaps, remove the "Solana Wallet" snap, and reconnect.';
+          "MetaMask Snap login is not supported on this domain. Please use Phantom, Solflare, or Backpack to sign in.";
       }
       throw new Error(errorMsg);
     }
