@@ -22,10 +22,38 @@ You are not reimplementing trading logic — `byreal-cli` and `byreal-perps-cli`
 ## Before doing anything else
 
 1. Confirm both companion skills are available. If `byreal-cli` or `byreal-perps-cli` isn't installed and the quest requires them, stop and tell the user to install them — don't try to call npm packages directly, the byreal skills encode safety rails (preview-then-confirm, slippage warnings, no key display) that we inherit by composing them.
-2. Confirm `QUPILOT_API_URL`, `QUPILOT_API_KEY`, and `QUPILOT_AGENT_WALLET` are set in the environment. If any is missing, stop and ask the user. The default for `QUPILOT_API_URL` is `https://terrahash.xyz/api`. The API key must be the user's `qpk_...` key from `POST /me/api-key` in the dashboard. The agent wallet must be a base58 Solana pubkey — the same wallet that will sign the on-chain steps.
+2. Confirm `QUPILOT_API_URL`, `QUPILOT_API_KEY`, and `QUPILOT_AGENT_WALLET` are set in the environment. If `QUPILOT_API_URL` is missing, stop and ask the user. The default for `QUPILOT_API_URL` is `https://terrahash.xyz/api`.
+3. Confirm the agent has a **Byreal wallet configured** (the same Solana wallet that will execute swaps/CLMM and produce tx hashes). If the agent doesn't have a wallet yet, tell them to install/setup Byreal first and stop.
+4. If `QUPILOT_API_KEY` is missing, **self-register** to obtain a `qpk_...` key:
+   - Call `POST /auth/agent/challenge` with `{ wallet_address: QUPILOT_AGENT_WALLET }` to get a `message`.
+   - Sign that exact `message` with the same wallet.
+   - Call `POST /auth/agent/register` with `{ wallet_address, message, signature }` to receive `plaintext: qpk_...`.
+   - Hard constraint: the wallet must already exist in QuPilot's `users` table (pre-approved). If registration returns `AGENT_NOT_REGISTERED`, stop and ask the user/operator to register that wallet first.
 3. Read `references/qupilot-api.md` once at the start of a session — it's the source of truth for endpoint shapes and error codes.
 
 ## The three-phase workflow
+
+### Phase 0 — Agent registration (optional, to obtain `QUPILOT_API_KEY`)
+
+If you do not have an API key yet, you can self-register using your Byreal Solana wallet.
+
+Request a challenge:
+
+```bash
+curl -sS -X POST -H "Content-Type: application/json" \
+  -d "{\"wallet_address\":\"$QUPILOT_AGENT_WALLET\"}" \
+  "$QUPILOT_API_URL/auth/agent/challenge"
+```
+
+The response includes a `message`. **Sign that exact string** with the same Solana wallet you will use for execution (your Byreal wallet). Then register:
+
+```bash
+curl -sS -X POST -H "Content-Type: application/json" \
+  -d "{\"wallet_address\":\"$QUPILOT_AGENT_WALLET\",\"message\":\"<challenge-message>\",\"signature\":\"<base58-signature>\"}" \
+  "$QUPILOT_API_URL/auth/agent/register"
+```
+
+Save the returned `plaintext` as `QUPILOT_API_KEY` (it is shown once).
 
 ### Phase 1 — Fetch
 
@@ -129,10 +157,10 @@ These are non-negotiable because they're the difference between a useful agent a
 >
 > Agent: calls `GET /quests`, renders a table of `title / protocol / reward_per_user / expires_at`, summarizes each quest's `steps[]`, recommends one by reward÷estimated-cost.
 
-**Example 2 — execute end-to-end:**
+**Example 2 — register then execute end-to-end:**
 > User: "Do quest <uuid> for me."
 >
-> Agent: `GET /quests/<uuid>` to capture `steps[].uuid`, `POST /agent/participations` with `{ quest_uuid, agent_wallet_address }`, walks each step through the mapping → runs the byreal command with `-o json` → captures the Solana signature, then `POST /agent/participations/<participation-uuid>/complete` with all `{ step_uuid, tx_hash }` pairs, reports the final `status` and reward.
+> Agent: if `QUPILOT_API_KEY` is missing, run Phase 0 (challenge → sign → register) to obtain it. Then: `GET /quests/<uuid>` to capture `steps[].uuid`, `POST /agent/participations` with `{ quest_uuid, agent_wallet_address }`, walks each step through the mapping → runs the byreal command with `-o json` → captures the Solana signature, then `POST /agent/participations/<participation-uuid>/complete` with all `{ step_uuid, tx_hash }` pairs, reports the final `status` and reward.
 
 **Example 3 — graceful failure:**
 > User: "Do quest <uuid> for me."
