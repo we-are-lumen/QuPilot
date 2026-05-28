@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { errorHandler } from './middlewares/error-handler';
 import { authUserRouter } from './modules/auth-user/auth-user.routes';
+import { authAgentRouter } from './modules/auth-agent/auth-agent.routes';
 import { providersRouter } from './modules/providers/providers.routes';
 import { providerQuestsRouter, publicQuestsRouter } from './modules/quests/quests.routes';
 import { participationsRouter } from './modules/participations/participations.routes';
@@ -22,6 +23,7 @@ export const createApp = (): Express => {
   });
 
   app.use('/auth/user', authUserRouter);
+  app.use('/auth/agent', authAgentRouter);
   app.use('/providers', providersRouter);
   app.use('/provider/quests', providerQuestsRouter);
   app.use(publicQuestsRouter);
