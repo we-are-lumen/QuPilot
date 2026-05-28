@@ -113,7 +113,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
 
       if (walletType === "metamask" && isMetaMaskSandboxActive()) {
         toast.warning(
-          "MetaMask Solana Snap failed (e.g. Invalid origin). Activating Sandbox Mode with a persistent local devnet wallet."
+          "MetaMask Solana Snap unavailable (snap disabled or invalid origin). Activating Sandbox Mode with a persistent local devnet wallet."
         );
       }
 

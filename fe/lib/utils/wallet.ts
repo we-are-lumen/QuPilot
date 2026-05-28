@@ -213,7 +213,10 @@ export async function connectWallet(walletType?: WalletType): Promise<string> {
       let errorMsg =
         err?.message ||
         "MetaMask Solana Snap connection failed. Please approve the snap request.";
-      if (errorMsg.includes("Invalid origin")) {
+      if (errorMsg.includes("is disabled")) {
+        errorMsg =
+          'The Solana Wallet snap is disabled in MetaMask. To fix this: open MetaMask → Settings → Snaps → find "Solana Wallet" → toggle it on. If you don\'t see it, remove and reconnect to reinstall.';
+      } else if (errorMsg.includes("Invalid origin")) {
         errorMsg =
           'MetaMask Solana Snap "Invalid origin" error. To fix this, please go to MetaMask Settings -> Snaps, remove the "Solana Wallet" snap, and reconnect.';
       }
