@@ -90,25 +90,3 @@ export function OkxIcon({ size = 24, ...props }: WalletIconProps) {
     </svg>
   );
 }
-
-export function MetaMaskIcon({ size = 24, ...props }: WalletIconProps) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <path
-        d="M22 6.77L12 2 2 6.77c-.49.18-.77.7-.63 1.2l3.41 12.18 10.45 9.85 10.45-9.85 3.41-12.18c.14-.5-.14-1.02-.63-1.2z"
-        fill="#E2761B"
-      />
-      <path d="M12 16.5l-4.5-3.5h9l-4.5 3.5z" fill="#E4761B" />
-      <path d="M6 10l10 6.5L26 10l-10-8L6 10z" fill="#F6851B" />
-      <circle cx="9.5" cy="13.5" r="1" fill="#333" />
-      <circle cx="14.5" cy="13.5" r="1" fill="#333" />
-    </svg>
-  );
-}

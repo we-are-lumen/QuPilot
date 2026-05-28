@@ -12,8 +12,6 @@ import {
   isSolflareInstalled,
   isBackpackInstalled,
   isOkxInstalled,
-  isMetaMaskInstalled,
-  isMetaMaskSandboxActive,
   connectWallet,
   buildSignInMessage,
   signMessage,
@@ -27,7 +25,6 @@ import {
   SolflareIcon,
   BackpackIcon,
   OkxIcon,
-  MetaMaskIcon,
 } from "./icons/WalletIcons";
 
 interface AuthModalProps {
@@ -56,8 +53,6 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
   const [solflareDetected, setSolflareDetected] = useState(false);
   const [backpackDetected, setBackpackDetected] = useState(false);
   const [okxDetected, setOkxDetected] = useState(false);
-  const [metamaskDetected, setMetamaskDetected] = useState(false);
-
   // Provider Form State
   const [displayName, setDisplayName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
@@ -80,7 +75,6 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
       setSolflareDetected(isSolflareInstalled());
       setBackpackDetected(isBackpackInstalled());
       setOkxDetected(isOkxInstalled());
-      setMetamaskDetected(isMetaMaskInstalled());
     }
   }, [isOpen]);
 
@@ -91,7 +85,6 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
       case 'solflare': installed = isSolflareInstalled(); break;
       case 'backpack': installed = isBackpackInstalled(); break;
       case 'okx': installed = isOkxInstalled(); break;
-      case 'metamask': installed = isMetaMaskInstalled(); break;
     }
     if (!installed) {
       const names: Record<WalletType, string> = {
@@ -99,7 +92,6 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
         solflare: 'Solflare',
         backpack: 'Backpack',
         okx: 'OKX Wallet',
-        metamask: 'MetaMask'
       };
       toast.danger(`${names[walletType]} is not installed. Please install it first.`);
       return;
@@ -110,12 +102,6 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
       setLoadingText("Connecting to wallet...");
       const address = await connectWallet(walletType);
       setWalletAddress(address);
-
-      if (walletType === "metamask" && isMetaMaskSandboxActive()) {
-        toast.warning(
-          "MetaMask Solana Snap unavailable (snap disabled or invalid origin). Activating Sandbox Mode with a persistent local devnet wallet."
-        );
-      }
 
       setLoadingText("Please sign the message in your wallet...");
       const message = buildSignInMessage(address);
@@ -462,33 +448,6 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                     </div>
                   </button>
 
-                  {/* MetaMask Wallet Row */}
-                  <button
-                    type="button"
-                    onClick={() => handleWalletLogin("metamask")}
-                    className="flex items-center justify-between p-4 rounded-xl border border-[#dfbfb9]/40 bg-white/50 hover:bg-[#FFE9E5]/10 hover:border-[#A63420]/30 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group w-full"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-white border border-[#dfbfb9]/30 flex items-center justify-center shrink-0 shadow-sm">
-                        <MetaMaskIcon size={24} />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-[#1f1b18]">MetaMask</h4>
-                        <p className="text-xs text-[#6b6560]">EVM & Solana Snap</p>
-                      </div>
-                    </div>
-                    <div>
-                      {metamaskDetected ? (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#10B981] border border-[#10B981]/20">
-                          Detected
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F8F4EF] text-[#A39D97] border border-[#E8E2D9]">
-                          Not Installed
-                        </span>
-                      )}
-                    </div>
-                  </button>
                 </Modal.Body>
                 <div className="h-6" />
               </>
