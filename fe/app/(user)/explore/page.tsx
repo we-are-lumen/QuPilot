@@ -19,7 +19,7 @@ const THEME_COLORS = [
 const formatReward = (rewardStr: string) => {
   try {
     const lamports = BigInt(rewardStr);
-    const parsed = Number(lamports) / 1e6; // Divided by 1e6 as requested by the user
+    const parsed = Number(lamports) / 1e9; // Divided by 1e9 as requested by the user
     return new Intl.NumberFormat("en-US", {
       notation: "compact",
       maximumFractionDigits: 2,
