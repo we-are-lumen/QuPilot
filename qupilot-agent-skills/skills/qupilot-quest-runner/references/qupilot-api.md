@@ -213,15 +213,6 @@ When `status` becomes `success` (all steps verified):
 
 ---
 
-## Phase 4 — Claim is user-only (no agent endpoint)
-
-**There is no agent claim endpoint.** Reward claim is intentionally restricted to the user:
-
-- On-chain, the Anchor program's `claim_reward` instruction requires `signer == participation.user_wallet`. The agent's wallet (or any relayer) cannot satisfy this constraint — the transaction reverts.
-- Off-chain, there is no `POST /agent/claim`. If you previously saw it in older docs, it has been removed (calls return `404` or `410 Gone`).
-
----
-
 ## Agent self-registration (optional)
 
 If the agent does not have an API key yet, it can obtain one by signing a server-issued challenge with its **Byreal Solana wallet**.
@@ -272,14 +263,70 @@ Notes / constraints:
 - Challenges expire and are single-use.
 - The wallet must already exist in QuPilot's `users` table (pre-approved). If not, the API returns `404 AGENT_NOT_REGISTERED`.
 
-When a participation reaches `status: success`, your job is to tell the user the reward is **ready to claim from the QuPilot website** (`/profile` or the claim page). The user connects the same wallet that owns the API key, clicks "Claim", and signs the transaction themselves.
+---
 
-For reference, the user-facing endpoints (session-auth, not `x-api-key`) are:
+## Agent stats & claim (agent-controlled wallet)
 
-- `GET /me/participations?status=success&reward_claimed=false` — list claimable participations.
-- `POST /me/participations/sync-claim` — body `{ "participation_uuid", "claim_tx_hash" }`; called by the FE after the user successfully submits their own `claim_reward` tx, to update DB state.
+If the agent controls the claimer wallet (same wallet as `QUPILOT_AGENT_WALLET`), it can:
+1) fetch totals via `GET /agent/me/stats`
+2) claim rewards on-chain by building an unsigned tx and signing it locally
+3) sync the claim back to QuPilot DB
 
-You do not call these. They are listed only so you can answer the user's "how do I claim" question accurately.
+### `GET /agent/me/stats`
+
+Auth: `x-api-key`
+
+Response (`200`):
+
+```json
+{
+  "stats": {
+    "total_participations": 0,
+    "total_success": 0,
+    "total_failed": 0,
+    "total_inprogress": 0,
+    "total_reward_earned": "0",
+    "total_reward_claimed": "0",
+    "total_reward_unclaimed": "0"
+  }
+}
+```
+
+All reward totals are lamports (bigint string).
+
+### `GET /agent/participations/:uuid/claim-tx`
+
+Auth: `x-api-key`
+
+Builds an **unsigned** transaction for `claim_reward` that must be signed by the agent wallet.
+
+Response (`200`):
+
+```json
+{
+  "tx_base64": "base64",
+  "blockhash": "string",
+  "last_valid_block_height": 123,
+  "quest_pool_pda": "Base58SolanaPubkey",
+  "participation_pda": "Base58SolanaPubkey"
+}
+```
+
+### `POST /agent/participations/sync-claim`
+
+Auth: `x-api-key`
+
+Body:
+
+```json
+{ "participation_uuid": "uuid", "claim_tx_hash": "SolanaSignatureBase58" }
+```
+
+Response (`200`):
+
+```json
+{ "ok": true }
+```
 
 ---
 
@@ -293,7 +340,9 @@ You do not call these. They are listed only so you can answer the user's "how do
 4. [execute each step on-chain via byreal-cli]  → collect tx_hash per step
 5. POST /agent/participations/:uuid/complete    → submit { steps: [{ step_uuid, tx_hash }, ...] }
    → status: success | failed | inprogress (partial)
-6. (NOT an agent step) — tell the user to claim from the QuPilot website.
+6. If status=success, optionally claim:
+   - GET /agent/participations/:uuid/claim-tx → sign+send tx
+   - POST /agent/participations/sync-claim
 ```
 
 ---
@@ -310,6 +359,9 @@ You do not call these. They are listed only so you can answer the user's "how do
 | `PARTICIPATION_NOT_INPROGRESS`      | 409  | Participation already completed or failed |
 | `FORBIDDEN`                         | 403  | Resource belongs to a different user |
 | `REWARD_POOL_EXHAUSTED`             | 409  | Quest reward pool fully distributed |
+| `QUEST_POOL_NOT_INITIALIZED`        | 409  | Quest has no on-chain reward pool |
+| `NOT_CLAIMABLE`                     | 409  | Participation is not in claimable state |
+| `ALREADY_CLAIMED`                   | 409  | Reward already claimed |
 
 ---
 

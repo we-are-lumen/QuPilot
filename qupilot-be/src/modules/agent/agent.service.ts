@@ -2,9 +2,16 @@ import { supabase } from '../../config/supabase';
 import { AppError, throw404 } from '../../lib/errors';
 import { verifySolanaClmmCloseTx, verifySolanaClmmOpenTx, verifySolanaSwapTxBasic } from '../../lib/solana';
 import { PublicKey } from '@solana/web3.js';
-import { resolveUserWalletById } from '../participations/participations.service';
-import { buildJoinQuestTx, buildMarkParticipationCompleteTx, buildMarkParticipationFailedTx, sendAdminTx } from '../../lib/solana/tx-builder';
+import { resolveUserWalletById, syncClaimByUserId } from '../participations/participations.service';
+import {
+  buildJoinQuestTx,
+  buildMarkParticipationCompleteTx,
+  buildMarkParticipationFailedTx,
+  buildClaimRewardTx,
+  sendAdminTx,
+} from '../../lib/solana/tx-builder';
 import { parseAnchorErrorCode } from '../../lib/solana/anchor-error';
+import type { SyncClaimBody } from './agent.schema';
 
 type QuestRow = { id: number; expires_at: string; quest_pool_pda: string | null };
 
@@ -234,6 +241,139 @@ const getExpectedSigner = (row: ParticipationRow, userId: number): string => {
     throw new AppError(400, 'AGENT_WALLET_MISSING', 'agent_wallet_address is required for verification');
   }
   return expectedSigner;
+};
+
+type UserIdentityRow = { uuid: string; wallet_address: string };
+
+const resolveUserIdentityById = async (userId: number): Promise<UserIdentityRow> => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('uuid, wallet_address')
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw404('USER_NOT_FOUND', 'User not found');
+  return data as unknown as UserIdentityRow;
+};
+
+export const getMyStats = async (userId: number): Promise<{
+  total_participations: number;
+  total_success: number;
+  total_failed: number;
+  total_inprogress: number;
+  total_reward_earned: string;
+  total_reward_claimed: string;
+  total_reward_unclaimed: string;
+}> => {
+  const count = async (status?: 'success' | 'failed' | 'inprogress'): Promise<number> => {
+    let q = supabase
+      .from('quest_participations')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId);
+    if (status) q = q.eq('status', status);
+    const res = await q;
+    if (res.error) throw res.error;
+    return res.count ?? 0;
+  };
+
+  const [total_participations, total_success, total_failed, total_inprogress] = await Promise.all([
+    count(),
+    count('success'),
+    count('failed'),
+    count('inprogress'),
+  ]);
+
+  // Sum rewards for successful participations by joining quests.reward_per_user.
+  const successRows = await supabase
+    .from('quest_participations')
+    .select('reward_claimed, quests(reward_per_user)')
+    .eq('user_id', userId)
+    .eq('status', 'success');
+  if (successRows.error) throw successRows.error;
+
+  const rows = (successRows.data ?? []) as unknown as Array<{
+    reward_claimed: boolean;
+    quests: { reward_per_user: number | string } | { reward_per_user: number | string }[] | null;
+  }>;
+
+  let earned = 0n;
+  let claimed = 0n;
+  for (const r of rows) {
+    const quest = Array.isArray(r.quests) ? r.quests[0] ?? null : r.quests;
+    if (!quest) continue;
+    const v = BigInt(String(quest.reward_per_user));
+    earned += v;
+    if (r.reward_claimed) claimed += v;
+  }
+
+  return {
+    total_participations,
+    total_success,
+    total_failed,
+    total_inprogress,
+    total_reward_earned: earned.toString(),
+    total_reward_claimed: claimed.toString(),
+    total_reward_unclaimed: (earned - claimed).toString(),
+  };
+};
+
+export const buildClaimTx = async (
+  userId: number,
+  participationUuid: string,
+): Promise<{
+  tx_base64: string;
+  blockhash: string;
+  last_valid_block_height: number;
+  quest_pool_pda: string;
+  participation_pda: string;
+}> => {
+  const identity = await resolveUserIdentityById(userId);
+
+  const participationRes = await supabase
+    .from('quest_participations')
+    .select('uuid, status, reward_claimed, participation_pda, quests(quest_pool_pda)')
+    .eq('user_id', userId)
+    .eq('uuid', participationUuid)
+    .maybeSingle();
+  if (participationRes.error) throw participationRes.error;
+  if (!participationRes.data) throw404('PARTICIPATION_NOT_FOUND', 'Participation not found');
+
+  const row = participationRes.data as unknown as {
+    uuid: string;
+    status: 'inprogress' | 'success' | 'failed';
+    reward_claimed: boolean;
+    participation_pda: string | null;
+    quests: { quest_pool_pda: string | null } | { quest_pool_pda: string | null }[] | null;
+  };
+  const q = Array.isArray(row.quests) ? row.quests[0] ?? null : row.quests;
+  if (!q || !q.quest_pool_pda) {
+    throw new AppError(409, 'QUEST_POOL_NOT_INITIALIZED', 'Quest has no on-chain reward pool');
+  }
+  if (row.status !== 'success') throw new AppError(409, 'NOT_CLAIMABLE', 'Reward is not yet claimable');
+  if (row.reward_claimed) throw new AppError(409, 'ALREADY_CLAIMED', 'Reward already claimed');
+
+  const questPoolPda = new PublicKey(q.quest_pool_pda);
+  const claimer = new PublicKey(identity.wallet_address);
+
+  const built = await buildClaimRewardTx({ questPoolPda, claimer });
+  const txBase64 = built.tx
+    .serialize({ requireAllSignatures: false, verifySignatures: false })
+    .toString('base64');
+
+  return {
+    tx_base64: txBase64,
+    blockhash: built.blockhash,
+    last_valid_block_height: built.lastValidBlockHeight,
+    quest_pool_pda: q.quest_pool_pda,
+    participation_pda: row.participation_pda ?? built.participationPda.toBase58(),
+  };
+};
+
+export const syncClaim = async (userId: number, body: SyncClaimBody): Promise<{ ok: true }> => {
+  const identity = await resolveUserIdentityById(userId);
+  const out = await syncClaimByUserId(identity.uuid, identity.wallet_address, body);
+  if (!out.ok) throw new AppError(500, 'SYNC_FAILED', 'Failed to sync claim');
+  return { ok: true };
 };
 
 const resolveStepRow = async (participationId: number, stepUuid: string): Promise<StepRow> => {

@@ -563,7 +563,61 @@ Catatan:
 - `steps[].step_uuid` diambil dari `quest.steps[].uuid` (lihat `GET /quests/:uuid`).
 - Request boleh mengirim sebagian step; response bisa tetap `status=inprogress` sampai semua step berhasil / ada step yang gagal.
 
-Claim reward adalah user-only dan dilakukan lewat website (user connect wallet dan sign tx `claim_reward`). Tidak ada endpoint `POST /agent/claim`.
+### GET /agent/me/stats
+
+Auth: `x-api-key`
+
+200 Response:
+
+```json
+{
+  "stats": {
+    "total_participations": 0,
+    "total_success": 0,
+    "total_failed": 0,
+    "total_inprogress": 0,
+    "total_reward_earned": "0",
+    "total_reward_claimed": "0",
+    "total_reward_unclaimed": "0"
+  }
+}
+```
+
+Semua nilai reward adalah lamports (bigint string).
+
+### GET /agent/participations/:uuid/claim-tx
+
+Auth: `x-api-key`
+
+Build tx `claim_reward` (unsigned). Agent harus sign + broadcast sendiri.
+
+200 Response:
+
+```json
+{
+  "tx_base64": "base64",
+  "blockhash": "string",
+  "last_valid_block_height": 123,
+  "quest_pool_pda": "Base58Pda",
+  "participation_pda": "Base58Pda"
+}
+```
+
+### POST /agent/participations/sync-claim
+
+Auth: `x-api-key`
+
+Body:
+
+```json
+{ "participation_uuid": "uuid", "claim_tx_hash": "SolanaSignatureBase58" }
+```
+
+200 Response:
+
+```json
+{ "ok": true }
+```
 
 ## Leaderboard (Public)
 

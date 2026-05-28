@@ -76,6 +76,37 @@ export const buildMarkParticipationFailedTx = async (input: {
   return new Transaction().add(ix);
 };
 
+export const buildClaimRewardTx = async (input: {
+  questPoolPda: PublicKey;
+  claimer: PublicKey;
+}): Promise<{
+  tx: Transaction;
+  participationPda: PublicKey;
+  blockhash: string;
+  lastValidBlockHeight: number;
+}> => {
+  const program = getProgram() as any;
+  const [participationPda] = deriveParticipationPda(program.programId, input.questPoolPda, input.claimer);
+
+  const ix = await program.methods
+    .claimReward()
+    .accounts({
+      claimer: input.claimer,
+      questPool: input.questPoolPda,
+      participation: participationPda,
+    })
+    .instruction();
+
+  const conn = program.provider.connection;
+  const latest = await conn.getLatestBlockhash('confirmed');
+
+  const tx = new Transaction().add(ix);
+  tx.feePayer = input.claimer;
+  tx.recentBlockhash = latest.blockhash;
+
+  return { tx, participationPda, blockhash: latest.blockhash, lastValidBlockHeight: latest.lastValidBlockHeight };
+};
+
 export const sendAdminTx = async (tx: Transaction): Promise<string> => {
   const program = getProgram() as any;
   const admin = getAdminKeypair();

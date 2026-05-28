@@ -35,3 +35,10 @@ export const participationUuidParamsSchema = z.object({
 });
 
 export type ParticipationUuidParams = z.infer<typeof participationUuidParamsSchema>;
+
+export const syncClaimBodySchema = z.object({
+  participation_uuid: z.string().uuid(),
+  claim_tx_hash: z.string().trim().min(32),
+});
+
+export type SyncClaimBody = z.infer<typeof syncClaimBodySchema>;

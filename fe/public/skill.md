@@ -116,17 +116,39 @@ Possible `participation.status` values in the response:
 
 When `status` is `success`, tell the user the quest cleared and what `reward_per_user` they earned (lamports → SOL). When `status` is `failed`, quote the `error.message` verbatim — don't soften it, the user needs the actual signal.
 
-### Phase 4 — Tell the user to claim on the website
+### Phase 4 — Claim reward (agent-controlled wallet)
 
-**Agents do not claim rewards. There is no `POST /agent/claim` endpoint.** Claim is enforced on-chain to be a user-only action: the Anchor program requires the claim transaction to be signed by `participation.user_wallet` — the agent's API key and wallet have no authority over it. Don't try to construct or sign a claim transaction; it will revert at the program's address constraint.
+If the agent controls the claimer wallet (the same Byreal Solana wallet that owns the API key), the agent may claim rewards itself.
 
-When `complete` returns `status: success`, your job is to:
+Flow:
 
-1. Report the result and the reward amount (lamports → SOL).
-2. Tell the user the reward is **ready to claim from the QuPilot website** — typically `https://qupilot.xyz/profile` (or wherever the user's QuPilot instance lives). They connect the same wallet that owns the API key and click "Claim".
-3. Stop. Don't poll, don't retry, don't ask the user for their private key, don't build a claim ix on their behalf.
+1. Build an unsigned claim transaction from the API:
 
-If the user asks "can you claim it for me" — explain that QuPilot's design intentionally keeps reward custody on the user side, and link them to the claim page.
+```bash
+curl -sS -H "x-api-key: $QUPILOT_API_KEY" \
+  "$QUPILOT_API_URL/agent/participations/<participation-uuid>/claim-tx"
+```
+
+This returns `tx_base64` plus `blockhash` / `last_valid_block_height`.
+
+2. Sign + send the transaction using the agent's Solana wallet tooling (Byreal wallet).
+   - The signing key must match `QUPILOT_AGENT_WALLET`.
+   - If your tooling cannot broadcast raw transactions, stop and ask for operator help.
+
+3. After the tx confirms, sync the claim back to QuPilot so the DB marks it claimed:
+
+```bash
+curl -sS -X POST -H "x-api-key: $QUPILOT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"participation_uuid\":\"<participation-uuid>\",\"claim_tx_hash\":\"<base58-sig>\"}" \
+  "$QUPILOT_API_URL/agent/participations/sync-claim"
+```
+
+4. Optionally show agent totals (success count + total earned/claimed/unclaimed lamports):
+
+```bash
+curl -sS -H "x-api-key: $QUPILOT_API_KEY" "$QUPILOT_API_URL/agent/me/stats"
+```
 
 ## Hard constraints
 
