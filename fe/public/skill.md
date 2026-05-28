@@ -1,19 +1,6 @@
----
-name: qupilot-quest-runner
-description: "Fetch, dispatch, and verify on-chain quests from the QuPilot API by composing the byreal-cli (Solana CLMM/swap) and byreal-perps-cli (Hyperliquid perpetuals) skills. Use whenever the user mentions QuPilot, quests, quest runner, on-chain tasks, quest rewards, agent missions, Byreal quests, RealClaw quests, or asks an agent to complete an on-chain task for them — even if they don't explicitly name QuPilot. Also use when the user wants to list, join, execute, or submit completion proof for any on-chain quest tied to swaps, liquidity, or perp trading on Byreal/Hyperliquid."
-metadata:
-  qupilot:
-    homepage: https://github.com/byreal-git/byreal-agent-skills
-    composes:
-      - byreal-cli
-      - byreal-perps-cli
-    env:
-      - QUPILOT_API_URL
-      - QUPILOT_API_KEY
-      - QUPILOT_AGENT_WALLET
----
-
 # QuPilot Quest Runner
+
+> Hosted copy of: `qupilot-agent-skills/skills/qupilot-quest-runner/SKILL.md`
 
 This skill teaches an agent the three-phase lifecycle of a QuPilot quest: **fetch** an open quest, **dispatch** each of its steps to the right byreal CLI to execute on-chain, then **verify** completion by submitting per-step tx hashes back to the QuPilot API.
 
@@ -167,34 +154,3 @@ UUID         Title                     Reward     Expires
 456a...1def  Open CLMM position        0.02 SOL   1d 04h
 ```
 
-## What to keep in your head vs. consult on demand
-
-- **In head**: the four-phase shape (fetch → join → complete → tell user to claim on website), the `x-api-key` header, the bare-object response shape, the hard constraints. Claim is **not** an agent action — never call a claim endpoint and never sign a claim tx.
-- **Consult `references/qupilot-api.md`** when you need exact endpoint paths, body shapes, or error codes.
-- **Consult `references/quest-mapping.md`** every time you dispatch a step — even when you "remember" the mapping. The byreal CLIs change flags occasionally and the file is the canonical source.
-
-## Examples
-
-**Example 1 — list and pick:**
-> User: "What's on my QuPilot queue?"
->
-> Agent: calls `GET /quests`, renders a table of `title / protocol / reward_per_user / expires_at`, summarizes each quest's `steps[]`, recommends one by reward÷estimated-cost.
-
-**Example 2 — register then execute end-to-end:**
-> User: "Do quest <uuid> for me."
->
-> Agent: if `QUPILOT_API_KEY` is missing, run Phase 0 (challenge → sign → register) to obtain it. Then: `GET /quests/<uuid>` to capture `steps[].uuid`, `POST /agent/participations` with `{ quest_uuid, agent_wallet_address }`, walks each step through the mapping → runs the byreal command with `-o json` → captures the Solana signature, then `POST /agent/participations/<participation-uuid>/complete` with all `{ step_uuid, tx_hash }` pairs, reports the final `status` and reward.
-
-**Example 3 — graceful failure:**
-> User: "Do quest <uuid> for me."
->
-> Agent: joins it, runs `byreal-cli swap execute`, sees `{success: false, error: {code: "INSUFFICIENT_BALANCE"}}`, stops, tells the user: "Your wallet doesn't hold enough SOL for this swap. Top up and rerun — the participation is left `inprogress` and there's no abandon endpoint, but it will time out at `expires_at`."
-
-**Example 4 — partial completion then resume:**
-> Quest has 2 steps. Step 1 succeeds on-chain; step 2 errors out before broadcast.
->
-> Agent: submits `complete` with just step 1's `{ step_uuid, tx_hash }`. Response is `status: inprogress`. Agent reports state and asks the user whether to retry step 2 or abandon (let it expire).
-
-## Why this skill exists (not just what)
-
-QuPilot's value is that *any* AI agent can clear on-chain tasks for a user. That promise only holds if the dispatch layer is boring, deterministic, and refuses to improvise on safety-critical paths. This skill is intentionally narrow: it's a router from quest step descriptions to known-good CLI commands, with explicit per-step verification. When in doubt, prefer "stop and ask" over "try and see" — the on-chain blast radius makes silent failures genuinely costly.
