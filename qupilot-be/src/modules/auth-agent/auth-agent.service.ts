@@ -85,22 +85,39 @@ const resolveValidChallenge = async (
 
 type UserRow = { uuid: string; wallet_address: string };
 
-const resolveExistingUserByWallet = async (walletAddress: string): Promise<UserRow> => {
+const resolveOrCreateUserByWallet = async (walletAddress: string): Promise<UserRow> => {
   const { data, error } = await supabase
     .from('users')
     .select('uuid, wallet_address')
     .eq('wallet_address', walletAddress)
     .maybeSingle();
   if (error) throw error;
-  if (!data) {
-    // Per requirement: agent wallet must already exist in DB.
-    throw new AppError(
-      404,
-      'AGENT_NOT_REGISTERED',
-      'Agent wallet is not registered yet. Register the wallet first, then retry.',
-    );
+  if (data) return data as unknown as UserRow;
+
+  // Agent self-register: auto-create a user row if it doesn't exist yet.
+  const inserted = await supabase
+    .from('users')
+    .insert({
+      wallet_address: walletAddress,
+      role: 'user',
+    })
+    .select('uuid, wallet_address')
+    .single();
+
+  if (!inserted.error) return inserted.data as unknown as UserRow;
+
+  // Race-condition: another request inserted between SELECT and INSERT.
+  if (inserted.error.code === '23505') {
+    const refetch = await supabase
+      .from('users')
+      .select('uuid, wallet_address')
+      .eq('wallet_address', walletAddress)
+      .single();
+    if (refetch.error) throw refetch.error;
+    return refetch.data as unknown as UserRow;
   }
-  return data as unknown as UserRow;
+
+  throw inserted.error;
 };
 
 export const register = async (input: {
@@ -118,8 +135,8 @@ export const register = async (input: {
     throw new AppError(401, 'INVALID_SIGNATURE', 'Wallet signature is invalid');
   }
 
-  // 3) Ensure this wallet is already present in DB (pre-approval gate)
-  const user = await resolveExistingUserByWallet(input.wallet_address);
+  // 3) Ensure a user row exists for this wallet (auto-create on first register)
+  const user = await resolveOrCreateUserByWallet(input.wallet_address);
 
   // 4) Mark challenge used (best-effort gate; we do it before key generation to
   //    reduce replay window). If this fails, we abort.
@@ -138,4 +155,3 @@ export const register = async (input: {
   // 5) Generate (and rotate) API key for this user
   return generateForUser(user.uuid, input.label);
 };
-

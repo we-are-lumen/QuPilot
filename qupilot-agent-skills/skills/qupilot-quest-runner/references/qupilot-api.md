@@ -261,7 +261,7 @@ Response (`201`):
 Notes / constraints:
 - The agent must sign the **exact** `message` returned by `/auth/agent/challenge`.
 - Challenges expire and are single-use.
-- The wallet must already exist in QuPilot's `users` table (pre-approved). If not, the API returns `404 AGENT_NOT_REGISTERED`.
+- If the wallet does not exist in QuPilot's `users` table yet, it will be auto-created (role=`user`) on first register.
 
 ---
 

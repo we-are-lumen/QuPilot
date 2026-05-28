@@ -28,7 +28,7 @@ You are not reimplementing trading logic — `byreal-cli` and `byreal-perps-cli`
    - Call `POST /auth/agent/challenge` with `{ wallet_address: QUPILOT_AGENT_WALLET }` to get a `message`.
    - Sign that exact `message` with the same wallet.
    - Call `POST /auth/agent/register` with `{ wallet_address, message, signature }` to receive `plaintext: qpk_...`.
-   - Hard constraint: the wallet must already exist in QuPilot's `users` table (pre-approved). If registration returns `AGENT_NOT_REGISTERED`, stop and ask the user/operator to register that wallet first.
+   - QuPilot will auto-create the wallet in its `users` table on first register (no pre-approval needed).
 3. Read `references/qupilot-api.md` once at the start of a session — it's the source of truth for endpoint shapes and error codes.
 
 ## The three-phase workflow
@@ -197,9 +197,62 @@ UUID         Title                     Reward     Expires
 456a...1def  Open CLMM position        0.02 SOL   1d 04h
 ```
 
+## Scheduler / Dispatcher mode (OpenClaw / Hermes)
+
+If your agent runtime supports scheduling (e.g. OpenClaw/Hermes), you may run QuPilot in “autopilot” mode. In this mode, the agent periodically fetches open quests, picks the best candidate, then executes it end-to-end.
+
+### Recommended cadence
+
+- Poll `GET /quests` every **5–10 minutes** (avoid tighter loops).
+- Use backoff on failure: 10s → 30s → 60s → 5m.
+
+### Safety rules (must follow)
+
+1. **One quest at a time per agent wallet.**
+2. **Never re-join the same quest repeatedly.**
+   - If join returns `PARTICIPATION_INPROGRESS_EXISTS` or `PARTICIPATION_ALREADY_COMPLETED`, mark the quest as “skip for this wallet” for a cooldown window (e.g. 1–6 hours).
+3. **No silent retries for trades.** If a byreal command fails (`success=false`), stop that run.
+4. **Do not claim if you cannot sign.** Only claim if the agent controls the wallet matching `QUPILOT_AGENT_WALLET`.
+
+### Selection heuristic (simple)
+
+Pick the quest with the highest **reward_per_user / estimated_cost**, ignoring anything that:
+- expires too soon (e.g. < 10 minutes),
+- requires an unsupported `step_type`,
+- uses tokens you can’t handle safely.
+
+### Pseudocode loop
+
+```text
+Every 5-10 minutes:
+  - Ensure Byreal wallet exists and env vars are set
+  - If QUPILOT_API_KEY missing: challenge -> sign -> register -> persist to .env
+  - quests = GET /quests
+  - candidates = filter quests by protocol/type + expiry + not in cooldown
+  - pick best candidate
+  - participation = POST /agent/participations
+  - for each step:
+      execute via byreal-cli (preview first) -> capture tx_hash
+  - POST /agent/participations/:uuid/complete
+  - if success and claim enabled:
+      GET /agent/participations/:uuid/claim-tx
+      sign+broadcast
+      POST /agent/participations/sync-claim
+  - GET /agent/me/stats (optional) and print summary table
+```
+
+### Example scheduler output (terminal-friendly)
+
+```text
+Run      Picked Quest     Result    Earned    Claimed   Notes
+18:00    123e...9abc      success   0.01 SOL  yes       swap USDC→USDT
+18:10    9f00...bada      skipped   -         -         expires <10m
+18:20    456a...1def      failed    -         -         byreal-cli: INSUFFICIENT_BALANCE
+```
+
 ## What to keep in your head vs. consult on demand
 
-- **In head**: the four-phase shape (fetch → join → complete → claim/sync claim), the `x-api-key` header, the bare-object response shape, the hard constraints.
+- **In head**: the four-phase shape (fetch → join → complete → claim/sync claim), the `x-api-key` header, the bare-object response shape, the hard constraints, and the scheduler safety rules above.
 - **Consult `references/qupilot-api.md`** when you need exact endpoint paths, body shapes, or error codes.
 - **Consult `references/quest-mapping.md`** every time you dispatch a step — even when you "remember" the mapping. The byreal CLIs change flags occasionally and the file is the canonical source.
 
