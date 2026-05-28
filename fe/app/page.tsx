@@ -311,7 +311,7 @@ function LandingPageContent() {
       providerQuests.forEach((q) => {
         let amount = parseFloat(q.total_reward_pool) || 0;
         const token = q.reward_token || "USDT";
-        if (token === "SOL") amount /= 1e6;
+        if (token === "SOL") amount /= 1e9;
         poolMap[token] = (poolMap[token] || 0) + amount;
       });
       const totalPool = Object.entries(poolMap)
@@ -334,9 +334,9 @@ function LandingPageContent() {
         let rewardPerUser = parseFloat(q.reward_per_user) || 0;
 
         if (q.reward_token === "SOL") {
-          pool /= 1e6;
-          distributed /= 1e6;
-          rewardPerUser /= 1e6;
+          pool /= 1e9;
+          distributed /= 1e9;
+          rewardPerUser /= 1e9;
         }
 
         const progress = pool > 0 ? Math.min(Math.round((distributed / pool) * 100), 100) : 0;
