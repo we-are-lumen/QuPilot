@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense, useMemo } from "react";
+import { useState, useEffect, useCallback, Suspense, useMemo, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -11,6 +11,10 @@ import { getUserData, clearAuth } from "@/lib/utils/auth";
 import { disconnectWallet } from "@/lib/utils/wallet";
 import { usePublicQuests } from "@/lib/hooks/useQuests";
 import AuthModal from "./components/AuthModal";
+import { Canvas, useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import { useGLTF, OrbitControls, Environment, Float } from "@react-three/drei";
+import { motion } from "motion/react";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -50,8 +54,79 @@ const THEME_COLORS = [
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
 function StatBadge({ value, label, icon }: { value: string; label: string; icon: React.ReactNode }) {
+  const [currentVal, setCurrentVal] = useState(0);
+  const [parsed, setParsed] = useState({ prefix: "", target: 0, suffix: value, decimals: 0 });
+  const [hasTriggered, setHasTriggered] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasTriggered) {
+          setHasTriggered(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasTriggered]);
+
+  useEffect(() => {
+    if (!hasTriggered) return;
+
+    // Regex to extract prefix, number, and suffix
+    // e.g. "$4.2M" -> prefix: "$", number: 4.2, suffix: "M"
+    // "12k+" -> prefix: "", number: 12, suffix: "k+"
+    // "94%" -> prefix: "", number: 94, suffix: "%"
+    const match = value.match(/^([^0-9.]*)([0-9.]+)([^0-9.]*)$/);
+    if (!match) {
+      setParsed({ prefix: "", target: 0, suffix: value, decimals: 0 });
+      return;
+    }
+
+    const prefix = match[1];
+    const numStr = match[2];
+    const suffix = match[3];
+
+    const target = parseFloat(numStr);
+    const decimalIndex = numStr.indexOf(".");
+    const decimals = decimalIndex === -1 ? 0 : numStr.length - decimalIndex - 1;
+
+    const info = { prefix, target, suffix, decimals };
+    setParsed(info);
+
+    let startTimestamp: number | null = null;
+    const duration = 2400; // Slower 2.4s elegant count-up duration
+
+    function step(timestamp: number) {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const elapsed = timestamp - startTimestamp;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Ease out quad
+      const easeProgress = progress * (2 - progress);
+      const current = easeProgress * info.target;
+      setCurrentVal(current);
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      }
+    }
+
+    requestAnimationFrame(step);
+  }, [value, hasTriggered]);
+
+  const displayString = parsed.prefix + currentVal.toFixed(parsed.decimals) + parsed.suffix;
+
   return (
-    <div className="flex flex-col items-center gap-1.5 px-8">
+    <div ref={containerRef} className="flex flex-col items-center gap-1.5 px-8">
       <div className="text-2xl text-[#A63420] opacity-80">
         {icon}
       </div>
@@ -59,7 +134,7 @@ function StatBadge({ value, label, icon }: { value: string; label: string; icon:
         className="text-3xl font-extrabold tracking-tight"
         style={{ fontFamily: "var(--font-nunito)", color: "#1F1B18" }}
       >
-        {value}
+        {displayString}
       </span>
       <span
         className="text-[11px] font-bold uppercase tracking-widest"
@@ -276,6 +351,118 @@ function ProviderSkeleton() {
   );
 }
 
+// ─── Looped Typewriter Component ──────────────────────────────────────────
+
+function LoopedTypewriter() {
+  const phrases = ["Automate your DeFi Journey.", "Earn like a Pro."];
+  const [index, setIndex] = useState(0);
+  const [displayText, setDisplayText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    let timer: any;
+    const currentPhrase = phrases[index];
+
+    if (!isDeleting) {
+      if (displayText.length < currentPhrase.length) {
+        timer = setTimeout(() => {
+          setDisplayText(currentPhrase.substring(0, displayText.length + 1));
+        }, 55); // fast typing speed
+      } else {
+        timer = setTimeout(() => {
+          setIsDeleting(true);
+        }, 2500); // 2.5s hold on completed text
+      }
+    } else {
+      if (displayText.length > 0) {
+        timer = setTimeout(() => {
+          setDisplayText(currentPhrase.substring(0, displayText.length - 1));
+        }, 25); // extra fast deleting speed
+      } else {
+        setIsDeleting(false);
+        setIndex((prev) => (prev + 1) % phrases.length);
+      }
+    }
+
+    return () => clearTimeout(timer);
+  }, [displayText, isDeleting, index]);
+
+  const isGradient = phrases[index] === "Earn like a Pro.";
+  const textStyle: React.CSSProperties = isGradient
+    ? {
+        background: "linear-gradient(168deg, #A63420 0%, #F59E0B 100%)",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+        backgroundClip: "text",
+        display: "inline",
+      }
+    : {
+        color: "#1F1B18",
+        display: "inline",
+      };
+
+  const cursorColor = isGradient ? "#A63420" : "#1F1B18";
+
+  return (
+    <>
+      <span style={textStyle}>{displayText}</span>
+      <motion.span
+        animate={{ opacity: [0, 1, 0] }}
+        transition={{ repeat: Infinity, duration: 0.8, ease: "easeInOut" }}
+        style={{
+          display: "inline-block",
+          marginLeft: "6px",
+          width: "4px",
+          height: "44px",
+          backgroundColor: cursorColor,
+          verticalAlign: "middle",
+          transform: "translateY(-4px)",
+        }}
+      />
+    </>
+  );
+}
+
+// ─── Rocket 3D Model ──────────────────────────────────────────────────────────
+
+if (typeof window !== "undefined") {
+  useGLTF.preload("/rocket.glb");
+}
+
+function RocketModel({ scrolled }: { scrolled: boolean }) {
+  const { scene } = useGLTF("/rocket.glb");
+  const pivotRef = useRef<any>(null);
+  const bodyRef = useRef<any>(null);
+
+  useFrame((state, delta) => {
+    // 1. Rotate the body around its local Y axis to make it spin
+    if (bodyRef.current) {
+      bodyRef.current.rotation.y += delta * 1.2; // spin speed
+    }
+
+    // 2. Lerp the pivot group (scale and position) for scroll flight
+    if (pivotRef.current) {
+      const targetScale = scrolled ? 0.4 : 4.0;
+      const targetY = scrolled ? 1.5 : -2.5;
+
+      const lerpFactor = Math.min(1, 5 * delta);
+      pivotRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), lerpFactor);
+      pivotRef.current.position.y = THREE.MathUtils.lerp(pivotRef.current.position.y, targetY, lerpFactor);
+    }
+  });
+
+  return (
+    <group 
+      ref={pivotRef} 
+      scale={4} 
+      position={[0, -2.5, 0]} 
+      rotation={[0.15, 0, 0.45]} // Tilt: X slightly forward, Z left to point to upper-left
+    >
+      <primitive ref={bodyRef} object={scene} />
+    </group>
+  );
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 function LandingPageContent() {
@@ -286,6 +473,12 @@ function LandingPageContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [mounted, setMounted] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { data: questsData, isLoading: isLoadingQuests } = usePublicQuests();
 
@@ -380,6 +573,12 @@ function LandingPageContent() {
         setScrollProgress(progress);
       } else {
         setScrollProgress(0);
+      }
+
+      if (window.scrollY > 80) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
       }
     };
 
@@ -586,7 +785,14 @@ function LandingPageContent() {
 
         <div className="relative z-10 max-w-7xl mx-auto flex items-center justify-between gap-12">
           {/* Left: text content */}
-          <div className="flex flex-col gap-5" style={{ maxWidth: 608 }}>
+          <div
+            className="flex flex-col gap-5"
+            style={{
+              maxWidth: scrolled ? "100%" : 608,
+              width: "100%",
+              transition: "all 1.2s cubic-bezier(0.25, 1, 0.5, 1)",
+            }}
+          >
             {/* Status pill */}
             <div
               className="inline-flex items-center gap-2 self-start px-3 py-1 rounded-full text-xs font-bold tracking-widest"
@@ -605,32 +811,25 @@ function LandingPageContent() {
               System Online. Mission Control Active.
             </div>
 
-            {/* Heading */}
             <h1
               className="text-[56px] font-extrabold leading-17.5 tracking-tight"
-              style={{ fontFamily: "var(--font-nunito)", color: "#1F1B18" }}
+              style={{
+                fontFamily: "var(--font-nunito)",
+                color: "#1F1B18",
+                minHeight: "70px",
+              }}
             >
-              Automate your DeFi
-              <br />
-              Journey.
-              <br />
-              <span
-                style={{
-                  background:
-                    "linear-gradient(168deg, #A63420 0%, #F59E0B 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                Earn like a Pro.
-              </span>
+              <LoopedTypewriter />
             </h1>
 
             {/* Sub-heading */}
             <p
               className="text-lg leading-relaxed"
-              style={{ color: "#6B6560", maxWidth: 576 }}
+              style={{
+                color: "#6B6560",
+                maxWidth: scrolled ? "100%" : 576,
+                transition: "all 1.2s cubic-bezier(0.25, 1, 0.5, 1)",
+              }}
             >
               Join Mission Control, deploy smart agents to complete complex DeFi
               tasks, and earn crypto rewards on autopilot in a vibrant Web3
@@ -657,7 +856,7 @@ function LandingPageContent() {
               </Button>
 
               <Button
-                render={(props) => <Link href="/explore" {...(props as any)} />}
+                render={(props) => <Link href="/quests" {...(props as any)} />}
                 id="hero-view-quests"
                 className="flex items-center justify-center px-8 py-3 rounded-full text-[17px] font-bold border-2 transition-all hover:bg-black/5"
                 style={{
@@ -673,34 +872,43 @@ function LandingPageContent() {
             </div>
           </div>
 
-          {/* Right: hero image */}
+          {/* Right: hero 3D model */}
           <div
             className="relative shrink-0"
-            style={{ width: 600, height: 600 }}
+            style={{
+              width: scrolled ? 0 : 600,
+              height: 600,
+              transform: scrolled
+                ? "translate(-1100px, -600px)"
+                : "translate(0, 0)",
+              opacity: scrolled ? 0 : 1,
+              transition: "transform 1.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 1.2s cubic-bezier(0.25, 1, 0.5, 1), width 1.2s cubic-bezier(0.25, 1, 0.5, 1)",
+              pointerEvents: scrolled ? "none" : "auto",
+              overflow: "hidden",
+            }}
           >
-            {/* Gradient overlay behind image */}
-            <div
-              className="absolute inset-0 rounded-xl"
-              style={{
-                background:
-                  "linear-gradient(45deg, rgba(166,52,32,0.1) 0%, rgba(245,158,11,0.1) 100%)",
-              }}
-            />
-            <div
-              className="relative w-full h-full rounded-xl overflow-hidden"
-              style={{
-                border: "6px solid rgba(255,255,255,0.8)",
-                boxShadow:
-                  "0px 12px 16px 0px rgba(31,27,24,0.06), 0px 24px 48px -12px rgba(31,27,24,0.12)",
-              }}
-            >
-              <Image
-                src="/hero_mission_control.png"
-                alt="Mission Control - DeFi automation hub"
-                fill
-                className="object-cover"
-                priority
-              />
+            <div className="relative w-full h-full overflow-visible">
+              {mounted ? (
+                <Canvas camera={{ position: [0, 0, 8], fov: 50 }}>
+                  <ambientLight intensity={0.7} />
+                  <directionalLight position={[10, 10, 5]} intensity={1.5} />
+                  <Suspense fallback={null}>
+                    <Float speed={scrolled ? 0 : 2} rotationIntensity={scrolled ? 0 : 0.5} floatIntensity={scrolled ? 0 : 1}>
+                      <RocketModel scrolled={scrolled} />
+                    </Float>
+                    <Environment preset="city" />
+                  </Suspense>
+                  <OrbitControls enableZoom={false} />
+                </Canvas>
+              ) : (
+                <Image
+                  src="/hero_mission_control.png"
+                  alt="Mission Control - DeFi automation hub"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              )}
             </div>
           </div>
         </div>
@@ -738,7 +946,13 @@ function LandingPageContent() {
         style={{ padding: "48px 20px" }}
       >
         {/* Section heading */}
-        <div className="flex flex-col items-center gap-2">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="flex flex-col items-center gap-2"
+        >
           <h2
             className="text-[32px] font-extrabold tracking-tight"
             style={{
@@ -754,10 +968,16 @@ function LandingPageContent() {
           >
             Discover official quests from verified DeFi protocols and exchanges.
           </p>
-        </div>
+        </motion.div>
 
         {/* Provider blocks */}
-        <div className="flex flex-col gap-3xl">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
+          className="flex flex-col gap-3xl"
+        >
           {isLoadingQuests ? (
             Array.from({ length: 2 }).map((_, idx) => (
               <ProviderSkeleton key={idx} />
@@ -780,7 +1000,7 @@ function LandingPageContent() {
               </p>
             </Card>
           )}
-        </div>
+        </motion.div>
       </main>
 
       {/* ── Footer ── */}
