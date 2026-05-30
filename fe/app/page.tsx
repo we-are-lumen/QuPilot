@@ -873,18 +873,24 @@ function LandingPageContent() {
           </div>
 
           {/* Right: hero 3D model */}
-          <div
+          <motion.div
             className="relative shrink-0"
             style={{
-              width: scrolled ? 0 : 600,
               height: 600,
-              transform: scrolled
-                ? "translate(-1100px, -600px)"
-                : "translate(0, 0)",
-              opacity: scrolled ? 0 : 1,
-              transition: "transform 1.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 1.2s cubic-bezier(0.25, 1, 0.5, 1), width 1.2s cubic-bezier(0.25, 1, 0.5, 1)",
               pointerEvents: scrolled ? "none" : "auto",
               overflow: "hidden",
+            }}
+            animate={{
+              width: scrolled ? 0 : 600,
+              x: scrolled ? -1100 : 0,
+              y: scrolled ? -600 : 0,
+              opacity: scrolled ? 0 : 1,
+            }}
+            transition={{
+              x: { duration: 1.5, ease: [0.25, 1, 0.5, 1] },
+              y: { duration: 1.5, ease: [0.25, 1, 0.5, 1] },
+              opacity: { duration: 1.2, ease: [0.25, 1, 0.5, 1] },
+              width: { duration: 1.2, ease: [0.25, 1, 0.5, 1] },
             }}
           >
             <div className="relative w-full h-full overflow-visible">
@@ -910,7 +916,7 @@ function LandingPageContent() {
                 />
               )}
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* ── Trust / Stats Bar ── */}
