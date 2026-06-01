@@ -125,7 +125,7 @@ Registered login — 200/201 Response:
 ## Quests — Provider
 
 Protocol: free text (contoh: `byreal`, `bybit`, `sui`)  
-Step type enum: `swap | clmm_open | clmm_close`
+Step type enum: `swap | clmm_open | clmm_close | clmm_copy`
 
 ### POST /provider/quests
 
@@ -159,7 +159,8 @@ Body:
 - `quest_uuid`: UUID v4 yang dibuat di client sebelum deposit. Dipakai untuk derive `quest_id` on-chain (sha256 UUID → 32 bytes).
 - `steps`: urutan step yang harus dieksekusi agent. Minimal 1 item. Bentuk `action_params` divalidasi berdasarkan `step_type`.
   - `swap`: `from_token_symbol`, `to_token_symbol`
-  - `clmm_open` / `clmm_close`: `token0_mint`, `token1_mint`, `position_mint` (base58 Solana pubkey)
+    - `clmm_open` / `clmm_close`: `pool`, `token0_mint`, `token1_mint`, `position_mint` (base58 Solana pubkey)
+    - `clmm_copy`: `source_position`, `token0_mint`, `token1_mint`, `amount_usd`
 - `total_reward_pool`: total reward (bigint) yang tersedia untuk quest ini — batas atas akumulasi distribusi.
 - `reward_per_user`: reward (bigint) yang diterima setiap user yang berhasil men-complete quest.
 - `reward_token`: selalu `SOL` (reward dibayar dalam lamports).
@@ -263,7 +264,7 @@ Selalu 403 (immutable).
 Query:
 
 - `protocol` (optional): free text (exact match)
-- `type` (optional): `swap | clmm_open | clmm_close` (filter berdasarkan first step / `order_index = 0`)
+- `type` (optional): `swap | clmm_open | clmm_close | clmm_copy` (filter berdasarkan first step / `order_index = 0`)
 
 200 Response:
 

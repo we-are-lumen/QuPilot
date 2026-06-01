@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const protocolSchema = z.string().trim().min(1).max(50);
 export type Protocol = z.infer<typeof protocolSchema>;
 
-export const stepTypeSchema = z.enum(['swap', 'clmm_open', 'clmm_close']);
+export const stepTypeSchema = z.enum(['swap', 'clmm_open', 'clmm_close', 'clmm_copy']);
 export type StepType = z.infer<typeof stepTypeSchema>;
 
 // bigint base units — stored as bigint in DB, accept string or integer in body.
@@ -40,10 +40,21 @@ const clmmCloseParams = z.object({
   position_mint: solanaPubkey,
 });
 
+const clmmCopyParams = z.object({
+  // Source CLMM position address to copy (from a top farmer / strategy position).
+  source_position: solanaPubkey,
+  token0_mint: solanaPubkey,
+  token1_mint: solanaPubkey,
+  // Notional guidance for the copy. The agent uses this to pick size via byreal-cli.
+  // Stored as number for now; backend verification focuses on tx success + signer + token outflow.
+  amount_usd: z.coerce.number().positive(),
+});
+
 const stepSchema = z.discriminatedUnion('step_type', [
   z.object({ step_type: z.literal('swap'), action_params: swapParams }),
   z.object({ step_type: z.literal('clmm_open'), action_params: clmmOpenParams }),
   z.object({ step_type: z.literal('clmm_close'), action_params: clmmCloseParams }),
+  z.object({ step_type: z.literal('clmm_copy'), action_params: clmmCopyParams }),
 ]);
 
 export type QuestStepInput = z.infer<typeof stepSchema>;

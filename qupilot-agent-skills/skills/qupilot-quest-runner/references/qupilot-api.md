@@ -51,7 +51,7 @@ Success responses return the data shape directly (no `{ success, data }` envelop
 
 Query params (all optional):
 - `protocol` — exact match free text (e.g. `byreal`, `bybit`)
-- `type` — one of `swap | clmm_open | clmm_close` (filters by the quest's first step, `order_index = 0`)
+- `type` — one of `swap | clmm_open | clmm_close | clmm_copy` (filters by the quest's first step, `order_index = 0`)
 
 Response (`200`):
 
@@ -122,8 +122,9 @@ Response (`200`):
 | `step_type`    | `action_params` fields |
 |----------------|------------------------|
 | `swap`         | `from_token_symbol`, `to_token_symbol` |
-| `clmm_open`    | `token0_mint`, `token1_mint`, `position_mint` (base58 Solana pubkey) |
-| `clmm_close`   | `token0_mint`, `token1_mint`, `position_mint` (base58 Solana pubkey) |
+| `clmm_open`    | `pool`, `token0_mint`, `token1_mint`, `position_mint` (base58 Solana pubkey) |
+| `clmm_close`   | `pool`, `token0_mint`, `token1_mint`, `position_mint` (base58 Solana pubkey) |
+| `clmm_copy`    | `source_position`, `token0_mint`, `token1_mint`, `amount_usd` |
 
 You **must** keep `steps[].uuid` for each step — you'll need it when submitting `complete`.
 

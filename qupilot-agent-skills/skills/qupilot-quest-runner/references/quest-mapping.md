@@ -9,6 +9,7 @@ The currently supported `step_type` values (per `references/qupilot-api.md`) are
 - `swap`
 - `clmm_open`
 - `clmm_close`
+- `clmm_copy`
 
 All three execute on Byreal via `byreal-cli`. There is no perp/Hyperliquid step type in the QuPilot API today — if you see one, treat it as unmapped and stop.
 
@@ -46,7 +47,7 @@ byreal-cli swap execute \
   -o json
 ```
 
-**Proof to send back:** the Solana signature (base58) from `data.tx_hash` in the JSON response. Pair it with the step's `uuid` as `{ "step_uuid": "<step-uuid>", "tx_hash": "<base58-sig>" }`.
+**Proof to send back:** the Solana transaction signature (base58) from the CLI output (often logged as `Transaction sent: <txid>` / `Transaction confirmed: <txid>`, and may also be present in JSON output when `-o json` is used). Pair it with the step's `uuid` as `{ "step_uuid": "<step-uuid>", "tx_hash": "<base58-sig>" }`.
 
 ---
 
@@ -85,7 +86,7 @@ byreal-cli position open \
   -o json
 ```
 
-**Proof to send back:** the Solana signature (base58) from `data.tx_hash`. Pair with the step's `uuid` as `{ "step_uuid": "<step-uuid>", "tx_hash": "<base58-sig>" }`.
+**Proof to send back:** the Solana transaction signature (base58) from the CLI output (often logged as `Transaction sent: <txid>` / `Transaction confirmed: <txid>`, and may also be present in JSON output when `-o json` is used). Pair it with the step's `uuid` as `{ "step_uuid": "<step-uuid>", "tx_hash": "<base58-sig>" }`.
 
 ---
 
@@ -121,7 +122,39 @@ byreal-cli position close \
   -o json
 ```
 
-**Proof to send back:** the Solana signature (base58) from `data.tx_hash`. Pair with the step's `uuid` as `{ "step_uuid": "<step-uuid>", "tx_hash": "<base58-sig>" }`.
+**Proof to send back:** the Solana transaction signature (base58) from the CLI output (often logged as `Transaction sent: <txid>` / `Transaction confirmed: <txid>`, and may also be present in JSON output when `-o json` is used). Pair it with the step's `uuid` as `{ "step_uuid": "<step-uuid>", "tx_hash": "<base58-sig>" }`.
+
+---
+
+## 4. `clmm_copy` — copy a top farmer's CLMM position
+
+**Quest step payload (excerpt):**
+
+```json
+{
+  "uuid": "<step-uuid>",
+  "order_index": 0,
+  "step_type": "clmm_copy",
+  "action_params": {
+    "source_position": "<base58-position-address>",
+    "token0_mint": "<base58-mint>",
+    "token1_mint": "<base58-mint>",
+    "amount_usd": 100
+  }
+}
+```
+
+**Execute:**
+
+```bash
+byreal-cli positions copy \
+  --position <source_position> \
+  --amount-usd <amount_usd> \
+  --confirm \
+  -o json
+```
+
+**Proof to send back:** the Solana transaction signature (base58) from the CLI output (often logged as `Transaction sent: <txid>` / `Transaction confirmed: <txid>`, and may also be present in JSON output when `-o json` is used). Pair it with the step's `uuid` as `{ "step_uuid": "<step-uuid>", "tx_hash": "<base58-sig>" }`.
 
 ---
 

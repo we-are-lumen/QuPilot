@@ -288,6 +288,13 @@ export type VerifyClmmOpenInput = {
 
 export type VerifyClmmCloseInput = VerifyClmmOpenInput;
 
+export type VerifyClmmCopyBasicInput = {
+  signature: string;
+  expectedSigner: string;
+  token0Mint: string;
+  token1Mint: string;
+};
+
 export type VerifyClmmComprehensiveFailure =
   | 'INVALID_SIGNATURE_FORMAT'
   | 'INVALID_SIGNER'
@@ -358,6 +365,43 @@ export const verifySolanaClmmCloseTx = async (input: VerifyClmmCloseInput): Prom
   const d0 = computeTokenDeltaByOwnerMint(tx, feePayer, input.token0Mint);
   const d1 = computeTokenDeltaByOwnerMint(tx, feePayer, input.token1Mint);
   if (d0 <= 0n && d1 <= 0n) return { ok: false, reason: 'NO_TOKEN_INFLOW' };
+
+  return { ok: true };
+};
+
+/**
+ * Basic verification for "copy strategy" CLMM operations.
+ *
+ * Unlike our `clmm_open` contract, Byreal's `positions copy` CLI does not let us
+ * pre-specify the resulting position NFT mint. So we verify the invariant parts:
+ * - tx exists + succeeded
+ * - signer matches expected agent wallet
+ * - at least one of token0/token1 decreases (liquidity deposit requires outflow)
+ */
+export const verifySolanaClmmCopyTxBasic = async (
+  input: VerifyClmmCopyBasicInput,
+): Promise<{ ok: true } | { ok: false; reason: VerifyClmmComprehensiveFailure }> => {
+  if (!isValidSignature(input.signature)) return { ok: false, reason: 'INVALID_SIGNATURE_FORMAT' };
+  if (!isValidPubkey(input.expectedSigner)) return { ok: false, reason: 'INVALID_SIGNER' };
+  if (!isValidMint(input.token0Mint) || !isValidMint(input.token1Mint)) {
+    return { ok: false, reason: 'INVALID_MINT' };
+  }
+
+  const conn = getSolanaConnection();
+  const tx = await conn.getParsedTransaction(input.signature, {
+    commitment: 'confirmed',
+    maxSupportedTransactionVersion: 0,
+  });
+  if (!tx || !tx.meta) return { ok: false, reason: 'TX_NOT_FOUND' };
+  if (tx.meta.err !== null) return { ok: false, reason: 'TX_FAILED' };
+
+  const feePayer = tx.transaction.message.accountKeys[0]?.pubkey?.toBase58();
+  if (!feePayer) return { ok: false, reason: 'TX_FAILED' };
+  if (feePayer !== input.expectedSigner) return { ok: false, reason: 'WRONG_SIGNER' };
+
+  const d0 = computeTokenDeltaByOwnerMint(tx, feePayer, input.token0Mint);
+  const d1 = computeTokenDeltaByOwnerMint(tx, feePayer, input.token1Mint);
+  if (d0 >= 0n && d1 >= 0n) return { ok: false, reason: 'NO_TOKEN_OUTFLOW' };
 
   return { ok: true };
 };

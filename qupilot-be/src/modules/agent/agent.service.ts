@@ -1,6 +1,11 @@
 import { supabase } from '../../config/supabase';
 import { AppError, throw404 } from '../../lib/errors';
-import { verifySolanaClmmCloseTx, verifySolanaClmmOpenTx, verifySolanaSwapTxBasic } from '../../lib/solana';
+import {
+  verifySolanaClmmCloseTx,
+  verifySolanaClmmCopyTxBasic,
+  verifySolanaClmmOpenTx,
+  verifySolanaSwapTxBasic,
+} from '../../lib/solana';
 import { PublicKey } from '@solana/web3.js';
 import { resolveUserWalletById, syncClaimByUserId } from '../participations/participations.service';
 import {
@@ -187,7 +192,7 @@ type ParticipationRow = {
 
 type CompleteStepInput = { step_uuid: string; tx_hash: string };
 
-type StepType = 'swap' | 'clmm_open' | 'clmm_close';
+type StepType = 'swap' | 'clmm_open' | 'clmm_close' | 'clmm_copy';
 
 type StepRow = {
   id: number;
@@ -440,6 +445,18 @@ const verifyStepTx = async (
       token0Mint,
       token1Mint,
       positionMint,
+    });
+    return res.ok;
+  }
+
+  if (stepType === 'clmm_copy') {
+    const token0Mint = requireStringField(actionParams, 'token0_mint');
+    const token1Mint = requireStringField(actionParams, 'token1_mint');
+    const res = await verifySolanaClmmCopyTxBasic({
+      signature: txHash,
+      expectedSigner,
+      token0Mint,
+      token1Mint,
     });
     return res.ok;
   }

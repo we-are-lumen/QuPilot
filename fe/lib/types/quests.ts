@@ -1,5 +1,5 @@
 export type Protocol = string;
-export type StepType = 'swap' | 'clmm_open' | 'clmm_close';
+export type StepType = 'swap' | 'clmm_open' | 'clmm_close' | 'clmm_copy';
 
 export interface IQuestStep {
   uuid: string;
@@ -87,5 +87,4 @@ export interface IPublicHighlightsResponse {
   top_quests: IPublicQuest[];
   top_providers: ITopProvider[];
 }
-
 
