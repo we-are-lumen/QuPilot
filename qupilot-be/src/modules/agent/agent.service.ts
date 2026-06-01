@@ -403,6 +403,15 @@ const requireStringField = (obj: Record<string, unknown>, key: string): string =
   return v;
 };
 
+const optionalStringField = (obj: Record<string, unknown>, key: string): string | undefined => {
+  const v = obj[key];
+  if (v === undefined || v === null) return undefined;
+  if (typeof v !== 'string' || !v.trim()) {
+    throw new AppError(400, 'STEP_ACTION_PARAMS_INVALID', `Missing or invalid ${key}`);
+  }
+  return v;
+};
+
 const verifyStepTx = async (
   stepType: StepType | undefined,
   actionParams: Record<string, unknown>,
@@ -410,13 +419,19 @@ const verifyStepTx = async (
   expectedSigner: string,
 ): Promise<boolean> => {
   if (stepType === 'swap') {
-    const from = requireStringField(actionParams, 'from_token_symbol');
-    const to = requireStringField(actionParams, 'to_token_symbol');
+    // Prefer mint-based swap verification (deterministic). Fallback to symbol-based.
+    const fromMint = optionalStringField(actionParams, 'from_mint');
+    const toMint = optionalStringField(actionParams, 'to_mint');
+    const fromSym = optionalStringField(actionParams, 'from_token_symbol');
+    const toSym = optionalStringField(actionParams, 'to_token_symbol');
+
     const res = await verifySolanaSwapTxBasic({
       signature: txHash,
       expectedSigner,
-      fromTokenSymbol: from,
-      toTokenSymbol: to,
+      fromMint: fromMint,
+      toMint: toMint,
+      fromTokenSymbol: fromMint ? undefined : fromSym,
+      toTokenSymbol: toMint ? undefined : toSym,
     });
     return res.ok;
   }

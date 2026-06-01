@@ -12,17 +12,56 @@ const bigintAmount = z
   .nonnegative()
   .transform((v) => v.toString());
 
-const swapParams = z.object({
-  from_token_symbol: z.string().trim().min(1).max(16),
-  to_token_symbol: z.string().trim().min(1).max(16),
-});
-
 const solanaPubkey = z
   .string()
   .trim()
   .min(32)
   .max(64)
   .regex(/^[1-9A-HJ-NP-Za-km-z]+$/, 'must be a base58 Solana pubkey');
+
+const swapParams = z
+  .object({
+    // New (recommended): deterministic token identity via mint addresses.
+    // For SOL, use the wrapped SOL mint: So11111111111111111111111111111111111111112
+    from_mint: solanaPubkey.optional(),
+    to_mint: solanaPubkey.optional(),
+
+    // Backward-compat: symbol-based swaps. Kept so existing quests don't break.
+    from_token_symbol: z.string().trim().min(1).max(16).optional(),
+    to_token_symbol: z.string().trim().min(1).max(16).optional(),
+  })
+  .superRefine((v, ctx) => {
+    const hasMints = Boolean(v.from_mint) || Boolean(v.to_mint);
+    const hasSymbols = Boolean(v.from_token_symbol) || Boolean(v.to_token_symbol);
+
+    if (hasMints) {
+      if (!v.from_mint || !v.to_mint) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'swap action_params must include both from_mint and to_mint',
+          path: ['from_mint'],
+        });
+      }
+      return;
+    }
+
+    if (hasSymbols) {
+      if (!v.from_token_symbol || !v.to_token_symbol) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'swap action_params must include both from_token_symbol and to_token_symbol',
+          path: ['from_token_symbol'],
+        });
+      }
+      return;
+    }
+
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'swap action_params must include either (from_mint,to_mint) or (from_token_symbol,to_token_symbol)',
+      path: [],
+    });
+  });
 
 const clmmOpenParams = z.object({
   pool: solanaPubkey,

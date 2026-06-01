@@ -87,8 +87,14 @@ export type VerifySwapFailure =
 export type VerifySwapBasicInput = {
   signature: string;
   expectedSigner: string;
-  fromTokenSymbol: string;
-  toTokenSymbol: string;
+  // Prefer deterministic mint-based verification when provided.
+  // For SOL, use wrapped SOL mint: So11111111111111111111111111111111111111112
+  fromMint?: string;
+  toMint?: string;
+
+  // Backward-compat: symbol-based verification (uses TOKEN_REGISTRY above).
+  fromTokenSymbol?: string;
+  toTokenSymbol?: string;
 };
 
 export type VerifySwapBasicFailure =
@@ -247,10 +253,20 @@ export const verifySolanaSwapTxBasic = async (input: VerifySwapBasicInput): Prom
     return { ok: false, reason: 'TX_FAILED' };
   }
 
-  const fromTok = resolveToken(input.fromTokenSymbol);
-  const toTok = resolveToken(input.toTokenSymbol);
-  if (!fromTok) return { ok: false, reason: 'UNKNOWN_FROM_TOKEN' };
-  if (!toTok) return { ok: false, reason: 'UNKNOWN_TO_TOKEN' };
+  const hasMints = Boolean(input.fromMint) || Boolean(input.toMint);
+  const hasSymbols = Boolean(input.fromTokenSymbol) || Boolean(input.toTokenSymbol);
+
+  if (hasMints) {
+    if (!input.fromMint || !input.toMint) return { ok: false, reason: 'TX_FAILED' };
+    if (!isValidPubkey(input.fromMint) || !isValidPubkey(input.toMint)) return { ok: false, reason: 'TX_FAILED' };
+  } else if (hasSymbols) {
+    const fromTok = input.fromTokenSymbol ? resolveToken(input.fromTokenSymbol) : null;
+    const toTok = input.toTokenSymbol ? resolveToken(input.toTokenSymbol) : null;
+    if (!fromTok) return { ok: false, reason: 'UNKNOWN_FROM_TOKEN' };
+    if (!toTok) return { ok: false, reason: 'UNKNOWN_TO_TOKEN' };
+  } else {
+    return { ok: false, reason: 'TX_FAILED' };
+  }
 
   const conn = getSolanaConnection();
   const tx: ParsedTransactionWithMeta | null = await conn.getParsedTransaction(input.signature, {
@@ -265,12 +281,18 @@ export const verifySolanaSwapTxBasic = async (input: VerifySwapBasicInput): Prom
   const feePayer = accountKeys[0]?.pubkey?.toBase58();
   if (!feePayer || feePayer !== input.expectedSigner) return { ok: false, reason: 'TX_FAILED' };
 
-  const fromDelta = fromTok.mint
-    ? computeTokenDeltaByOwnerMint(tx, feePayer, fromTok.mint)
-    : computeNativeDeltaByWallet(tx, feePayer);
-  const toDelta = toTok.mint
-    ? computeTokenDeltaByOwnerMint(tx, feePayer, toTok.mint)
-    : computeNativeDeltaByWallet(tx, feePayer);
+  const fromDelta = hasMints
+    ? computeTokenDeltaByOwnerMint(tx, feePayer, input.fromMint!)
+    : (() => {
+        const t = resolveToken(input.fromTokenSymbol!);
+        return t?.mint ? computeTokenDeltaByOwnerMint(tx, feePayer, t.mint) : computeNativeDeltaByWallet(tx, feePayer);
+      })();
+  const toDelta = hasMints
+    ? computeTokenDeltaByOwnerMint(tx, feePayer, input.toMint!)
+    : (() => {
+        const t = resolveToken(input.toTokenSymbol!);
+        return t?.mint ? computeTokenDeltaByOwnerMint(tx, feePayer, t.mint) : computeNativeDeltaByWallet(tx, feePayer);
+      })();
 
   if (fromDelta >= 0n) return { ok: false, reason: 'TOKEN_IN_NOT_DECREASED' };
   if (toDelta <= 0n) return { ok: false, reason: 'TOKEN_OUT_NOT_INCREASED' };

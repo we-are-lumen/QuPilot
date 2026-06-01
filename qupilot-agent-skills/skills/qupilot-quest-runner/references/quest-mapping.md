@@ -25,25 +25,26 @@ All three execute on Byreal via `byreal-cli`. There is no perp/Hyperliquid step 
   "order_index": 0,
   "step_type": "swap",
   "action_params": {
-    "from_token_symbol": "USDC",
-    "to_token_symbol": "USDT"
+    "from_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "to_mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
   }
 }
 ```
 
 **Pre-flight:**
 
-1. `byreal-cli wallet balance -o json` — confirm the `from_token_symbol` balance covers the trade plus SOL gas headroom.
-2. `byreal-cli swap quote --from <from_token_symbol> --to <to_token_symbol> --amount <calc> -o json` — inspect the quote, slippage, and notional.
+1. `byreal-cli wallet balance -o json` — confirm the input token balance covers the trade plus SOL gas headroom.
+2. `byreal-cli swap execute --input-mint <from_mint> --output-mint <to_mint> --amount <calc> --dry-run -o json` — inspect the quote, slippage, and notional.
 3. If the estimated notional ≥ $1000, preview the trade and have the user confirm before submitting (hard constraint #5 in `SKILL.md`).
 
 **Execute:**
 
 ```bash
 byreal-cli swap execute \
-  --from <from_token_symbol> \
-  --to <to_token_symbol> \
+  --input-mint <from_mint> \
+  --output-mint <to_mint> \
   --amount <calc> \
+  --confirm \
   -o json
 ```
 

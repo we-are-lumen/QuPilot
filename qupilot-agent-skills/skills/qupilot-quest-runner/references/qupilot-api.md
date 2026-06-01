@@ -68,7 +68,10 @@ Response (`200`):
           "uuid": "step-uuid",
           "order_index": 0,
           "step_type": "swap",
-          "action_params": { "from_token_symbol": "USDC", "to_token_symbol": "USDT" }
+          "action_params": {
+            "from_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            "to_mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+          }
         }
       ],
       "total_reward_pool": "10000000",
@@ -101,7 +104,10 @@ Response (`200`):
         "uuid": "step-uuid",
         "order_index": 0,
         "step_type": "swap",
-        "action_params": { "from_token_symbol": "USDC", "to_token_symbol": "USDT" }
+        "action_params": {
+          "from_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "to_mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+        }
       }
     ],
     "total_reward_pool": "10000000",
@@ -121,7 +127,7 @@ Response (`200`):
 
 | `step_type`    | `action_params` fields |
 |----------------|------------------------|
-| `swap`         | `from_token_symbol`, `to_token_symbol` |
+| `swap`         | (recommended) `from_mint`, `to_mint` (base58 Solana mint). For SOL use wSOL mint `So11111111111111111111111111111111111111112`. Backward-compat: `from_token_symbol`, `to_token_symbol` |
 | `clmm_open`    | `pool`, `token0_mint`, `token1_mint`, `position_mint` (base58 Solana pubkey) |
 | `clmm_close`   | `pool`, `token0_mint`, `token1_mint`, `position_mint` (base58 Solana pubkey) |
 | `clmm_copy`    | `source_position`, `token0_mint`, `token1_mint`, `amount_usd` |

@@ -143,8 +143,8 @@ Body:
     {
       "step_type": "swap",
       "action_params": {
-        "from_token_symbol": "USDC",
-        "to_token_symbol": "USDT"
+        "from_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "to_mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
       }
     }
   ],
@@ -158,7 +158,8 @@ Body:
 
 - `quest_uuid`: UUID v4 yang dibuat di client sebelum deposit. Dipakai untuk derive `quest_id` on-chain (sha256 UUID → 32 bytes).
 - `steps`: urutan step yang harus dieksekusi agent. Minimal 1 item. Bentuk `action_params` divalidasi berdasarkan `step_type`.
-  - `swap`: `from_token_symbol`, `to_token_symbol`
+  - `swap`: (recommended) `from_mint`, `to_mint` (base58 Solana mint pubkey). Untuk SOL gunakan wSOL mint `So11111111111111111111111111111111111111112`.
+    - Backward-compat: masih menerima `from_token_symbol`, `to_token_symbol`, tapi tidak se-deterministic mint.
     - `clmm_open` / `clmm_close`: `pool`, `token0_mint`, `token1_mint`, `position_mint` (base58 Solana pubkey)
     - `clmm_copy`: `source_position`, `token0_mint`, `token1_mint`, `amount_usd`
 - `total_reward_pool`: total reward (bigint) yang tersedia untuk quest ini — batas atas akumulasi distribusi.
@@ -177,7 +178,7 @@ Body:
     "title": "...",
     "description": "...",
     "protocol": "byreal",
-    "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_token_symbol": "USDC", "to_token_symbol": "USDT" } }],
+    "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "to_mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB" } }],
     "total_reward_pool": "10000000",
     "reward_per_user": "1000000",
     "total_reward_distributed": "0",
@@ -205,7 +206,7 @@ Auth: Wallet JWT dengan role=user_provider
       "title": "...",
       "description": "...",
       "protocol": "byreal",
-      "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_token_symbol": "USDC", "to_token_symbol": "USDT" } }],
+      "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "to_mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB" } }],
       "total_reward_pool": "10000000",
       "reward_per_user": "1000000",
       "total_reward_distributed": "5000000",
@@ -234,7 +235,7 @@ Auth: Wallet JWT dengan role=user_provider
     "title": "...",
     "description": "...",
     "protocol": "byreal",
-    "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_token_symbol": "USDC", "to_token_symbol": "USDT" } }],
+    "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "to_mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB" } }],
     "total_reward_pool": "10000000",
     "reward_per_user": "1000000",
     "total_reward_distributed": "5000000",
@@ -276,7 +277,7 @@ Query:
       "title": "...",
       "description": "...",
       "protocol": "byreal",
-      "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_token_symbol": "USDC", "to_token_symbol": "USDT" } }],
+      "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "to_mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB" } }],
       "total_reward_pool": "10000000",
       "reward_per_user": "1000000",
       "total_reward_distributed": "5000000",
@@ -308,7 +309,7 @@ Public.
     "title": "...",
     "description": "...",
     "protocol": "byreal",
-    "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_token_symbol": "USDC", "to_token_symbol": "USDT" } }],
+    "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "to_mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB" } }],
     "total_reward_pool": "10000000",
     "reward_per_user": "1000000",
     "total_reward_distributed": "5000000",
@@ -336,7 +337,7 @@ Public. Untuk homepage/landing: ambil **3 quest dengan total reward pool terbesa
       "title": "...",
       "description": "...",
       "protocol": "byreal",
-      "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_token_symbol": "USDC", "to_token_symbol": "USDT" } }],
+      "steps": [{ "uuid": "uuid", "order_index": 0, "step_type": "swap", "action_params": { "from_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "to_mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB" } }],
       "total_reward_pool": "10000000",
       "reward_per_user": "1000000",
       "total_reward_distributed": "5000000",
