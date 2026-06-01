@@ -69,11 +69,28 @@ export default function CreateQuestPage() {
         { key: "from_token_symbol", value: "" },
         { key: "to_token_symbol", value: "" },
       ];
-    } else if (stepType === "clmm_open" || stepType === "clmm_close") {
+    } else if (stepType === "clmm_open") {
       return [
+        { key: "pool", value: "" },
         { key: "token0_mint", value: "" },
         { key: "token1_mint", value: "" },
         { key: "position_mint", value: "" },
+        { key: "tick_lower", value: "" },
+        { key: "tick_upper", value: "" },
+      ];
+    } else if (stepType === "clmm_close") {
+      return [
+        { key: "pool", value: "" },
+        { key: "token0_mint", value: "" },
+        { key: "token1_mint", value: "" },
+        { key: "position_mint", value: "" },
+      ];
+    } else if (stepType === "clmm_copy") {
+      return [
+        { key: "source_position", value: "" },
+        { key: "token0_mint", value: "" },
+        { key: "token1_mint", value: "" },
+        { key: "amount_usd", value: "" },
       ];
     }
     return [];
@@ -207,9 +224,11 @@ export default function CreateQuestPage() {
           const stringOnlyFields = [
             "from_token_symbol",
             "to_token_symbol",
+            "pool",
             "token0_mint",
             "token1_mint",
             "position_mint",
+            "source_position",
           ];
           
           const isStringField = 
@@ -456,6 +475,10 @@ export default function CreateQuestPage() {
                           </ListBox.Item>
                           <ListBox.Item id="clmm_close" textValue="Close CLMM Position" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
                             Close CLMM Position (clmm_close)
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="clmm_copy" textValue="Copy Strategy" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                            Copy Strategy (clmm_copy)
                             <ListBox.ItemIndicator />
                           </ListBox.Item>
                         </ListBox>
