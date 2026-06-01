@@ -14,6 +14,7 @@ import { parseAnchorErrorCode } from '../../lib/solana/anchor-error';
 import type { SyncClaimBody } from './agent.schema';
 
 type QuestRow = { id: number; expires_at: string; quest_pool_pda: string | null };
+type QuestRewardRow = { reward_per_user: string | number; total_reward_pool: string | number; total_reward_distributed: string | number };
 
 const nowIso = (): string => new Date().toISOString();
 
@@ -511,6 +512,30 @@ export const complete = async (
     throw new AppError(500, 'QUEST_POOL_NOT_INITIALIZED', 'Quest has no on-chain reward pool');
   }
 
+  // Align with API.md: total_reward_distributed is bumped when a participation becomes `success`
+  // (i.e., when the agent completes the quest successfully), not at claim time.
+  if (finalStatus === 'success') {
+    const questRes = await supabase
+      .from('quests')
+      .select('reward_per_user, total_reward_pool, total_reward_distributed')
+      .eq('id', row.quest_id)
+      .maybeSingle();
+    if (questRes.error) throw questRes.error;
+    if (!questRes.data) throw404('QUEST_NOT_FOUND', 'Quest not found');
+
+    const q = questRes.data as unknown as QuestRewardRow;
+    const rewardPerUser = BigInt(String(q.reward_per_user));
+    const pool = BigInt(String(q.total_reward_pool));
+    const distributed = BigInt(String(q.total_reward_distributed));
+    const newDistributed = distributed + rewardPerUser;
+
+    if (newDistributed > pool) {
+      // Defensive: on-chain `join_quest` should prevent this via allocated_amount checks,
+      // but we keep the check to match documented behavior.
+      throw new AppError(409, 'REWARD_POOL_EXHAUSTED', 'Reward pool exhausted — all slots taken');
+    }
+  }
+
   const questPoolPda = new PublicKey(row.quest_pool_pda);
   const participationPda = row.participation_pda ? new PublicKey(row.participation_pda) : null;
   if (!participationPda) {
@@ -550,6 +575,33 @@ export const complete = async (
     .select('uuid, status, completed_at, complete_tx_hash, participation_pda')
     .single();
   if (updatedPart.error) throw updatedPart.error;
+
+  if (finalStatus === 'success') {
+    // Best-effort bump. If it fails, we surface error so it can be fixed (data consistency).
+    const questRes = await supabase
+      .from('quests')
+      .select('reward_per_user, total_reward_pool, total_reward_distributed')
+      .eq('id', row.quest_id)
+      .maybeSingle();
+    if (questRes.error) throw questRes.error;
+    if (!questRes.data) throw404('QUEST_NOT_FOUND', 'Quest not found');
+
+    const q = questRes.data as unknown as QuestRewardRow;
+    const rewardPerUser = BigInt(String(q.reward_per_user));
+    const pool = BigInt(String(q.total_reward_pool));
+    const distributed = BigInt(String(q.total_reward_distributed));
+    const newDistributed = distributed + rewardPerUser;
+
+    if (newDistributed > pool) {
+      throw new AppError(409, 'REWARD_POOL_EXHAUSTED', 'Reward pool exhausted — all slots taken');
+    }
+
+    const bump = await supabase
+      .from('quests')
+      .update({ total_reward_distributed: newDistributed.toString() })
+      .eq('id', row.quest_id);
+    if (bump.error) throw bump.error;
+  }
 
   return {
     uuid: updatedPart.data.uuid,

@@ -390,16 +390,5 @@ export const syncClaimByUserId = async (
     .eq('id', row.id);
   if (upd.error) throw upd.error;
 
-  const pool = BigInt(String(quest.total_reward_pool));
-  const distributed = BigInt(String(quest.total_reward_distributed));
-  const newDistributed = distributed + expectedAmount;
-  if (newDistributed <= pool) {
-    const bump = await supabase
-      .from('quests')
-      .update({ total_reward_distributed: newDistributed.toString() })
-      .eq('id', quest.id);
-    if (bump.error) throw bump.error;
-  }
-
   return { ok: true };
 };
