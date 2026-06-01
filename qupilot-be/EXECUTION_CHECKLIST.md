@@ -159,8 +159,9 @@ User yang sudah login wallet bisa generate / revoke API key untuk dipakai AI Age
   - [ ] Pakai key user lain untuk complete participation user A → **403** (ownership check)
   - [ ] `POST /me/api-key` lagi → key lama otomatis revoked, key lama dipakai → **401**
   - [ ] `GET /me/participations` (Bearer user) → success + `can_claim=true`
-  - [ ] `POST /me/claim` → on-chain transfer SOL terjadi, tx signature claim ada
-  - [ ] `POST /agent/claim` (x-api-key) → reward yang belum di-claim ditransfer ke wallet user (bukan agent); call kedua kalinya `claimed=[]` (idempotent)
+  - [ ] (Claim — agent-assisted) `GET /agent/participations/:uuid/claim-tx` (x-api-key) → dapat `tx_base64` (unsigned)
+  - [ ] (Claim — agent-assisted) Agent sign + broadcast tx claim (di luar BE), lalu `POST /agent/participations/sync-claim` (x-api-key) dengan `{ participation_uuid, claim_tx_hash }` → `{ ok: true }`
+  - [ ] (Alternatif) User sign claim dari website, lalu `POST /me/participations/sync-claim` (Bearer user) untuk update status claim
   - [ ] `GET /leaderboard` → user muncul dengan `total_reward` & `success_rate`
 - [x] **13.4** (Opsional) Bikin `API.md` ringkas — daftar endpoint + contoh request.
 

@@ -231,13 +231,13 @@ Semua endpoint memerlukan JWT dengan role `user`. User hanya bisa **melihat data
 - Menampilkan apakah reward sudah bisa di-claim (`status = success` dan `reward_claimed = false`)
 
 **Claim Reward**
-- Endpoint bulk: claim semua reward dari quest yang sudah `success` dan belum di-claim
-- Trigger transaksi on-chain untuk mengirim reward ke wallet user
-- Setelah berhasil, update `reward_claimed = true` pada semua participation yang di-claim
-- Reward bisa di-claim lewat dua jalur (sama-sama mengirim ke wallet user yang sama):
-  - **Manual** oleh user via dashboard (JWT user) → `POST /me/claim`
-  - **Otomatis** oleh AI Agent atas nama user (API key) → `POST /agent/claim`. Agent tidak menerima reward — destination tetap `users.wallet_address` milik owner API key.
-- Bersifat idempotent: row yang sudah `reward_claimed = true` otomatis di-skip, jadi dual-trigger (user + agent) tidak menyebabkan double-spend.
+- Claim terjadi melalui transaksi on-chain `claim_reward` (user wallet sebagai penerima reward).
+- Backend menyediakan dua hal:
+  1) **Build tx (unsigned)** untuk agent-assisted claim: `GET /agent/participations/:uuid/claim-tx` (auth: `x-api-key`).
+  2) **Sync status claim** setelah tx confirmed:
+     - `POST /agent/participations/sync-claim` (auth: `x-api-key`) untuk flow agent-assisted
+     - `POST /me/participations/sync-claim` (auth: JWT user) untuk flow user dari website
+- Idempotent: participation yang sudah `reward_claimed=true` tidak berubah lagi kalau di-sync ulang.
 
 **Generate API Key untuk AI Agent**
 - Hanya bisa diakses setelah user login pakai wallet (JWT role `user`)
@@ -319,11 +319,11 @@ AI agent mengakses API menggunakan API key via header `x-api-key`. Key di-genera
 - Kalau `failed`: `total_reward_distributed` tidak berubah, pool tidak terpakai.
 
 **Claim Reward (Agent-triggered)**
-- Endpoint: `POST /agent/claim` (auth via `x-api-key`)
-- Agent boleh men-trigger claim semua reward milik user pemilik API key — `user_id` di-resolve dari API key, tidak perlu di body
-- Sama persis dengan logika `POST /me/claim`: loop semua participation `status=success` & `reward_claimed=false` milik user tersebut, transfer SOL on-chain ke `users.wallet_address`, set `reward_claimed=true`
-- Reward selalu masuk ke wallet user — agent tidak pernah jadi destination address
-- Idempotent: aman dipanggil berulang, dan aman kalau user juga manual claim dari dashboard (DB constraint `reward_claimed=true` mencegah double-spend)
+- Tidak ada endpoint “claim-all” untuk agent.
+- Agent-assisted claim dilakukan per participation:
+  1) `GET /agent/participations/:uuid/claim-tx` untuk build unsigned tx `claim_reward`
+  2) agent sign + broadcast (dengan wallet penerima reward)
+  3) `POST /agent/participations/sync-claim` untuk menandai claim di DB
 
 ---
 

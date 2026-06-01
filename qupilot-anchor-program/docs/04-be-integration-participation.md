@@ -15,16 +15,19 @@ Setelah anchor program di-extend dengan `join_quest` / `mark_participation_compl
 | `POST /agent/participations`                                 | `join_quest`                         | BE admin  |
 | `POST /agent/participations/:uuid/complete` (semua step ok)  | `mark_participation_complete`        | BE admin  |
 | `POST /agent/participations/:uuid/complete` (ada step gagal) | `mark_participation_failed`          | BE admin  |
-| `POST /me/participations/sync-claim` (NEW)                   | (none — read-only, parse user tx)    | —         |
-| (none — FE user)                                             | `claim_reward`                       | user      |
+| `GET /agent/participations/:uuid/claim-tx` (agent-assisted)  | (build tx `claim_reward`)            | — (unsigned) |
+| `POST /agent/participations/sync-claim` (agent-assisted)     | (none — read-only, parse claim tx)   | —         |
+| `POST /me/participations/sync-claim` (opsional)              | (none — read-only, parse claim tx)   | —         |
+| (FE user / agent wallet)                                     | `claim_reward`                       | `participation.user_wallet` |
 
-**Yang dihapus dari rencana sebelumnya:**
+**Catatan (align dengan kebutuhan sekarang):**
+- Tidak ada endpoint `POST /agent/claim` “claim-all” (itu membingungkan dan rawan salah persepsi).
+- Kita dukung **agent-assisted claim** lewat pattern yang lebih aman & eksplisit:
+  1) BE membangun tx claim (unsigned) per participation (`GET /agent/participations/:uuid/claim-tx`)
+  2) Agent sign + broadcast menggunakan **wallet penerima reward** (`participation.user_wallet`)
+  3) BE sync status claim (`POST /agent/participations/sync-claim`)
 
-- ❌ Endpoint `POST /agent/claim` — agent tidak lagi punya jalan claim atas nama user.
-- ❌ Endpoint claim relay milik BE — BE tidak pernah jadi signer `claim_reward`.
-- ❌ Flag `QUPILOT_AUTOCLAIM_ON_SUCCESS` dan flow auto-claim di handler `complete`.
-
-Claim eksklusif: **user connect wallet di website → user yang sign tx `claim_reward` → user yang nerima SOL**. BE cuma mirror state ke DB lewat endpoint `sync-claim` (atau event listener nanti).
+Dengan desain ini, reward **tetap** masuk ke wallet user (recipient), dan agent hanya membantu menjalankan transaksi bila ia mengontrol wallet tersebut.
 
 ---
 
@@ -299,25 +302,14 @@ Response:
 
 FE user pakai endpoint ini untuk render tombol "Claim". Sekali user sukses sign+submit `claim_reward`, FE call `sync-claim`, lalu refresh list.
 
-### 4.5 ~~`POST /agent/claim`~~ — DIHAPUS
+### 4.5 `POST /agent/claim` — tidak dipakai
 
-Endpoint ini **tidak lagi ada**. Kalau ada existing handler/route, hapus:
-- Route definition.
-- Service function `claimAgentRewards()` atau sejenis.
-- Schema Zod-nya.
-- Reference di `API.md`.
-- Reference di `qupilot-agent-skills/skills/qupilot-quest-runner/SKILL.md` (lihat §7).
+Kita **tidak menggunakan** endpoint “claim-all” tipe `POST /agent/claim`.
 
-Kalau hapusnya menimbulkan breaking change ke client lama (mis. ada CLI yang masih panggil), return `410 Gone` dengan body:
-```jsonc
-{
-  "error": {
-    "code": "ENDPOINT_REMOVED",
-    "message": "Reward claim is now user-only. Visit https://qupilot.xyz/profile to claim from your wallet."
-  }
-}
-```
-Selama tidak ada client live di luar tim, langsung delete saja.
+Sebagai gantinya, gunakan flow yang lebih eksplisit dan cocok untuk agent runner:
+- `GET /agent/participations/:uuid/claim-tx` → build unsigned tx untuk `claim_reward`
+- agent sign + broadcast dengan wallet penerima (`participation.user_wallet`)
+- `POST /agent/participations/sync-claim` → sync status claim ke DB
 
 ---
 
@@ -373,14 +365,14 @@ Spawn 3 keypairs (provider, user, agent). Airdrop. Lalu jalankan skenario lengka
 1. Provider buat quest via FE → BE.
 2. Agent (pakai API key user) call `POST /agent/participations` → BE call `join_quest` → confirm.
 3. Agent submit `complete` dengan tx hash mock yang valid → BE call `mark_participation_complete` → confirm. Response berisi `complete_tx_hash`, **bukan** `claim_tx_hash`.
-4. User buka FE profile, connect wallet → FE call `GET /me/participations?status=success&reward_claimed=false` → daftar muncul.
-5. User klik claim → FE build `claim_reward` ix, wallet user sign, submit RPC.
-6. FE call `POST /me/participations/sync-claim` dengan tx hash → BE parse log, update DB.
-7. Verifikasi: balance user naik = `reward_per_user - tx_fee`, `reward_claimed=true`, `claim_tx_hash` terisi.
+4. (Claim — agent-assisted) Agent call `GET /agent/participations/:uuid/claim-tx` → dapat `tx_base64` (unsigned).
+5. Agent sign + submit tx claim ke RPC menggunakan **wallet penerima reward** (`participation.user_wallet`), lalu call `POST /agent/participations/sync-claim`.
+6. Verifikasi: balance user naik = `reward_per_user - tx_fee`, `reward_claimed=true`, `claim_tx_hash` terisi.
+7. (Alternatif UX) User claim lewat FE, lalu `POST /me/participations/sync-claim`.
 
 ### 7.3 Adversarial
 
-- Agent (pakai keypair sendiri) coba build & submit `claim_reward` langsung ke RPC dengan `Participation` milik user. Expect: tx revert di constraint `address = participation.user_wallet` pada account `claimer`. Tidak ada lamports berpindah.
+- Agent (pakai keypair yang **bukan** `participation.user_wallet`) coba sign `claim_reward` untuk `Participation` milik user lain. Expect: tx revert di constraint `address = participation.user_wallet` pada account `claimer`. Tidak ada lamports berpindah.
 - BE admin (kalau seseorang punya keypair-nya) coba sign `claim_reward`. Expect: revert sama (admin pubkey ≠ user_wallet).
 - User coba `sync-claim` dengan `claim_tx_hash` punya user lain. Expect: 400 — event `user_wallet` tidak match session user.
 - User coba `sync-claim` dua kali. Expect: idempotent — kedua call → state akhir `reward_claimed=true`, tidak menambah amount.
@@ -398,8 +390,10 @@ Spawn 3 keypairs (provider, user, agent). Airdrop. Lalu jalankan skenario lengka
 - [ ] Migrasi DB: tambah `participations.participation_pda`, `join_tx_hash`, `complete_tx_hash`, `claim_tx_hash`, `reward_claimed`.
 - [ ] Update `POST /agent/participations` → call `join_quest`.
 - [ ] Update `POST /agent/participations/:uuid/complete` → call `mark_participation_complete` / `mark_participation_failed`. Tambah `participation_pda` + `complete_tx_hash` ke response.
-- [ ] Implement `GET /me/participations` (session auth) untuk halaman claim FE.
-- [ ] Implement `POST /me/participations/sync-claim` (session auth) untuk update DB setelah user claim on-chain.
+- [ ] Implement endpoint agent claim:
+  - [ ] `GET /agent/participations/:uuid/claim-tx` (build unsigned tx `claim_reward`)
+  - [ ] `POST /agent/participations/sync-claim` (sync status claim dari tx hash)
+- [ ] (Opsional UX) Implement `POST /me/participations/sync-claim` (session/JWT user) untuk update DB setelah user claim on-chain.
 - [ ] **Hapus** `POST /agent/claim` (route, handler, schema, dokumentasi).
 - [ ] Error mapping per §6.
 - [ ] Background worker `retry-onchain-sync` untuk participation `requires_onchain_sync=true`.
@@ -407,12 +401,9 @@ Spawn 3 keypairs (provider, user, agent). Airdrop. Lalu jalankan skenario lengka
 - [ ] Update `API.md`: hapus `POST /agent/claim`, tambah `GET /me/participations` + `POST /me/participations/sync-claim`.
 - [ ] Update FE provider create form: pass `verifier = NEXT_PUBLIC_QUPILOT_ADMIN_PUBKEY` ke instruction `create_quest`.
 - [ ] Update FE user profile: section "Claim Rewards" yang build → sign → submit RPC → sync ke BE.
-- [ ] Update `qupilot-agent-skills/skills/qupilot-quest-runner/SKILL.md`:
-  - Hapus Phase 4 lama yang menyebut `POST /agent/claim`.
-  - Ganti dengan instruksi: agent tidak claim. Setelah `complete` sukses, agent **harus memberi tahu user** bahwa reward siap di-claim di website QuPilot (`/profile` atau halaman claim).
-- [ ] Update `qupilot-agent-skills/skills/qupilot-quest-runner/references/qupilot-api.md`:
-  - Hapus seksi "Phase 4 — Claim Rewards" dan baris `POST /agent/claim` di error codes / endpoints table.
-  - Tambah catatan di "Notes": "Claiming rewards is a user-only action performed from the QuPilot website. Agents do not call any claim endpoint."
+- [ ] Update `qupilot-agent-skills/skills/qupilot-quest-runner/SKILL.md` dan `references/qupilot-api.md` bila perlu:
+  - Pastikan Phase 4 memakai flow `claim-tx` → sign/broadcast → `sync-claim`
+  - Tegaskan bahwa signer harus wallet penerima reward (`participation.user_wallet`)
 
 ---
 
@@ -420,4 +411,4 @@ Spawn 3 keypairs (provider, user, agent). Airdrop. Lalu jalankan skenario lengka
 
 - Bukan tanggung jawab BE untuk merefund provider kalau quest expire dengan sisa pool. Itu instruction `refund_unallocated` di anchor (roadmap).
 - Bukan tanggung jawab BE untuk meng-handle SPL token reward. Sementara hard-coded SOL.
-- Bukan tanggung jawab BE untuk sign `claim_reward`. Selama-lamanya. Kalau ada tekanan "buatkan auto-claim", arahkan ke channel hanya-user di docs ini.
+- Bukan tanggung jawab BE untuk sign `claim_reward` (BE tidak memegang private key user). BE hanya build unsigned tx (opsional) dan/atau sync status claim.

@@ -23,10 +23,10 @@ Karakteristik penting yang harus dijaga:
 2. **BE adalah authority untuk `join_quest` + `mark_participation_complete` + `mark_participation_failed`.**
    Provider tidak mungkin sign tiap mark_complete (UX), dan agent tidak boleh sign (trust). BE menyimpan keypair admin (`QUPILOT_ADMIN_KEYPAIR`) yang ditetapkan saat `create_quest` sebagai `verifier`.
 3. **Allocate-then-claim.** `mark_participation_complete` cuma me-reserve dana di state PDA `Participation` (idempotent, hemat compute, audit-friendly). Transfer lamports terjadi di `claim_reward` yang ditandatangani user.
-4. **Single-channel claim — hanya user yang sign claim, lewat website.**
-   - **claimer = signer = recipient = `participation.user_wallet`.** Tidak ada relay, tidak ada auto-claim oleh BE, tidak ada agent yang sign claim.
-   - Anchor mengenforce dua hal: (a) signer wajib `participation.user_wallet` via constraint `address = participation.user_wallet` di account `claimer`, (b) lamports keluar dari PDA hanya bisa ke `claimer` itu sendiri (akun yang sama, jadi tidak ada parameter recipient terpisah yang bisa disalahgunakan).
-   - Konsekuensi: tidak ada endpoint API `claim` di BE. Tidak ada flow di mana agent/BE sign claim atas nama user. Reward muncul "siap di-claim" di profile page user; user yang connect wallet dan klik tombol claim.
+4. **Claim tx harus ditandatangani oleh wallet penerima reward (`participation.user_wallet`).**
+   - **claimer = signer = recipient = `participation.user_wallet`.** Ini menjaga agar reward **selalu** masuk ke wallet user, bukan ke wallet lain.
+   - **Agent boleh melakukan “agent-assisted claim” hanya jika agent mengontrol private key dari wallet tersebut** (mis. agent memang berjalan memakai wallet user yang sama, atau user mendelegasikan signing ke agent mereka). Secara on-chain tidak ada perbedaan: yang sign tetap `participation.user_wallet`.
+   - Konsekuensi: BE bisa menyediakan endpoint untuk **membangun** transaksi claim (unsigned) agar agent/user tinggal sign + broadcast, lalu BE melakukan **sync** status claim ke DB. (Detail integrasi endpoint ada di dokumen BE/agent runner; bukan berarti BE/agent menjadi recipient.)
 
 ---
 
@@ -185,6 +185,7 @@ pub struct MarkComplete<'info> {
 ### 3.3 `claim_reward`
 
 Dipanggil **hanya oleh user, dari website**, setelah `participation.status == success`. Tidak ada channel lain — BE tidak relay, agent tidak sign. User yang connect wallet dan klik "Claim".
+> Update: kita dukung **agent-assisted claim**: agent boleh menandatangani & broadcast transaksi **selama signer tetap `participation.user_wallet`**. Dengan kata lain, agent hanya “membantu eksekusi tx”, bukan mengubah siapa recipient reward.
 
 **Argumen:**
 ```rust
@@ -243,24 +244,21 @@ require!(
 Pastikan rent-exempt minimum tetap terjaga supaya PDA tidak ke-close prematurely.
 
 ### 3.3.x Flow claim — single channel via website
+Kita dukung **2 cara** (keduanya tetap mensyaratkan signer = `participation.user_wallet`):
 
-Cuma satu jalur, sengaja sederhana:
-
+**A) User claim lewat website (default UX)**
 1. User buka website, connect wallet (Phantom/Backpack). Wallet ini **wajib sama** dengan `users.wallet_address` yang tersimpan saat register — kalau bukan, FE tidak menampilkan participation apa pun.
 2. FE call BE: `GET /me/participations?status=success&reward_claimed=false` → daftar participation yang siap di-claim. Setiap item mengandung `participation_pda`, `quest_pool_pda`, `reward_amount`.
-3. User klik "Claim" pada salah satu (atau "Claim all"). FE build instruction `claim_reward` per participation:
-   - `claimer` = wallet yang connected (sign-er-nya).
-   - `quest_pool` = `quest_pool_pda` dari response.
-   - `participation` = `participation_pda` dari response.
-4. Wallet user sign tx, FE submit ke RPC langsung (tidak lewat BE).
-5. Setelah confirmed, FE call `POST /me/participations/sync-claim` dengan `{ participation_uuid, claim_tx_hash }` supaya BE update DB (`reward_claimed=true, claim_tx_hash=...`). Alternatif jangka panjang: BE pakai event listener `RewardClaimed` untuk auto-sync — endpoint manual ini cuma jaring pengaman.
+3. FE build instruction `claim_reward` per participation (atau minta BE build tx), lalu wallet user sign & submit ke RPC.
+4. Setelah confirmed, FE call `POST /me/participations/sync-claim` dengan `{ participation_uuid, claim_tx_hash }` supaya BE update DB (`reward_claimed=true, claim_tx_hash=...`).
 
-**Yang tidak ada (deliberate scope cut):**
-- ❌ Tidak ada endpoint `POST /agent/claim`. Agent **tidak** punya cara untuk claim atas nama user.
-- ❌ Tidak ada flow auto-claim di BE saat `mark_complete` sukses (`QUPILOT_AUTOCLAIM_ON_SUCCESS` env var dihapus).
-- ❌ Tidak ada keypair user di BE — BE tidak pernah punya kunci untuk sign atas nama user.
+**B) Agent-assisted claim (agent mengontrol wallet penerima)**
+1. Agent minta BE membangun tx claim untuk participation yang berhasil (mis. endpoint agent `GET /agent/participations/:uuid/claim-tx`).
+2. Agent sign & broadcast tx tersebut menggunakan **wallet yang sama dengan `participation.user_wallet`**.
+3. Agent panggil endpoint sync (mis. `POST /agent/participations/sync-claim`) supaya BE menandai `reward_claimed=true`.
 
-Konsekuensi UX yang dapat diterima: user **wajib** balik ke website untuk klaim. Trade-off-nya: tidak ada surface attack berupa "BE / agent diam-diam claim", dan tidak ada beban fee tersembunyi di treasury BE atau agent.
+Catatan scope:
+- Tetap **tidak ada** endpoint “auto-claim semua” yang membuat BE/agent bisa mengklaim ke wallet lain. Reward selalu dikirim ke `participation.user_wallet` di on-chain constraint.
 
 ### 3.4 `mark_participation_failed`
 
@@ -330,7 +328,7 @@ pub struct RewardClaimed {
 }
 ```
 
-> Catatan: `RewardClaimed` tidak lagi punya field `agent_wallet` karena claim tidak melibatkan agent. Audit "siapa agent yang quest-nya nyumbang" tetap ada di `Participation.agent_wallet` (queryable on-chain) + di event `QuestJoined`.
+> Catatan: `RewardClaimed` tidak punya field `agent_wallet` karena klaim reward tidak perlu mengetahui “siapa yang menjalankan UI/agent” — yang penting signer/recipient tetap `user_wallet`. Audit "siapa agent yang quest-nya nyumbang" tetap ada di `Participation.agent_wallet` (queryable on-chain) + di event `QuestJoined`.
 
 BE memparse event-event ini untuk update DB (mirror state on-chain → off-chain).
 
@@ -386,10 +384,10 @@ pub enum QuestError {
 
 ### 6.2.1 Authorization test (claim — KRITIS, single channel)
 
-Inti security model "hanya user yang sign claim":
+Inti security model: **hanya `participation.user_wallet` yang boleh sign claim** (private key-nya bisa dipegang user langsung atau didelegasikan ke agent untuk agent-assisted claim).
 
 - `claim_reward` dengan `claimer=user_wallet` (sign sendiri) → ✅ success, lamports naik ke user.
-- `claim_reward` dengan `claimer=agent_wallet` (agent coba sign atas nama user) → ❌ Anchor constraint `address = participation.user_wallet` revert.
+- `claim_reward` dengan `claimer=agent_wallet` **yang berbeda** dari `user_wallet` → ❌ Anchor constraint `address = participation.user_wallet` revert.
 - `claim_reward` dengan `claimer=verifier (BE admin)` → ❌ constraint revert. BE secara teknis tidak punya jalan untuk claim atas nama user.
 - `claim_reward` dengan `claimer=provider` → ❌ constraint revert.
 - `claim_reward` dengan `claimer=random_keypair` → ❌ constraint revert.
