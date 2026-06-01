@@ -23,6 +23,10 @@ const swapParams = z
   .object({
     // New (recommended): deterministic token identity via mint addresses.
     // For SOL, use the wrapped SOL mint: So11111111111111111111111111111111111111112
+    from_token: solanaPubkey.optional(),
+    to_token: solanaPubkey.optional(),
+
+    // Backward-compat: earlier mint naming
     from_mint: solanaPubkey.optional(),
     to_mint: solanaPubkey.optional(),
 
@@ -31,8 +35,20 @@ const swapParams = z
     to_token_symbol: z.string().trim().min(1).max(16).optional(),
   })
   .superRefine((v, ctx) => {
+    const hasTokens = Boolean(v.from_token) || Boolean(v.to_token);
     const hasMints = Boolean(v.from_mint) || Boolean(v.to_mint);
     const hasSymbols = Boolean(v.from_token_symbol) || Boolean(v.to_token_symbol);
+
+    if (hasTokens) {
+      if (!v.from_token || !v.to_token) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'swap action_params must include both from_token and to_token',
+          path: ['from_token'],
+        });
+      }
+      return;
+    }
 
     if (hasMints) {
       if (!v.from_mint || !v.to_mint) {
@@ -58,7 +74,8 @@ const swapParams = z
 
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'swap action_params must include either (from_mint,to_mint) or (from_token_symbol,to_token_symbol)',
+      message:
+        'swap action_params must include either (from_token,to_token) or (from_mint,to_mint) or (from_token_symbol,to_token_symbol)',
       path: [],
     });
   });

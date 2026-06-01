@@ -66,8 +66,8 @@ export default function CreateQuestPage() {
   const getDefaultParamsForStepType = (stepType: StepType): StepParam[] => {
     if (stepType === "swap") {
       return [
-        { key: "from_mint", value: "" },
-        { key: "to_mint", value: "" },
+        { key: "from_token", value: "" },
+        { key: "to_token", value: "" },
       ];
     } else if (stepType === "clmm_open") {
       return [
@@ -224,6 +224,8 @@ export default function CreateQuestPage() {
           const stringOnlyFields = [
             "from_token_symbol",
             "to_token_symbol",
+            "from_token",
+            "to_token",
             "from_mint",
             "to_mint",
             "pool",

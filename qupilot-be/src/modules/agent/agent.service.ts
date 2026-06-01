@@ -420,18 +420,23 @@ const verifyStepTx = async (
 ): Promise<boolean> => {
   if (stepType === 'swap') {
     // Prefer mint-based swap verification (deterministic). Fallback to symbol-based.
+    const fromToken = optionalStringField(actionParams, 'from_token');
+    const toToken = optionalStringField(actionParams, 'to_token');
     const fromMint = optionalStringField(actionParams, 'from_mint');
     const toMint = optionalStringField(actionParams, 'to_mint');
     const fromSym = optionalStringField(actionParams, 'from_token_symbol');
     const toSym = optionalStringField(actionParams, 'to_token_symbol');
 
+    const preferredFromMint = fromToken ?? fromMint;
+    const preferredToMint = toToken ?? toMint;
+
     const res = await verifySolanaSwapTxBasic({
       signature: txHash,
       expectedSigner,
-      fromMint: fromMint,
-      toMint: toMint,
-      fromTokenSymbol: fromMint ? undefined : fromSym,
-      toTokenSymbol: toMint ? undefined : toSym,
+      fromMint: preferredFromMint,
+      toMint: preferredToMint,
+      fromTokenSymbol: preferredFromMint ? undefined : fromSym,
+      toTokenSymbol: preferredToMint ? undefined : toSym,
     });
     return res.ok;
   }
