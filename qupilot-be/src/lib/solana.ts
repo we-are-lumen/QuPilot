@@ -5,13 +5,42 @@ import { env } from '../config/env';
 // Connection (lazy singleton)
 // ---------------------------------------------------------------------------
 
-let connection: Connection | null = null;
+type SolanaRpcPurpose = 'qupilot' | 'byreal';
 
-export const getSolanaConnection = (): Connection => {
-  if (!connection) {
-    connection = new Connection(env.SOLANA_RPC_URL, 'confirmed');
+let qupilotConnection: Connection | null = null;
+let byrealConnection: Connection | null = null;
+
+const hasEnv = (k: string): boolean => {
+  const v = process.env[k];
+  return typeof v === 'string' && v.trim().length > 0;
+};
+
+const resolveRpcUrl = (purpose: SolanaRpcPurpose): string => {
+  // Legacy override: if SOLANA_RPC_URL is set and the purpose-specific var isn't set,
+  // use the legacy value (keeps old deployments working).
+  if (purpose === 'byreal') {
+    if (hasEnv('SOLANA_RPC_URL_BYREAL')) return env.SOLANA_RPC_URL_BYREAL;
+    if (hasEnv('SOLANA_RPC_URL')) return process.env.SOLANA_RPC_URL as string;
+    return env.SOLANA_RPC_URL_BYREAL;
   }
-  return connection;
+
+  if (hasEnv('SOLANA_RPC_URL_QUPILOT')) return env.SOLANA_RPC_URL_QUPILOT;
+  if (hasEnv('SOLANA_RPC_URL')) return process.env.SOLANA_RPC_URL as string;
+  return env.SOLANA_RPC_URL_QUPILOT;
+};
+
+export const getSolanaConnection = (purpose: SolanaRpcPurpose = 'qupilot'): Connection => {
+  if (purpose === 'byreal') {
+    if (!byrealConnection) {
+      byrealConnection = new Connection(resolveRpcUrl('byreal'), 'confirmed');
+    }
+    return byrealConnection;
+  }
+
+  if (!qupilotConnection) {
+    qupilotConnection = new Connection(resolveRpcUrl('qupilot'), 'confirmed');
+  }
+  return qupilotConnection;
 };
 
 // ---------------------------------------------------------------------------
@@ -128,7 +157,8 @@ const isValidSignature = (s: string): boolean => {
 export const verifySolanaTxBasic = async (signature: string): Promise<boolean> => {
   if (!isValidSignature(signature)) return false;
 
-  const conn = getSolanaConnection();
+  // Generic helper: default to Byreal/mainnet because most external tx checks are swaps.
+  const conn = getSolanaConnection('byreal');
   const tx = await conn.getParsedTransaction(signature, {
     commitment: 'confirmed',
     maxSupportedTransactionVersion: 0,
@@ -184,7 +214,7 @@ export const verifySolanaSwapTx = async (input: VerifySwapInput): Promise<Verify
   if (!fromTok) return { ok: false, reason: 'UNKNOWN_FROM_TOKEN' };
   if (!toTok) return { ok: false, reason: 'UNKNOWN_TO_TOKEN' };
 
-  const conn = getSolanaConnection();
+  const conn = getSolanaConnection('byreal');
   const tx: ParsedTransactionWithMeta | null = await conn.getParsedTransaction(input.signature, {
     commitment: 'confirmed',
     maxSupportedTransactionVersion: 0,
@@ -268,7 +298,7 @@ export const verifySolanaSwapTxBasic = async (input: VerifySwapBasicInput): Prom
     return { ok: false, reason: 'TX_FAILED' };
   }
 
-  const conn = getSolanaConnection();
+  const conn = getSolanaConnection('byreal');
   const tx: ParsedTransactionWithMeta | null = await conn.getParsedTransaction(input.signature, {
     commitment: 'confirmed',
     maxSupportedTransactionVersion: 0,
@@ -340,7 +370,7 @@ export const verifySolanaClmmOpenTx = async (input: VerifyClmmOpenInput): Promis
     return { ok: false, reason: 'INVALID_MINT' };
   }
 
-  const conn = getSolanaConnection();
+  const conn = getSolanaConnection('byreal');
   const tx = await conn.getParsedTransaction(input.signature, {
     commitment: 'confirmed',
     maxSupportedTransactionVersion: 0,
@@ -369,7 +399,7 @@ export const verifySolanaClmmCloseTx = async (input: VerifyClmmCloseInput): Prom
     return { ok: false, reason: 'INVALID_MINT' };
   }
 
-  const conn = getSolanaConnection();
+  const conn = getSolanaConnection('byreal');
   const tx = await conn.getParsedTransaction(input.signature, {
     commitment: 'confirmed',
     maxSupportedTransactionVersion: 0,
@@ -409,7 +439,7 @@ export const verifySolanaClmmCopyTxBasic = async (
     return { ok: false, reason: 'INVALID_MINT' };
   }
 
-  const conn = getSolanaConnection();
+  const conn = getSolanaConnection('byreal');
   const tx = await conn.getParsedTransaction(input.signature, {
     commitment: 'confirmed',
     maxSupportedTransactionVersion: 0,

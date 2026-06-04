@@ -10,9 +10,19 @@ const envSchemaBase = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 chars'),
   JWT_EXPIRES_IN: z.string().default('7d'),
 
-  // Default to mainnet-beta because Byreal swaps run on mainnet.
-  // If you run QuPilot on devnet, you MUST override this via env var.
-  SOLANA_RPC_URL: z.url().default('https://api.mainnet-beta.solana.com'),
+  /**
+   * Solana RPC configuration
+   *
+   * QuPilot program / rewards may run on devnet, while Byreal swaps & CLMM run on mainnet.
+   * So we separate RPC URLs by purpose:
+   * - SOLANA_RPC_URL_QUPILOT: QuPilot Anchor program (create/join/complete/claim) + event parsing
+   * - SOLANA_RPC_URL_BYREAL: Byreal swap/CLMM verification
+   *
+   * Backward-compat: SOLANA_RPC_URL (legacy) overrides both if the new ones are not set.
+   */
+  SOLANA_RPC_URL: z.url().optional(),
+  SOLANA_RPC_URL_QUPILOT: z.url().default('https://api.devnet.solana.com'),
+  SOLANA_RPC_URL_BYREAL: z.url().default('https://api.mainnet-beta.solana.com'),
   QUPILOT_PROGRAM_ID: z
     .string()
     .trim()

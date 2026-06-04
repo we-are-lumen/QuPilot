@@ -72,7 +72,7 @@ export const getAdminPubkey = (): PublicKey => getAdminKeypair().publicKey;
 export const getProgram = (): anchor.Program => {
   if (program) return program;
 
-  const conn = getSolanaConnection();
+  const conn = getSolanaConnection('qupilot');
   const wallet = new anchor.Wallet(getAdminKeypair());
   const provider = new anchor.AnchorProvider(conn, wallet, { commitment: 'confirmed' });
   const idlAddress = (idl as unknown as { address?: unknown }).address;

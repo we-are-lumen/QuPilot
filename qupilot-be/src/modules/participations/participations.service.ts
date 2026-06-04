@@ -333,7 +333,7 @@ export const syncClaimByUserId = async (
     throw new AppError(409, 'NOT_CLAIMABLE', 'Reward is not yet claimable');
   }
 
-  const conn = getSolanaConnection();
+  const conn = getSolanaConnection('qupilot');
   const delaysMs = [0, 1000, 2000, 4000];
 
   let tx: Awaited<ReturnType<typeof conn.getTransaction>> | null = null;

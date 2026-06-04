@@ -53,7 +53,7 @@ export const verifyCreateQuestTx = async (input: VerifyCreateQuestInput): Promis
   const programId = new PublicKey(env.QUPILOT_PROGRAM_ID);
   const coder = new anchor.BorshCoder(qupilotIdl as unknown as anchor.Idl);
 
-  const conn = getSolanaConnection();
+  const conn = getSolanaConnection('qupilot');
   const delaysMs = [0, 1000, 2000, 4000];
 
   let tx: Awaited<ReturnType<typeof conn.getTransaction>> | null = null;
