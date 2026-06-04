@@ -10,7 +10,9 @@ const envSchemaBase = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 chars'),
   JWT_EXPIRES_IN: z.string().default('7d'),
 
-  SOLANA_RPC_URL: z.url().default('https://api.devnet.solana.com'),
+  // Default to mainnet-beta because Byreal swaps run on mainnet.
+  // If you run QuPilot on devnet, you MUST override this via env var.
+  SOLANA_RPC_URL: z.url().default('https://api.mainnet-beta.solana.com'),
   QUPILOT_PROGRAM_ID: z
     .string()
     .trim()
