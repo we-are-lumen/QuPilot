@@ -24,6 +24,7 @@ import { FiTarget, FiGift, FiSliders, FiPlus, FiTrash2, FiClock } from "react-ic
 import { LuRocket } from "react-icons/lu";
 import { createQuest } from "@/lib/api/quests";
 import type { ICreateQuestPayload, Protocol, StepType } from "@/lib/types/quests";
+import { parseSolToLamports } from "@/lib/utils/format";
 import { createQuestDepositTx, isSolanaWalletInstalled } from "@/lib/utils/wallet";
 import { QUPILOT_PROGRAM_ID } from "@/config";
 
@@ -189,19 +190,19 @@ export default function CreateQuestPage() {
 
     // Validate BigInt reward amounts
     try {
-      const pool = BigInt(totalRewardPool);
-      const perUser = BigInt(rewardPerUser);
+      const pool = parseSolToLamports(totalRewardPool);
+      const perUser = parseSolToLamports(rewardPerUser);
       if (pool <= BigInt(0) || perUser <= BigInt(0)) {
-        toast.danger("Reward pool and reward per user must be positive integers.");
+        toast.danger("Reward pool dan reward per user harus > 0 (dalam SOL).");
         return;
       }
       if (pool < perUser) {
-        setRewardPoolError("Total reward pool cannot be smaller than reward per user.");
-        toast.danger("Validation Error: Total reward pool must be >= Reward per user.");
+        setRewardPoolError("Total reward pool tidak boleh lebih kecil dari reward per user.");
+        toast.danger("Validasi gagal: total reward pool harus >= reward per user.");
         return;
       }
     } catch {
-      toast.danger("Invalid amount values. Please enter integer values.");
+      toast.danger("Invalid amount values. Masukkan angka SOL yang valid (contoh: 1 atau 0.5).");
       return;
     }
 
@@ -265,6 +266,19 @@ export default function CreateQuestPage() {
 
     const questUuid = crypto.randomUUID();
 
+    // Convert UI SOL inputs -> lamports for on-chain + backend storage.
+    let poolLamports: bigint;
+    let perUserLamports: bigint;
+    try {
+      poolLamports = parseSolToLamports(totalRewardPool);
+      perUserLamports = parseSolToLamports(rewardPerUser);
+    } catch {
+      toast.danger("Invalid amount values. Masukkan angka SOL yang valid (contoh: 1 atau 0.5).");
+      setIsLoading(false);
+      setStatusText("");
+      return;
+    }
+
     let depositSignature = txHash.trim();
     try {
       if (!depositSignature) {
@@ -277,8 +291,8 @@ export default function CreateQuestPage() {
         setStatusText("Depositing rewards on-chain...");
         depositSignature = await createQuestDepositTx({
           questUuid,
-          totalRewardPoolLamports: totalRewardPool,
-          rewardPerUserLamports: rewardPerUser,
+          totalRewardPoolLamports: poolLamports.toString(),
+          rewardPerUserLamports: perUserLamports.toString(),
           expiresAtUnixSeconds: String(expiresUnix),
         });
         setTxHash(depositSignature);
@@ -303,8 +317,8 @@ export default function CreateQuestPage() {
       description,
       protocol: protocol as Protocol,
       steps: formattedSteps,
-      total_reward_pool: totalRewardPool,
-      reward_per_user: rewardPerUser,
+      total_reward_pool: poolLamports.toString(),
+      reward_per_user: perUserLamports.toString(),
       reward_token: rewardToken,
       tx_hash: depositSignature,
       expires_at: expiresISO,
@@ -567,7 +581,7 @@ export default function CreateQuestPage() {
                   <Input
                     value={totalRewardPool}
                     onChange={(e) => setTotalRewardPool(e.target.value)}
-                    placeholder="e.g., 10000000 (BigInt format)"
+                    placeholder="e.g., 1 (SOL)"
                     className="rounded-md border border-[#e8e2d9] px-3 py-2.5 text-base shadow-sm focus-visible:border-[#a63420] w-full"
                   />
                 </TextField>
@@ -581,7 +595,7 @@ export default function CreateQuestPage() {
                 <Input
                   value={rewardPerUser}
                   onChange={(e) => setRewardPerUser(e.target.value)}
-                  placeholder="e.g., 1000000 (BigInt format)"
+                  placeholder="e.g., 0.1 (SOL)"
                   className="rounded-md border border-[#e8e2d9] px-3 py-2.5 text-base shadow-sm focus-visible:border-[#a63420]"
                 />
               </TextField>
