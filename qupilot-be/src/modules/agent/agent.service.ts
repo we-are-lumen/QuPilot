@@ -417,7 +417,7 @@ const verifyStepTx = async (
   actionParams: Record<string, unknown>,
   txHash: string,
   expectedSigner: string,
-): Promise<boolean> => {
+): Promise<{ ok: true } | { ok: false; reason: string }> => {
   if (stepType === 'swap') {
     // Prefer mint-based swap verification (deterministic). Fallback to symbol-based.
     const fromToken = optionalStringField(actionParams, 'from_token');
@@ -438,7 +438,7 @@ const verifyStepTx = async (
       fromTokenSymbol: preferredFromMint ? undefined : fromSym,
       toTokenSymbol: preferredToMint ? undefined : toSym,
     });
-    return res.ok;
+    return res.ok ? { ok: true } : { ok: false, reason: res.reason };
   }
 
   if (stepType === 'clmm_open') {
@@ -452,7 +452,7 @@ const verifyStepTx = async (
       token1Mint,
       positionMint,
     });
-    return res.ok;
+    return res.ok ? { ok: true } : { ok: false, reason: res.reason };
   }
 
   if (stepType === 'clmm_close') {
@@ -466,7 +466,7 @@ const verifyStepTx = async (
       token1Mint,
       positionMint,
     });
-    return res.ok;
+    return res.ok ? { ok: true } : { ok: false, reason: res.reason };
   }
 
   if (stepType === 'clmm_copy') {
@@ -478,7 +478,7 @@ const verifyStepTx = async (
       token0Mint,
       token1Mint,
     });
-    return res.ok;
+    return res.ok ? { ok: true } : { ok: false, reason: res.reason };
   }
 
   throw new AppError(500, 'STEP_TYPE_UNKNOWN', 'Quest step type is missing or invalid');
@@ -536,8 +536,13 @@ export const complete = async (
 
     const stepType = base.quest_steps?.step_type;
     const actionParams = (base.quest_steps?.action_params ?? {}) as Record<string, unknown>;
-    const ok = await verifyStepTx(stepType, actionParams, s.tx_hash, expectedSigner);
-    await updateStepParticipation(base.id, ok ? 'success' : 'failed', s.tx_hash);
+    const v = await verifyStepTx(stepType, actionParams, s.tx_hash, expectedSigner);
+    if (!v.ok) {
+      // Important: do NOT mark the step or participation as failed on verification failure.
+      // This allows the agent to retry (e.g., wrong tx hash, RPC flake, wrong token mint).
+      throw new AppError(422, 'STEP_VERIFICATION_FAILED', `Step verification failed: ${v.reason}`);
+    }
+    await updateStepParticipation(base.id, 'success', s.tx_hash);
   }
 
   const finalStatus = await computeFinalStatus(row.id);
