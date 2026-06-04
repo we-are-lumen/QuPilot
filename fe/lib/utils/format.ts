@@ -37,5 +37,6 @@ export function parseSolToLamports(input: string | number | bigint): bigint {
   const whole = BigInt(wholeStr || "0");
   const fracPadded = (fracStr + "000000000").slice(0, 9); // right-pad to 9 decimals
   const frac = BigInt(fracPadded || "0");
-  return whole * 1000000000n + frac;
+  const lamportsPerSol = BigInt("1000000000");
+  return whole * lamportsPerSol + frac;
 }
