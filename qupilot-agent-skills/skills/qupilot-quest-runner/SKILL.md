@@ -19,6 +19,8 @@ This skill teaches an agent the three-phase lifecycle of a QuPilot quest: **fetc
 
 You are not reimplementing trading logic — `byreal-cli` and `byreal-perps-cli` already do that, and they handle wallets, slippage, and confirmations correctly. Your job is to read a quest's structured `steps[]` payload, pick the right CLI command for each step's `step_type`, run it cleanly, and report the resulting tx hash back per step.
 
+> Note: `byreal-perps-cli` is included for **future step types** (perps / Hyperliquid). If you see a perp-like step type today, treat it as **unmapped** and stop (do not guess).
+
 ## Before doing anything else
 
 1. Confirm both companion skills are available. If `byreal-cli` or `byreal-perps-cli` isn't installed and the quest requires them, stop and tell the user to install them — don't try to call npm packages directly, the byreal skills encode safety rails (preview-then-confirm, slippage warnings, no key display) that we inherit by composing them.
@@ -26,24 +28,56 @@ You are not reimplementing trading logic — `byreal-cli` and `byreal-perps-cli`
 3. Confirm the agent has a **Byreal wallet configured** (the same Solana wallet that will execute swaps/CLMM and produce tx hashes). If the agent doesn't have a wallet yet, tell them to install/setup Byreal first and stop.
 4. If `QUPILOT_API_KEY` is missing, **self-register** to obtain a `qpk_...` key:
    - Call `POST /auth/agent/challenge` with `{ wallet_address: QUPILOT_AGENT_WALLET }` to get a `message`.
-   - Sign that exact `message` with the same wallet.
+   - Sign that exact `message` with the **same wallet used by byreal** (it must match `QUPILOT_AGENT_WALLET`).
    - Call `POST /auth/agent/register` with `{ wallet_address, message, signature }` to receive `plaintext: qpk_...`.
    - QuPilot will auto-create the wallet in its `users` table on first register (no pre-approval needed).
-3. Read `references/qupilot-api.md` once at the start of a session — it's the source of truth for endpoint shapes and error codes.
+5. Read `references/qupilot-api.md` once at the start of a session — it's the source of truth for endpoint shapes and error codes.
+
+## Local persistence contract (wajib)
+
+Agent harus punya tempat **persist** untuk:
+- secrets (API key),
+- policy/guardrails (batas amount),
+- state eksekusi (participation UUID, step UUID, tx hash) supaya bisa resume / audit kalau agent “lupa” atau runtime restart.
+
+Gunakan folder khusus QuPilot, misalnya:
+- `./qupilot/.env` **atau** `.env.qupilot` (khusus secrets + policy)
+- `./qupilot/state.json` (khusus state dinamis eksekusi quest)
+
+**Aturan penting:**
+- Jangan commit file-file ini ke git.
+- Kalau agent tidak bisa menulis file di runtime, agent wajib minta user/operator untuk menyimpan nilai-nilai ini secara manual (copy-paste), lalu lanjut setelah terset.
+
+### Format rekomendasi `./qupilot/.env` (secrets + policy)
+
+Minimal:
+```bash
+QUPILOT_API_URL="https://terrahash.xyz/api"
+QUPILOT_API_KEY="qpk_..."
+QUPILOT_AGENT_WALLET="<base58>"
+```
+
+Guardrail trading (contoh — sesuaikan dengan kebutuhan produk):
+```bash
+# Kalau quest bilang "swap any amount", agent TIDAK BOLEH swap seluruh balance.
+# Wajib pakai allowance/limit ini atau tanya user dulu.
+QUPILOT_MAX_SWAP_USD="50"
+QUPILOT_REQUIRE_AMOUNT_CONFIRM="true"
+```
+
 
 ## The three-phase workflow
 
 ### Phase 0 — Agent registration (optional, to obtain `QUPILOT_API_KEY`)
 
 If you do not have an API key yet, you can self-register using your Byreal Solana wallet.
-
+**Important (persistence):** after you successfully register and receive `plaintext: qpk_...`, you must persist it so you don't have to register again. Store it in `./qupilot/.env` (atau `.env.qupilot`) sebagai:
 **Important (persistence):** after you successfully register and receive `plaintext: qpk_...`, you must persist it so you don't have to register again. Store it in your agent's `.env` (or equivalent secret store) as:
 
 ```bash
 QUPILOT_API_KEY="qpk_..."
 ```
 
-Do **not** commit this value to git.
 
 Request a challenge:
 
@@ -54,6 +88,8 @@ curl -sS -X POST -H "Content-Type: application/json" \
 ```
 
 The response includes a `message`. **Sign that exact string** with the same Solana wallet you will use for execution (your Byreal wallet). Then register:
+
+> Requirement: wallet untuk sign challenge **harus sama** dengan wallet yang byreal gunakan untuk eksekusi on-chain, dan harus match `QUPILOT_AGENT_WALLET`. Kalau beda, registrasi/participation bisa gagal atau reward/claim tidak bisa diproses.
 
 ```bash
 curl -sS -X POST -H "Content-Type: application/json" \
@@ -105,11 +141,28 @@ Then walk `quest.steps[]` in `order_index` order. For each step, look up `step_t
 
 - **Always `-o json`.** Text output is for humans; we're parsing.
 - **Always preview first when the byreal skill exposes a preview.** Skipping preview is exactly the kind of shortcut that turns a $50 swap into a $500 loss.
+- **Never “auto-spend” the user's full balance.** If a quest step implies "any amount" (or doesn't specify an amount), you must either:
+  - read an explicit allowance from `./qupilot/.env` (recommended), or
+  - ask the user to confirm a concrete amount first.
 - **Never paste private keys into commands.** The byreal CLIs handle auth via their own SQLite stores or env vars they document themselves.
 - **Capture the on-chain signature** (Solana tx hash, base58) per step. Map it back to the originating `quest.steps[].uuid` — the `complete` endpoint requires `{ step_uuid, tx_hash }` pairs.
 - **If a CLI command returns `success: false`, stop.** Don't retry with different params. Either submit `complete` with the steps you've finished (and let the backend mark the participation `failed`) or stop and report.
 
 If a step's `step_type` isn't in the mapping table, stop. Surface the type to the user with a note that the skill needs an explicit mapping — don't infer.
+
+#### Amount & allowance guardrails (wajib)
+
+Ini untuk mencegah kasus: quest bilang "swap any amount USDC → HYPE", lalu agent malah swap **semua** USDC.
+
+Rules:
+1. Jika step tidak punya amount eksplisit, agent wajib treat itu sebagai "needs user confirmation".
+2. Agent harus punya **allowance** yang persistent di `./qupilot/.env` (atau `.env.qupilot`) sebelum bisa auto-execute.
+3. Jika allowance tidak ada / tidak cocok, agent wajib stop dan minta user set allowance (atau confirm amount sekali), lalu baru lanjut.
+
+Minimal yang harus agent lakukan sebelum submit transaksi:
+- tampilkan quote/preview (output JSON),
+- tampilkan amount yang akan dipakai,
+- minta konfirmasi user jika `QUPILOT_REQUIRE_AMOUNT_CONFIRM=true` atau step amount tidak eksplisit.
 
 ### Phase 3 — Complete (synchronous verification)
 
@@ -146,7 +199,8 @@ This returns `tx_base64` plus `blockhash` / `last_valid_block_height`.
 
 2. Sign + send the transaction using the agent's Solana wallet tooling (Byreal wallet).
    - The signing key must match `QUPILOT_AGENT_WALLET`.
-   - If your tooling cannot broadcast raw transactions, stop and ask for operator help.
+   - If your tooling cannot sign+broadcast a base64 transaction safely, stop and ask for operator help (do not improvise raw key handling).
+   - If there is a supported byreal-cli path to sign/send this tx, use it; otherwise, require a human operator to broadcast.
 
 3. After the tx confirms, sync the claim back to QuPilot so the DB marks it claimed:
 
@@ -226,13 +280,15 @@ Pick the quest with the highest **reward_per_user / estimated_cost**, ignoring a
 ```text
 Every 5-10 minutes:
   - Ensure Byreal wallet exists and env vars are set
-  - If QUPILOT_API_KEY missing: challenge -> sign -> register -> persist to .env
+  - Ensure ./qupilot/.env (or .env.qupilot) exists for secrets + policy
+  - If QUPILOT_API_KEY missing: challenge -> sign -> register -> persist to ./qupilot/.env
   - quests = GET /quests
   - candidates = filter quests by protocol/type + expiry + not in cooldown
   - pick best candidate
   - participation = POST /agent/participations
   - for each step:
-      execute via byreal-cli (preview first) -> capture tx_hash
+      load allowance/policy -> preview -> confirm amount (if needed) -> execute via byreal-cli -> capture tx_hash
+      persist step progress to ./qupilot/state.json
   - POST /agent/participations/:uuid/complete
   - if success and claim enabled:
       GET /agent/participations/:uuid/claim-tx

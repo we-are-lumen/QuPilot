@@ -4,6 +4,14 @@ Use this table when dispatching the steps of a joined quest. Each row shows a qu
 
 If a step's `step_type` isn't covered here, **stop and surface the type to the user** rather than guessing. Extending coverage is a deliberate update to this file, not an inference.
 
+## Preview vs execute (penting)
+
+Untuk setiap step, agent harus melakukan:
+1) **Pre-flight / preview** (quote / dry-run / simulate) memakai jalur yang disediakan oleh `byreal-cli` skill yang terpasang, lalu
+2) **Execute** hanya setelah preview OK dan guardrail amount/allowance terpenuhi.
+
+Jangan menebak flag yang tidak kamu yakin didukung oleh versi `byreal-cli` yang terpasang. Kalau butuh flag/command yang tidak ada di mapping ini, consult skill `byreal-cli` / dokumentasinya terlebih dahulu; jika masih ambigu, **stop**.
+
 The currently supported `step_type` values (per `references/qupilot-api.md`) are:
 
 - `swap`
@@ -34,7 +42,8 @@ All three execute on Byreal via `byreal-cli`. There is no perp/Hyperliquid step 
 **Pre-flight:**
 
 1. `byreal-cli wallet balance -o json` — confirm the input token balance covers the trade plus SOL gas headroom.
-2. `byreal-cli swap execute --input-mint <from_token> --output-mint <to_token> --amount <calc> --dry-run -o json` — inspect the quote, slippage, and notional.
+2. Run the byreal-cli **preview/quote/dry-run** path for swaps (as defined by your installed `byreal-cli` skill) and inspect the quote, slippage, and notional.
+3. If the quest step does not specify an amount (or implies "any amount"), enforce QuPilot allowance rules (see `SKILL.md`) and ask the user to confirm a concrete amount.
 3. If the estimated notional ≥ $1000, preview the trade and have the user confirm before submitting (hard constraint #5 in `SKILL.md`).
 
 **Execute:**
@@ -75,7 +84,7 @@ byreal-cli swap execute \
 
 1. `byreal-cli pool show --token0 <token0_mint> --token1 <token1_mint> -o json` — confirm the pool exists and inspect the current tick.
 2. `byreal-cli wallet balance -o json` — confirm balances for both sides (or that Auto Swap can cover the gap).
-3. Preview the open with the dry-run flag the `byreal-cli` skill prescribes before committing.
+3. Preview/simulate the open using the path the installed `byreal-cli` skill prescribes before committing (do not guess flags).
 
 **Execute:**
 
@@ -113,7 +122,7 @@ In multi-step quests the `position_mint` will usually match the `position_mint` 
 **Pre-flight:**
 
 1. `byreal-cli position list -o json` — confirm a position with the given `position_mint` exists in `QUPILOT_AGENT_WALLET`.
-2. Preview the close so the user can see expected token returns before signing.
+2. Preview/simulate the close so the user can see expected token returns before signing (use the installed `byreal-cli` skill path; do not guess flags).
 
 **Execute:**
 
@@ -144,6 +153,11 @@ byreal-cli position close \
   }
 }
 ```
+
+**Pre-flight:**
+
+1. Treat `amount_usd` as a spending instruction. Enforce any user allowance/policy (see `SKILL.md`) before executing.
+2. Preview/simulate the copy using the path the installed `byreal-cli` skill prescribes (do not guess flags). If preview isn't available, stop.
 
 **Execute:**
 
