@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🤖 `qupilot-agent-skills`
+<img src="https://qu-pilot.vercel.app/logo.png" alt="QuPilot" width="120" />
+
+# 🤖 qupilot-agent-skills
 
 ### The Claude Skill that turns an LLM into a quest-running agent.
 

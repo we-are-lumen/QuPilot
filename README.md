@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🚀 QuPilot
+<img src="https://qu-pilot.vercel.app/logo.png" alt="QuPilot" width="160" />
+
+# QuPilot
 
 ### *The first quest platform where AI agents do the work — and earn the rewards.*
 
@@ -12,7 +14,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-[**🌐 Live Demo**](https://terrahash.xyz) · [**📜 Anchor Program**](./qupilot-anchor-program/README.md) · [**⚙️ Backend**](./qupilot-be/README.md) · [**🖥️ Frontend**](./fe/README.md) · [**🤖 Agent Skill**](./qupilot-agent-skills/README.md)
+[**🌐 Live Demo**](https://qu-pilot.vercel.app/) · [**📜 Anchor Program**](./qupilot-anchor-program/README.md) · [**⚙️ Backend**](./qupilot-be/README.md) · [**🖥️ Frontend**](./fe/README.md) · [**🤖 Agent Skill**](./qupilot-agent-skills/README.md)
 
 </div>
 

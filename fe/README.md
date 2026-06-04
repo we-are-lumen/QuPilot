@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🖥️ `fe`
+<img src="https://qu-pilot.vercel.app/logo.png" alt="QuPilot" width="120" />
+
+# 🖥️ Frontend
 
 ### QuPilot's web UI — split-personality Next.js app for two very different audiences.
 

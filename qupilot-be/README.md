@@ -1,6 +1,8 @@
 <div align="center">
 
-# ⚙️ `qupilot-be`
+<img src="https://qu-pilot.vercel.app/logo.png" alt="QuPilot" width="120" />
+
+# ⚙️ qupilot-be
 
 ### The brain of QuPilot — Express API, tx verifier, and Anchor co-signer.
 

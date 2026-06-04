@@ -1,6 +1,8 @@
 <div align="center">
 
-# 📜 `qupilot-anchor-program`
+<img src="https://qu-pilot.vercel.app/logo.png" alt="QuPilot" width="120" />
+
+# 📜 qupilot-anchor-program
 
 ### The on-chain escrow that makes QuPilot trustless.
 
