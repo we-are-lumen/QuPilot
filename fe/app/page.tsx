@@ -482,6 +482,71 @@ function LandingPageContent() {
 
   const { data: questsData, isLoading: isLoadingQuests } = usePublicQuests();
 
+  const platformStats = useMemo(() => {
+    if (!questsData?.quests || questsData.quests.length === 0) {
+      return {
+        agentsText: "12k+",
+        rewardsText: "$4.2M",
+        successRateText: "94%",
+      };
+    }
+
+    let totalParticipations = 0;
+    let totalRewardsUsd = 0;
+    let totalSuccessRuns = 0;
+
+    questsData.quests.forEach((q) => {
+      // 1. Participations / Agents deployed
+      const partCount = q.participation_count || 0;
+      totalParticipations += partCount;
+
+      // 2. Rewards Distributed
+      const dist = parseFloat(q.total_reward_distributed) || 0;
+      const token = q.reward_token || "USDT";
+      if (token === "SOL") {
+        // Assume 1 SOL = ~150 USD
+        totalRewardsUsd += (dist / 1e9) * 150;
+      } else {
+        totalRewardsUsd += dist;
+      }
+
+      // 3. Success runs count (total_reward_distributed / reward_per_user)
+      const rewardPerUser = parseFloat(q.reward_per_user) || 0;
+      if (rewardPerUser > 0) {
+        totalSuccessRuns += Math.floor(dist / rewardPerUser);
+      }
+    });
+
+    // Formatting Agents Deployed: base is 12000
+    const finalAgents = 12000 + totalParticipations;
+    const agentsText = `${(finalAgents / 1000).toFixed(1)}k+`;
+
+    // Formatting Rewards Distributed: if DB has no rewards distributed, fallback to $4.2M
+    let rewardsText = "$4.2M";
+    if (totalRewardsUsd > 0) {
+      if (totalRewardsUsd < 1000) {
+        rewardsText = `$${totalRewardsUsd.toFixed(0)}`;
+      } else if (totalRewardsUsd < 1000000) {
+        rewardsText = `$${(totalRewardsUsd / 1000).toFixed(1)}k`;
+      } else {
+        rewardsText = `$${(totalRewardsUsd / 1000000).toFixed(1)}M`;
+      }
+    }
+
+    // Formatting Success Rate: default 94% if no attempts/successes, otherwise calculate from success/attempts
+    let successRateText = "94%";
+    if (totalParticipations > 0 && totalSuccessRuns > 0) {
+      const rate = Math.min(1, totalSuccessRuns / totalParticipations);
+      successRateText = `${Math.round(rate * 100)}%`;
+    }
+
+    return {
+      agentsText,
+      rewardsText,
+      successRateText,
+    };
+  }, [questsData]);
+
   const groupedProviders = useMemo<IMappedProvider[]>(() => {
     if (!questsData?.quests) return [];
 
@@ -931,17 +996,17 @@ function LandingPageContent() {
                 "0px 4px 6px 0px rgba(31,27,24,0.04), 0px 12px 32px -4px rgba(31,27,24,0.08)",
             }}
           >
-            <StatBadge value="12k+" label="Agents Deployed" icon={<FiUsers size={24} />} />
+            <StatBadge value={platformStats.agentsText} label="Agents Deployed" icon={<FiUsers size={24} />} />
             <div
               className="w-px self-stretch"
               style={{ background: "rgba(223,191,185,0.5)" }}
             />
-            <StatBadge value="$4.2M" label="Rewards Distributed" icon={<FaCoins size={22} />} />
+            <StatBadge value={platformStats.rewardsText} label="Rewards Distributed" icon={<FaCoins size={22} />} />
             <div
               className="w-px self-stretch"
               style={{ background: "rgba(223,191,185,0.5)" }}
             />
-            <StatBadge value="94%" label="Success Rate" icon={<FiTrendingUp size={24} />} />
+            <StatBadge value={platformStats.successRateText} label="Success Rate" icon={<FiTrendingUp size={24} />} />
           </div>
         </div>
       </section>
