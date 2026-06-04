@@ -24,6 +24,17 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     return;
   }
 
+  // Supabase/PostgREST errors are often plain objects (not instanceof Error),
+  // which would otherwise get collapsed into a generic INTERNAL_ERROR.
+  // Surface the error `code` + `message` so agents can recover (retry, fix params).
+  if (err && typeof err === 'object' && 'message' in err && typeof (err as any).message === 'string') {
+    const code = typeof (err as any).code === 'string' ? (err as any).code : 'INTERNAL_ERROR';
+    const message = (err as any).message as string;
+    console.error('[unhandled object error]', err);
+    res.status(500).json({ error: { code, message } });
+    return;
+  }
+
   console.error('[unhandled error]', err);
   res.status(500).json({
     error: { code: 'INTERNAL_ERROR', message: 'Internal server error' },
