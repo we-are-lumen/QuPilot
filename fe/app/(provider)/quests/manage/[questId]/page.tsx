@@ -18,8 +18,10 @@ import {
   FiAlertTriangle, 
   FiLock, 
   FiCopy,
-  FiClock
+  FiClock,
+  FiExternalLink
 } from "react-icons/fi";
+import { SOLANA_RPC_URL } from "@/config";
 
 export default function ProviderQuestDetailPage() {
   const { questId } = useParams();
@@ -133,13 +135,7 @@ export default function ProviderQuestDetailPage() {
   const { quest, analytics } = data;
   const isActive = new Date(quest.expires_at) > new Date();
 
-  // Dynamic Cosmic Gradients based on Protocol
-  let gradient = "from-[#0d091a] via-[#1c133a] to-[#301c63]"; // Sui/default
-  if (quest.protocol === "byreal") {
-    gradient = "from-[#1a0c08] via-[#3a130c] to-[#631c0f]";
-  } else if (quest.protocol === "bybit") {
-    gradient = "from-[#0a1820] via-[#0d2a3a] to-[#12425c]";
-  }
+
 
   return (
     <div className="flex flex-col gap-8 pb-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -155,36 +151,25 @@ export default function ProviderQuestDetailPage() {
       </div>
 
       {/* Quest Header Hero */}
-      <div className="bg-surface border-2 border-surface-variant rounded-xl p-6 md:p-8 flex flex-col lg:flex-row gap-8 items-center relative overflow-hidden shadow-soft">
+      <div className="bg-surface border-2 border-surface-variant rounded-xl p-6 md:p-8 flex flex-col gap-6 relative overflow-hidden shadow-soft">
         {/* Decorative Blob */}
         <div className="absolute -right-10 -top-10 w-64 h-64 bg-[#ffdad3] rounded-full blur-3xl opacity-60 pointer-events-none" />
 
-        {/* Nebula Illustration */}
-        <div className="relative w-full lg:w-97.75 h-65 lg:h-97.75 rounded-lg bg-[#f5ddd9] shrink-0 overflow-hidden flex items-center justify-center border border-outline-variant shadow-inner">
-          <div className={`absolute inset-0 bg-linear-to-tr ${gradient} animate-pulse opacity-85`} />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-white/10 via-transparent to-black/30" />
-          {/* Star dust effect */}
-          <div className="absolute w-2 h-2 rounded-full bg-white top-12 left-16 animate-ping duration-1000" />
-          <div className="absolute w-1.5 h-1.5 rounded-full bg-white bottom-20 right-24 animate-ping duration-700" />
-          <div className="absolute w-1 h-1 rounded-full bg-white top-32 right-12 animate-pulse" />
-          <div className="absolute w-2 h-2 rounded-full bg-yellow-200 bottom-12 left-32 animate-pulse" />
-
-          <span className="text-display text-white drop-shadow-lg text-center select-none font-extrabold z-10 px-4">
-            {quest.uuid.slice(0, 8).toUpperCase()}
-          </span>
-
-          {/* Overlay Status Badge */}
-          <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm border border-surface-variant rounded-full py-1.5 px-3.5 flex items-center gap-2 shadow-soft">
-            <span className={`w-2.5 h-2.5 rounded-full ${isActive ? 'bg-success animate-pulse' : 'bg-text-muted'}`} />
-            <span className={`text-xs font-sans font-bold ${isActive ? 'text-success' : 'text-text-muted'} capitalize`}>
-              {isActive ? "Active" : "Expired"}
-            </span>
-          </div>
-        </div>
-
         {/* Content Info */}
         <div className="flex-1 flex flex-col gap-4 z-10 w-full">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Chip 
+              color={isActive ? "success" : "default"} 
+              variant="soft" 
+              className={`${
+                isActive 
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200/50" 
+                  : "bg-stone-50 text-stone-600 border-stone-200"
+              } font-bold border flex items-center gap-1.5 shrink-0`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'} inline-block`} />
+              <Chip.Label>{isActive ? "Active" : "Expired"}</Chip.Label>
+            </Chip>
             <Chip variant="soft" className="bg-secondary-fixed text-on-secondary-fixed font-bold border border-secondary-container/20 capitalize">
               <Chip.Label>{quest.protocol}</Chip.Label>
             </Chip>
@@ -289,19 +274,16 @@ export default function ProviderQuestDetailPage() {
                 <div className="bg-surface border border-outline-variant rounded-lg p-4 flex flex-col gap-1.5 shadow-sm">
                   <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Creation Transaction</span>
                   <div className="flex items-center justify-between text-text-primary font-mono text-[13px] font-bold">
-                    <div className="flex items-center gap-2">
-                      <FiActivity className="text-secondary" />
-                      <span>{quest.tx_hash.slice(0, 6)}...{quest.tx_hash.slice(-4)}</span>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(quest.tx_hash || "");
-                        alert("Transaction hash copied!");
-                      }} 
-                      className="text-text-muted hover:text-primary transition-colors p-1"
+                    <a
+                      href={`https://solscan.io/tx/${quest.tx_hash}${SOLANA_RPC_URL.includes("devnet") ? "?cluster=devnet" : ""}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-[#a63420] hover:underline"
                     >
-                      <FiCopy />
-                    </button>
+                      <FiActivity className="text-secondary shrink-0" />
+                      <span>{quest.tx_hash.slice(0, 6)}...{quest.tx_hash.slice(-4)}</span>
+                      <FiExternalLink className="text-[11px] shrink-0" />
+                    </a>
                   </div>
                 </div>
               )}
@@ -310,19 +292,16 @@ export default function ProviderQuestDetailPage() {
                 <div className="bg-surface border border-outline-variant rounded-lg p-4 flex flex-col gap-1.5 shadow-sm">
                   <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Quest Pool PDA</span>
                   <div className="flex items-center justify-between text-text-primary font-mono text-[13px] font-bold">
-                    <div className="flex items-center gap-2">
-                      <FiCheckCircle className="text-success" />
-                      <span>{quest.quest_pool_pda.slice(0, 6)}...{quest.quest_pool_pda.slice(-4)}</span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(quest.quest_pool_pda || "");
-                        alert("Quest pool PDA copied!");
-                      }}
-                      className="text-text-muted hover:text-primary transition-colors p-1"
+                    <a
+                      href={`https://solscan.io/account/${quest.quest_pool_pda}${SOLANA_RPC_URL.includes("devnet") ? "?cluster=devnet" : ""}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-[#a63420] hover:underline"
                     >
-                      <FiCopy />
-                    </button>
+                      <FiCheckCircle className="text-success shrink-0" />
+                      <span>{quest.quest_pool_pda.slice(0, 6)}...{quest.quest_pool_pda.slice(-4)}</span>
+                      <FiExternalLink className="text-[11px] shrink-0" />
+                    </a>
                   </div>
                 </div>
               )}
@@ -331,19 +310,16 @@ export default function ProviderQuestDetailPage() {
                 <div className="bg-surface border border-outline-variant rounded-lg p-4 flex flex-col gap-1.5 shadow-sm">
                   <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Quest ID On-chain</span>
                   <div className="flex items-center justify-between text-text-primary font-mono text-[13px] font-bold">
-                    <div className="flex items-center gap-2">
-                      <FiCheckCircle className="text-success" />
-                      <span>{quest.quest_id_onchain.slice(0, 10)}...{quest.quest_id_onchain.slice(-6)}</span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(quest.quest_id_onchain || "");
-                        alert("Quest id on-chain copied!");
-                      }}
-                      className="text-text-muted hover:text-primary transition-colors p-1"
+                    <a
+                      href={`https://solscan.io/account/${quest.quest_id_onchain}${SOLANA_RPC_URL.includes("devnet") ? "?cluster=devnet" : ""}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-[#a63420] hover:underline"
                     >
-                      <FiCopy />
-                    </button>
+                      <FiCheckCircle className="text-success shrink-0" />
+                      <span>{quest.quest_id_onchain.slice(0, 10)}...{quest.quest_id_onchain.slice(-6)}</span>
+                      <FiExternalLink className="text-[11px] shrink-0" />
+                    </a>
                   </div>
                 </div>
               )}

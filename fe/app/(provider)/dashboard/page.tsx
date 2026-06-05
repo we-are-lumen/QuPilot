@@ -12,9 +12,10 @@ import {
   LuBot, 
   LuCircleCheck, 
   LuArrowRight, 
-  LuSparkles, 
-  LuMilestone 
+  LuSparkles,
+  LuExternalLink
 } from "react-icons/lu";
+import { SOLANA_RPC_URL } from "@/config";
 
 const truncateAddress = (addr?: string | null) => {
   if (!addr) return "-";
@@ -276,51 +277,30 @@ export default function ProviderDashboard() {
 
           const isActive = new Date(quest.expires_at) > new Date();
 
-          let gradient = "from-[#0d091a] via-[#1c133a] to-[#301c63]"; // Sui/default
-          if (quest.protocol === "byreal") {
-            gradient = "from-[#1a0c08] via-[#3a130c] to-[#631c0f]";
-          } else if (quest.protocol === "bybit") {
-            gradient = "from-[#0a1820] via-[#0d2a3a] to-[#12425c]";
-          }
-
-          const firstStepType = quest.steps?.[0]?.step_type;
-
           return (
             <Card key={quest.uuid} className="bg-white border border-[#dfbfb94d] rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-              {/* Visual Cover Header */}
-              <div className={`h-40 bg-linear-to-br ${gradient} relative p-4 flex flex-col justify-between overflow-hidden`}>
-                {/* Decorative Stars */}
-                <div className="absolute inset-0 opacity-20 pointer-events-none">
-                  <div className="absolute top-4 left-6 w-1 h-1 bg-white rounded-full animate-ping" />
-                  <div className="absolute top-12 right-16 w-1.5 h-1.5 bg-white rounded-full" />
-                  <div className="absolute bottom-8 left-20 w-0.5 h-0.5 bg-white rounded-full" />
-                </div>
-                
-                <Chip 
-                  size="sm"
-                  className={`${
-                    isActive 
-                      ? "bg-[#10b981e5]" 
-                      : "bg-[#6b6560e5]"
-                  } text-white font-bold self-end border-none shadow-sm`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full bg-white mr-1 inline-block ${isActive ? 'animate-pulse' : ''}`} />
-                  <Chip.Label>{isActive ? "Active" : "Expired"}</Chip.Label>
-                </Chip>
-
-                {/* Icon Overlay inside Cover */}
-                <div className="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white">
-                  {firstStepType === "swap" ? <LuSparkles className="text-lg" /> : <LuMilestone className="text-lg" />}
-                </div>
-              </div>
-
               {/* Quest Details */}
               <Card.Content className="p-5 flex flex-col gap-4">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-lg font-bold text-[#1f1b18] hover:text-[#a63420] transition-colors leading-snug">
-                    <Link href={`/quests/manage/${quest.uuid}`}>{quest.title}</Link>
-                  </h3>
-                  <Chip size="sm" className="bg-[#ffe9e5] text-[#a63420] border-[#a63420]/20 border font-bold px-2 py-0.5 capitalize">
+                  <div className="flex flex-col gap-1.5 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-lg font-bold text-[#1f1b18] hover:text-[#a63420] transition-colors leading-snug">
+                        <Link href={`/quests/manage/${quest.uuid}`}>{quest.title}</Link>
+                      </h3>
+                      <Chip 
+                        size="sm"
+                        className={`${
+                          isActive 
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                            : "bg-stone-50 text-stone-600 border-stone-200"
+                        } font-bold border px-2 py-0.5 shrink-0 flex items-center gap-1.5`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'} inline-block`} />
+                        <Chip.Label>{isActive ? "Active" : "Expired"}</Chip.Label>
+                      </Chip>
+                    </div>
+                  </div>
+                  <Chip size="sm" className="bg-[#ffe9e5] text-[#a63420] border-[#a63420]/20 border font-bold px-2 py-0.5 capitalize shrink-0">
                     {quest.protocol}
                   </Chip>
                 </div>
@@ -331,9 +311,15 @@ export default function ProviderDashboard() {
 
                 <div className="bg-[#fcfbfa] border border-[#dfbfb94d] rounded-lg p-3 flex items-center justify-between">
                   <span className="text-[10px] text-[#6b6560] uppercase tracking-wider font-bold">Pool PDA</span>
-                  <span className="text-xs font-mono font-bold text-[#1f1b18]">
+                  <a
+                    href={`https://solscan.io/account/${quest.quest_pool_pda}${SOLANA_RPC_URL.includes("devnet") ? "?cluster=devnet" : ""}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-mono font-bold text-[#a63420] hover:underline flex items-center gap-1"
+                  >
                     {truncateAddress(quest.quest_pool_pda)}
-                  </span>
+                    <LuExternalLink className="text-[10px] shrink-0" />
+                  </a>
                 </div>
 
                 {/* Metrics Row */}

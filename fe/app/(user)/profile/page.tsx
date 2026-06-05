@@ -25,8 +25,6 @@ import {
   FaTrophy,
   FaCompass,
   FaWater,
-  FaShareNodes,
-  FaRoute,
   FaSpinner,
   FaCheck,
   FaLock,
@@ -65,7 +63,10 @@ export default function UserProfilePage() {
     ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
     : "AstroExplorer";
   const activeSince = user?.created_at
-    ? new Date(user.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long" })
+    ? new Date(user.created_at).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+      })
     : "";
 
   const { data: participationsData, isLoading: isLoadingParticipations } =
@@ -92,9 +93,10 @@ export default function UserProfilePage() {
   const formattedTotalEarned = formatLamportsToSol(totalEarnedLamports);
   const formattedTotalUnclaimed = formatLamportsToSol(totalUnclaimedLamports);
 
-  const completionRate = participations.length > 0
-    ? (completedQuests.length / participations.length) * 100
-    : 0;
+  const completionRate =
+    participations.length > 0
+      ? (completedQuests.length / participations.length) * 100
+      : 0;
   const formattedCompletion = isLoadingParticipations
     ? "..."
     : `${completionRate.toFixed(1)}%`;
@@ -133,7 +135,7 @@ export default function UserProfilePage() {
           questPoolPda: p.quest_pool_pda,
           participationPda: p.participation_pda,
         });
-        
+
         // Sync with the backend
         await syncClaimRewardMutate({
           participation_uuid: p.uuid,
@@ -143,28 +145,15 @@ export default function UserProfilePage() {
       alert("Successfully claimed rewards!");
     } catch (err: any) {
       console.error("Claim rewards failed:", err);
-      alert(err?.message || "Failed to claim rewards on-chain. Please make sure your wallet is connected and has enough SOL for transaction fees.");
+      alert(
+        err?.message ||
+          "Failed to claim rewards on-chain. Please make sure your wallet is connected and has enough SOL for transaction fees.",
+      );
     } finally {
       setIsClaiming(false);
     }
   };
 
-  const getIconForQuest = (type?: string, protocol?: string) => {
-    if (type === "swap") return FaRoute;
-    if (type === "clmm_open" || type === "clmm_close") return FaWater;
-    if (
-      protocol?.toLowerCase().includes("twitter") ||
-      protocol?.toLowerCase() === "x"
-    )
-      return FaShareNodes;
-    return FaRocket;
-  };
-
-  const getIconColor = (type?: string) => {
-    if (type === "swap") return "text-[#006767]";
-    if (type === "clmm_open" || type === "clmm_close") return "text-[#6746c5]";
-    return "text-[#a63420]";
-  };
 
   const newLocal =
     "rounded-xl border border-[#dfbfb94d] bg-white p-8 shadow-sm transition-all duration-300 hover:shadow-md";
@@ -451,11 +440,13 @@ export default function UserProfilePage() {
                           Unclaimed Rewards
                         </span>
                         <span className="text-sm font-extrabold text-[#065f46]">
-                          {formattedTotalUnclaimed} • {unclaimedQuests.length} quest
+                          {formattedTotalUnclaimed} • {unclaimedQuests.length}{" "}
+                          quest
                           {unclaimedQuests.length > 1 ? "s" : ""}
                         </span>
                         <span className="text-[11px] text-[#047857] font-medium">
-                          Disclaimer: claim will submit an on-chain transaction and may require SOL for fees.
+                          Disclaimer: claim will submit an on-chain transaction
+                          and may require SOL for fees.
                         </span>
                       </div>
 
@@ -497,21 +488,24 @@ export default function UserProfilePage() {
                       </div>
                     ) : (
                       activeQuests.map((participation) => {
-                        const QuestIcon = getIconForQuest(
-                          participation.quest.steps[0]?.step_type,
-                          participation.quest.protocol,
-                        );
-                        const iconColor = getIconColor(
-                          participation.quest.steps[0]?.step_type,
-                        );
                         return (
                           <div
                             key={participation.uuid}
                             className="bg-[#f8f4ef] border border-[#dfbfb94d] rounded-xl p-5 flex flex-col md:flex-row gap-5 items-stretch justify-between transition-all duration-200 hover:border-[#ebdcd6] hover:shadow-2xs"
                           >
                             <div className="flex gap-4 items-start flex-1">
-                              <div className="w-12 h-12 rounded-lg bg-white border border-[#dfbfb94d] flex items-center justify-center text-xl shrink-0 shadow-3xs">
-                                <QuestIcon className={iconColor} />
+                              <div className="w-12 h-12 rounded-lg bg-white border border-[#dfbfb94d] flex items-center justify-center text-xl shrink-0 shadow-3xs overflow-hidden">
+                                {participation.quest.provider?.logo_url ? (
+                                  <img
+                                    src={participation.quest.provider.logo_url}
+                                    alt={participation.quest.provider.display_name || "Provider"}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-[#ffdad3] text-[#a63420] font-bold text-lg">
+                                    {(participation.quest.provider?.display_name || "P").charAt(0).toUpperCase()}
+                                  </div>
+                                )}
                               </div>
                               <div className="flex-1 flex flex-col gap-2">
                                 <div className="flex items-center gap-2.5">
@@ -533,7 +527,11 @@ export default function UserProfilePage() {
                                     </span>
                                     <span className="whitespace-nowrap">
                                       Reward:{" "}
-                                      {participation.quest.reward_per_user} XP
+                                      {formatLamportsToSol(
+                                        BigInt(
+                                          participation.quest.reward_per_user,
+                                        ),
+                                      )}
                                     </span>
                                   </div>
                                   <ProgressBar
@@ -584,21 +582,24 @@ export default function UserProfilePage() {
                       </div>
                     ) : (
                       completedQuests.map((participation) => {
-                        const QuestIcon = getIconForQuest(
-                          participation.quest.steps[0]?.step_type,
-                          participation.quest.protocol,
-                        );
-                        const iconColor = getIconColor(
-                          participation.quest.steps[0]?.step_type,
-                        );
                         return (
                           <div
                             key={participation.uuid}
                             className="bg-[#f8f4ef] border border-[#dfbfb94d] rounded-xl p-5 flex flex-col md:flex-row gap-5 items-stretch justify-between transition-all duration-200 hover:border-[#ebdcd6] hover:shadow-2xs"
                           >
                             <div className="flex gap-4 items-start flex-1">
-                              <div className="w-12 h-12 rounded-lg bg-white border border-[#dfbfb94d] flex items-center justify-center text-xl shrink-0 shadow-3xs">
-                                <QuestIcon className={iconColor} />
+                              <div className="w-12 h-12 rounded-lg bg-white border border-[#dfbfb94d] flex items-center justify-center text-xl shrink-0 shadow-3xs overflow-hidden">
+                                {participation.quest.provider?.logo_url ? (
+                                  <img
+                                    src={participation.quest.provider.logo_url}
+                                    alt={participation.quest.provider.display_name || "Provider"}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-[#ffdad3] text-[#a63420] font-bold text-lg">
+                                    {(participation.quest.provider?.display_name || "P").charAt(0).toUpperCase()}
+                                  </div>
+                                )}
                               </div>
                               <div className="flex-1 flex flex-col gap-2">
                                 <div className="flex items-center gap-2.5">
@@ -620,10 +621,14 @@ export default function UserProfilePage() {
                                       {new Date(
                                         participation.completed_at || "",
                                       ).toLocaleDateString()}
-                                    </span>
+                                    </span>{" "}
                                     <span className="whitespace-nowrap">
                                       Reward:{" "}
-                                      {participation.quest.reward_per_user} XP
+                                      {formatLamportsToSol(
+                                        BigInt(
+                                          participation.quest.reward_per_user,
+                                        ),
+                                      )}
                                     </span>
                                   </div>
                                   <ProgressBar
