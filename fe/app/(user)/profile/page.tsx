@@ -46,6 +46,16 @@ export default function UserProfilePage() {
   const [user, setUser] = useState<IUser | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
 
+  const formatLamportsToSol = (lamports: bigint): string => {
+    const sol = Number(lamports) / 1e9;
+    return (
+      new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 6,
+      }).format(sol) + " SOL"
+    );
+  };
+
   useEffect(() => {
     setUser(getUserData());
   }, []);
@@ -71,14 +81,16 @@ export default function UserProfilePage() {
 
   const questsDone = completedQuests.length;
 
-  const totalXp = completedQuests.reduce(
-    (acc, p) => acc + BigInt(p.quest.reward_per_user || 0),
+  const totalEarnedLamports = completedQuests.reduce(
+    (acc, p) => acc + BigInt(String(p.quest.reward_per_user ?? 0)),
     BigInt(0),
   );
-  const formattedXp =
-    totalXp >= BigInt(1000)
-      ? `${(Number(totalXp) / 1000).toFixed(1)}k`
-      : totalXp.toString();
+  const totalUnclaimedLamports = unclaimedQuests.reduce(
+    (acc, p) => acc + BigInt(String(p.quest.reward_per_user ?? 0)),
+    BigInt(0),
+  );
+  const formattedTotalEarned = formatLamportsToSol(totalEarnedLamports);
+  const formattedTotalUnclaimed = formatLamportsToSol(totalUnclaimedLamports);
 
   const completionRate = participations.length > 0
     ? (completedQuests.length / participations.length) * 100
@@ -253,13 +265,13 @@ export default function UserProfilePage() {
 
                   <div className="bg-[#f8f4ef] border border-[#dfbfb94d] rounded-xl p-4 flex flex-col gap-1 transition-all duration-200 hover:scale-[1.02] hover:shadow-2xs">
                     <span className="text-[10px] text-[#6b6560] font-bold uppercase tracking-wider">
-                      Reward
+                      Total Earned
                     </span>
                     {isLoadingParticipations ? (
                       <Skeleton className="w-16 h-8 rounded-lg mt-1" />
                     ) : (
                       <span className="text-2xl font-extrabold text-[#6746c5]">
-                        {formattedXp}
+                        {formattedTotalEarned}
                       </span>
                     )}
                   </div>
@@ -428,32 +440,44 @@ export default function UserProfilePage() {
                           <Tabs.Indicator className="absolute -bottom-2.25 left-0 right-0 h-0.75 bg-[#a63420] rounded-full" />
                         </Tabs.Tab>
                       </Tabs.List>
-
-                      {/* Claim Rewards Button above tabs */}
-                      {unclaimedQuests.length > 0 && (
-                        <Button
-                          onPress={handleClaimRewards}
-                          isDisabled={isClaiming}
-                          className="bg-[#10b981] hover:bg-[#0ea5e9] text-white font-bold py-1.5 px-4 rounded-full text-xs shadow-md transition-colors flex items-center gap-1.5 cursor-pointer font-sans"
-                        >
-                          {isClaiming ? (
-                            <>
-                              <span className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent" />
-                              <span>Claiming...</span>
-                            </>
-                          ) : (
-                            <>
-                              <FaGift className="text-[12px]" />
-                              <span>
-                                Claim {unclaimedQuests.length} Reward
-                                {unclaimedQuests.length > 1 ? "s" : ""}
-                              </span>
-                            </>
-                          )}
-                        </Button>
-                      )}
                     </div>
                   </Tabs.ListContainer>
+
+                  {/* Rewards banner (better UX than squeezing a CTA into the tab header) */}
+                  {unclaimedQuests.length > 0 && (
+                    <div className="bg-[#ecfdf5] border border-[#10b98133] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-[#065f46] font-bold uppercase tracking-wider">
+                          Unclaimed Rewards
+                        </span>
+                        <span className="text-sm font-extrabold text-[#065f46]">
+                          {formattedTotalUnclaimed} • {unclaimedQuests.length} quest
+                          {unclaimedQuests.length > 1 ? "s" : ""}
+                        </span>
+                        <span className="text-[11px] text-[#047857] font-medium">
+                          Disclaimer: claim will submit an on-chain transaction and may require SOL for fees.
+                        </span>
+                      </div>
+
+                      <Button
+                        onPress={handleClaimRewards}
+                        isDisabled={isClaiming}
+                        className="bg-[#10b981] hover:bg-[#0f9d78] text-white font-bold py-2 px-4 rounded-full text-xs shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer font-sans w-full sm:w-auto"
+                      >
+                        {isClaiming ? (
+                          <>
+                            <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+                            <span>Claiming...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FaGift className="text-[12px]" />
+                            <span>Claim now</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
 
                   {/* Tab Panel: Active Quests */}
                   <Tabs.Panel id="active" className="flex flex-col gap-4 mt-2">
