@@ -28,6 +28,38 @@ You are not reimplementing trading logic — `byreal-cli` and `byreal-perps-cli`
 
 > Note: `byreal-perps-cli` is included for **future step types** (perps / Hyperliquid). If you see a perp-like step type today, treat it as **unmapped** and stop (do not guess).
 
+## Network model (HYBRID — MUST understand)
+
+QuPilot (program + rewards) and Byreal (swap/CLMM) can run on **different Solana networks**.
+
+In our current setup, assume this HYBRID model unless the user/operator says otherwise:
+- **Byreal swap/CLMM tx (proof)**: **mainnet**
+- **QuPilot program tx (join/complete/claim + rewards state)**: **devnet**
+
+This is why the same quest flow can touch two clusters:
+- Step tx hashes (`swap`, `clmm_*`) come from mainnet (Byreal).
+- Participation/reward state is tracked by the QuPilot program (devnet).
+
+### Phase → network mapping
+
+- Fetch quest list/detail: HTTP only (no Solana network)
+- Join participation: QuPilot program **devnet** (`join_tx_hash` is a devnet tx)
+- Execute steps:
+  - `swap`, `clmm_open`, `clmm_close`, `clmm_copy`: **mainnet** (Byreal)
+- Complete:
+  - verify step tx hashes: **mainnet**
+  - mark participation complete/failed: QuPilot program **devnet** (`complete_tx_hash` is a devnet tx)
+- Claim:
+  - claim tx: QuPilot program **devnet**
+
+### RPC env vars (MUST set explicitly)
+
+Use two RPC URLs:
+- `SOLANA_RPC_URL_BYREAL` → mainnet (example: `https://api.mainnet.solana.com`)
+- `SOLANA_RPC_URL_QUPILOT` → devnet (example: `https://api.devnet.solana.com`)
+
+If an agent sees `TX_NOT_FOUND` / `RPC_NETWORK_MISMATCH`, it's almost always a misconfigured RPC.
+
 ## Before doing anything else
 
 1. Confirm both companion skills are available. If `byreal-cli` or `byreal-perps-cli` isn't installed and the quest requires them, stop and tell the user to install them — don't try to call npm packages directly, the byreal skills encode safety rails (preview-then-confirm, slippage warnings, no key display) that we inherit by composing them.
@@ -132,6 +164,12 @@ curl -sS -X POST -H "Content-Type: application/json" \
 ```
 
 Save the returned `plaintext` as `QUPILOT_API_KEY` (it is shown once).
+
+#### API key format (MUST, no placeholder / truncation)
+
+`QUPILOT_API_KEY` MUST be stored as the **full literal key** (example: `qpk_...` full string).
+Never store or paste truncated placeholders like `qpk_55…6NhH` / `qpk_55...6NhH`.
+If the user/operator only provides a truncated key, the agent MUST stop and ask for the full key.
 
 ### MUST: Run log / audit trail (per participation)
 
@@ -300,8 +338,14 @@ curl -sS -H "x-api-key: $QUPILOT_API_KEY" \
 
 This returns `tx_base64` plus `blockhash` / `last_valid_block_height`.
 
+**Blockhash note (MUST):** blockhash can expire quickly. Correct flow:
+1) call `claim-tx`,
+2) **immediately** sign+send,
+3) if it fails due to blockhash/expired → call `claim-tx` again to get a fresh transaction.
+
 2. Sign + send the transaction using the agent's Solana wallet tooling (Byreal wallet).
    - The signing key must match `QUPILOT_AGENT_WALLET`.
+   - The claim transaction MUST be sent to the QuPilot program network (typically devnet) → use `SOLANA_RPC_URL_QUPILOT`.
    - If your tooling cannot sign+broadcast a base64 transaction safely, stop and ask for operator help (do not improvise raw key handling).
    - If there is a supported byreal-cli path to sign/send this tx, use it; otherwise, require a human operator to broadcast.
 

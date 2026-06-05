@@ -12,6 +12,9 @@ Source of truth for the `qupilot-quest-runner` skill. Only the endpoints an AI a
 - `Content-Type: application/json` for all requests with a body.
 - All timestamps are ISO strings (`2026-05-22T00:00:00.000Z`).
 
+**Important:** `QUPILOT_API_KEY` must be the **full literal key** (e.g. `qpk_...` complete string).
+Do not use truncated placeholders like `qpk_55…6NhH` / `qpk_55...6NhH` — they will fail with `INVALID_API_KEY`.
+
 ### Reward amounts
 
 All reward fields (`total_reward_pool`, `reward_per_user`, `total_reward_distributed`, `claimed[].amount`) are `bigint` in the DB and sent as **string numerics** in JSON (e.g. `"1000000"`) to avoid JS precision loss. Reward token is always `SOL` (lamports).
@@ -142,6 +145,9 @@ You **must** keep `steps[].uuid` for each step — you'll need it when submittin
 
 Auth: `x-api-key`
 
+**Network context (HYBRID):** joining updates participation state in the **QuPilot program network** (typically devnet).
+This is separate from Byreal swap/CLMM tx hashes (mainnet).
+
 Body:
 
 ```json
@@ -179,6 +185,13 @@ After executing each step on-chain (e.g. via `byreal-cli`), submit one `tx_hash`
 ### `POST /agent/participations/:uuid/complete`
 
 Auth: `x-api-key`
+
+**Network context (HYBRID):**
+- `steps[].tx_hash` must be a **Byreal on-chain signature on mainnet** (swap/CLMM proof).
+- Backend verifies the proof tx on mainnet, then writes participation status in the QuPilot program network (typically devnet).
+
+**Troubleshooting:**
+- `TX_NOT_FOUND` / `RPC_NETWORK_MISMATCH` usually means the Byreal verifier RPC is not pointing to mainnet.
 Path param: `:uuid` = `participation.uuid` from join.
 
 Body:
@@ -304,6 +317,11 @@ All reward totals are lamports (bigint string).
 ### `GET /agent/participations/:uuid/claim-tx`
 
 Auth: `x-api-key`
+
+**Network context:** the returned claim transaction targets the **QuPilot program network** (typically devnet).
+If you broadcast it on mainnet, you may see `ProgramAccountNotFound`.
+
+**Blockhash:** blockhash can expire quickly. If signing/sending fails due to blockhash, re-fetch `claim-tx` to get a fresh transaction.
 
 Builds an **unsigned** transaction for `claim_reward` that must be signed by the agent wallet.
 

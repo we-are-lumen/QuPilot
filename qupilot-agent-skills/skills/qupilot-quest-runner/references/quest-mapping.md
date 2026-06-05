@@ -39,6 +39,8 @@ All three execute on Byreal via `byreal-cli`. There is no perp/Hyperliquid step 
 }
 ```
 
+**Network context:** `swap` proof tx is executed on **Byreal (mainnet)**. The tx hash you submit to QuPilot `complete` must be a **mainnet Solana signature**.
+
 **Pre-flight:**
 
 1. `byreal-cli wallet balance -o json` — confirm the input token balance covers the trade plus SOL gas headroom.

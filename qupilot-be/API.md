@@ -7,6 +7,20 @@
 - Semua timestamp: ISO string (`2026-05-22T00:00:00.000Z`)
 - **Reward amount:** semua nilai reward (`quests.total_reward_pool`, `quests.reward_per_user`, `quests.total_reward_distributed`, `claimed[].amount`, `leaderboard.total_reward`) di-store sebagai `bigint` di DB dan dikirim sebagai **string numeric** di JSON response (mis. `"1000000"`) untuk menghindari precision loss di JavaScript. FE pakai `BigInt(...)` atau library decimal kalau perlu hitung. Saat create quest, body boleh kirim string atau number — server akan coerce ke bigint. Note: `quest_participations` **tidak** punya kolom reward — nominal claim direfer ke `quests.reward_per_user` yang immutable.
 
+## Konteks Network (devnet vs mainnet)
+
+QuPilot bisa berjalan dalam mode **HYBRID**:
+- **Byreal swap/CLMM transactions (proof)** terjadi di **mainnet** dan menghasilkan signature mainnet.
+- **QuPilot program transactions** (join/complete/claim state & rewards) bisa berjalan di **devnet** (tergantung deployment).
+
+Implikasi penting:
+- `POST /agent/participations/:uuid/complete` akan **memverifikasi** `steps[].tx_hash` di mainnet (Byreal), lalu bisa mengirim tx QuPilot di devnet untuk menandai completion.
+- `GET /agent/participations/:uuid/claim-tx` mengembalikan tx claim yang harus dibroadcast di **network QuPilot program** (seringnya devnet). Kalau dibroadcast di mainnet bisa gagal dengan `ProgramAccountNotFound`.
+
+Troubleshooting:
+- Kalau `TX_NOT_FOUND`, cek RPC verifier Byreal harus mainnet.
+- Kalau claim gagal karena blockhash expired, re-fetch `claim-tx` (jangan pakai tx_base64 lama).
+
 ## Error Response
 
 ```json
