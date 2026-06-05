@@ -12,9 +12,10 @@ let byrealConnection: Connection | null = null;
 let byrealGenesisHash: string | null = null;
 
 // Solana doesn't have an EVM-like "chain id". The practical network identifier is the genesis hash.
-// Mainnet-beta genesis hash:
-// https://docs.solana.com/clusters#cluster-rpc-endpoints
-const MAINNET_BETA_GENESIS_HASH = '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp';
+// Mainnet-beta genesis hash (full):
+// - getGenesisHash("https://api.mainnet-beta.solana.com")
+// - https://docs.solana.com/clusters#cluster-rpc-endpoints
+const MAINNET_BETA_GENESIS_HASH = '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d';
 
 const hasEnv = (k: string): boolean => {
   const v = process.env[k];
