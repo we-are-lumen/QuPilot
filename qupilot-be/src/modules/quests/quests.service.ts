@@ -48,6 +48,26 @@ export type QuestAnalytics = {
   success_rate: number;
 };
 
+export type QuestAgentParticipant = {
+  uuid: string;
+  status: 'inprogress' | 'success' | 'failed';
+  reward_claimed: boolean;
+  started_at: string;
+  completed_at: string | null;
+  agent_wallet_address: string | null;
+  participation_pda: string | null;
+  join_tx_hash: string | null;
+  complete_tx_hash: string | null;
+  claim_tx_hash: string | null;
+  reward_amount: number | string;
+  user: {
+    uuid: string;
+    wallet_address: string;
+    display_name: string | null;
+    logo_url: string | null;
+  } | null;
+};
+
 export type ProviderDepositHighlights = ProviderSummary & {
   total_deposit_reward_pool: string;
 };
@@ -218,7 +238,7 @@ const countParticipations = async (
 export const getDetailForProvider = async (
   providerUuid: string,
   questUuid: string,
-): Promise<{ quest: QuestPublic; analytics: QuestAnalytics }> => {
+): Promise<{ quest: QuestPublic; analytics: QuestAnalytics; participants: QuestAgentParticipant[] }> => {
   const provider_id = await resolveProviderId(providerUuid);
 
   const { data, error } = await supabase
@@ -246,8 +266,46 @@ export const getDetailForProvider = async (
     success_rate: total > 0 ? success / total : 0,
   };
 
+  const { data: participationData, error: participationError } = await supabase
+    .from('quest_participations')
+    .select(
+      'uuid, status, reward_claimed, started_at, completed_at, agent_wallet_address, participation_pda, join_tx_hash, complete_tx_hash, claim_tx_hash, users(uuid, wallet_address, display_name, logo_url)',
+    )
+    .eq('quest_id', row.id)
+    .order('started_at', { ascending: false });
+
+  if (participationError) throw participationError;
+
+  const participantRows = (participationData ?? []) as unknown as Array<
+    Omit<QuestAgentParticipant, 'reward_amount' | 'user'> & {
+      users:
+        | {
+            uuid: string;
+            wallet_address: string;
+            display_name: string | null;
+            logo_url: string | null;
+          }
+        | {
+            uuid: string;
+            wallet_address: string;
+            display_name: string | null;
+            logo_url: string | null;
+          }[]
+        | null;
+    }
+  >;
+
+  const participants = participantRows.map((participant) => {
+    const { users, ...restParticipant } = participant;
+    return {
+      ...restParticipant,
+      reward_amount: row.reward_per_user,
+      user: Array.isArray(users) ? users[0] ?? null : users,
+    };
+  });
+
   const { id: _id, ...rest } = row;
-  return { quest: normalizeQuest(rest) as QuestPublic, analytics };
+  return { quest: normalizeQuest(rest) as QuestPublic, analytics, participants };
 };
 
 // ---------------------------------------------------------------------------

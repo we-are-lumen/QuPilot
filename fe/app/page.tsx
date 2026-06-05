@@ -19,6 +19,7 @@ import { FiX, FiCpu, FiTarget } from "react-icons/fi";
 import { getUserData, clearAuth } from "@/lib/utils/auth";
 import { disconnectWallet } from "@/lib/utils/wallet";
 import { usePublicQuests } from "@/lib/hooks/useQuests";
+import { usePublicStats } from "@/lib/hooks/usePublicStats";
 import type { IQuestStep } from "@/lib/types/quests";
 import AuthModal from "./components/AuthModal";
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -556,14 +557,22 @@ function LandingPageContent() {
   }, []);
 
   const { data: questsData, isLoading: isLoadingQuests } = usePublicQuests();
+  const { data: statsData } = usePublicStats();
 
-  //TODO: wait for backend to provide real data and update this
   const platformStats = useMemo(() => {
+    if (statsData?.stats) {
+      return {
+        agentsText: statsData.stats.agents_deployed.display_value,
+        rewardsText: statsData.stats.total_rewards_earned.display_value,
+        successRateText: statsData.stats.success_rate.display_value,
+      };
+    }
+
     if (!questsData?.quests || questsData.quests.length === 0) {
       return {
-        agentsText: "12,842",
-        rewardsText: "$2.48M",
-        successRateText: "98.6%",
+        agentsText: "12.845",
+        rewardsText: "2.48M SOL",
+        successRateText: "99.6%",
       };
     }
 
@@ -619,7 +628,7 @@ function LandingPageContent() {
       rewardsText,
       successRateText,
     };
-  }, [questsData]);
+  }, [questsData, statsData]);
 
   const groupedProviders = useMemo<IMappedProvider[]>(() => {
     if (!questsData?.quests) return [];

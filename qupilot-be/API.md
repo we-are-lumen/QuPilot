@@ -74,6 +74,44 @@ Response:
 { "ok": true }
 ```
 
+## Public Stats
+
+### GET /public/stats
+
+Public. Untuk statistik landing page.
+
+Sumber data:
+
+- `agents_deployed`: count semua row `quest_participations`.
+- `total_rewards_earned`: sum `quests.total_reward_distributed`, dikonversi dari lamports ke SOL.
+- `success_rate`: count `quest_participations.status=success` / total participation.
+
+200 Response (contoh):
+
+```json
+{
+  "stats": {
+    "agents_deployed": {
+      "label": "Agents Deployed",
+      "value": 12,
+      "display_value": "12"
+    },
+    "total_rewards_earned": {
+      "label": "Total Rewards Earned",
+      "value": 0.25,
+      "display_value": "0.25 SOL",
+      "currency": "SOL"
+    },
+    "success_rate": {
+      "label": "Success Rate",
+      "value": 75,
+      "ratio": 0.75,
+      "display_value": "75.0%"
+    }
+  }
+}
+```
+
 ## Auth — Wallet (User / Provider)
 
 ### POST /auth/user/login
@@ -260,9 +298,32 @@ Auth: Wallet JWT dengan role=user_provider
     "expires_at": "...",
     "created_at": "..."
   },
-  "analytics": { "total": 0, "success": 0, "failed": 0, "success_rate": 0 }
+  "analytics": { "total": 1, "success": 0, "failed": 0, "success_rate": 0 },
+  "participants": [
+    {
+      "uuid": "uuid",
+      "status": "inprogress",
+      "reward_claimed": false,
+      "started_at": "...",
+      "completed_at": null,
+      "agent_wallet_address": "AgentWalletBase58",
+      "participation_pda": "Base58Pda",
+      "join_tx_hash": "SolanaSignatureBase58",
+      "complete_tx_hash": null,
+      "claim_tx_hash": null,
+      "reward_amount": "1000000",
+      "user": {
+        "uuid": "uuid",
+        "wallet_address": "UserWalletBase58",
+        "display_name": null,
+        "logo_url": null
+      }
+    }
+  ]
 }
 ```
+
+`participants` berisi agent participation untuk quest milik provider tersebut, diurutkan dari yang paling baru. `reward_amount` mengacu ke `quest.reward_per_user` karena nominal reward tidak disimpan di `quest_participations`.
 
 ### PATCH /provider/quests/:uuid
 

@@ -10,6 +10,7 @@ import { participationsRouter } from './modules/participations/participations.ro
 import { apiKeysRouter } from './modules/api-keys/api-keys.routes';
 import { agentRouter } from './modules/agent/agent.routes';
 import { leaderboardRouter } from './modules/leaderboard/leaderboard.routes';
+import { publicStatsRouter } from './modules/public-stats/public-stats.routes';
 
 export const createApp = (): Express => {
   const app = express();
@@ -31,6 +32,7 @@ export const createApp = (): Express => {
   app.use(apiKeysRouter);
   app.use(agentRouter);
   app.use(leaderboardRouter);
+  app.use(publicStatsRouter);
 
   app.use(errorHandler);
 

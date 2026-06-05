@@ -215,6 +215,7 @@ Semua endpoint memerlukan JWT dengan role `user_provider`.
 **Lihat Detail Quest**
 - Menampilkan detail lengkap satu quest berdasarkan `uuid`
 - Termasuk analytics: jumlah eksekusi, jumlah success, jumlah failed, success rate
+- Termasuk list agent participants untuk quest tersebut: status, agent wallet, user wallet, tx hashes, PDA, reward claimed, timestamp, dan reward amount dari `quests.reward_per_user`
 
 ---
 

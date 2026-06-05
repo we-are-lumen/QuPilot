@@ -55,9 +55,30 @@ export interface IQuestAnalytics {
   success_rate: number;
 }
 
+export interface IQuestAgentParticipant {
+  uuid: string;
+  status: 'inprogress' | 'success' | 'failed';
+  reward_claimed: boolean;
+  started_at: string;
+  completed_at: string | null;
+  agent_wallet_address: string | null;
+  participation_pda: string | null;
+  join_tx_hash: string | null;
+  complete_tx_hash: string | null;
+  claim_tx_hash: string | null;
+  reward_amount: string;
+  user: {
+    uuid: string;
+    wallet_address: string;
+    display_name: string | null;
+    logo_url: string | null;
+  } | null;
+}
+
 export interface IProviderQuestDetailResponse {
   quest: IQuest;
   analytics: IQuestAnalytics;
+  participants: IQuestAgentParticipant[];
 }
 
 export interface IPublicQuest extends IQuest {
@@ -87,4 +108,3 @@ export interface IPublicHighlightsResponse {
   top_quests: IPublicQuest[];
   top_providers: ITopProvider[];
 }
-
