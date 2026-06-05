@@ -39,10 +39,12 @@ Agent harus punya tempat **persist** untuk:
 - secrets (API key),
 - policy/guardrails (batas amount),
 - state eksekusi (participation UUID, step UUID, tx hash) supaya bisa resume / audit kalau agent “lupa” atau runtime restart.
+- **run log** (audit trail) yang mencatat semua request/response penting + tx hash on-chain.
 
 Gunakan folder khusus QuPilot, misalnya:
 - `./qupilot/.env` **atau** `.env.qupilot` (khusus secrets + policy)
 - `./qupilot/state.json` (khusus state dinamis eksekusi quest)
+- `./qupilot/runs/<participation_uuid>.json` (log per run/participation, mudah di-debug)
 
 **Aturan penting:**
 - Jangan commit file-file ini ke git.
@@ -56,6 +58,11 @@ QUPILOT_API_URL="https://terrahash.xyz/api"
 QUPILOT_API_KEY="qpk_..."
 QUPILOT_AGENT_WALLET="<base58>"
 ```
+
+**WAJIB:** setelah registrasi berhasil dan agent menerima `plaintext: qpk_...`, agent harus:
+1) menampilkan nilai key itu ke user (sekali, jangan disensor),
+2) secara eksplisit menyuruh user untuk menyimpannya (copy-paste),
+3) dan (kalau bisa) menuliskannya ke `./qupilot/.env`.
 
 Guardrail trading (contoh — sesuaikan dengan kebutuhan produk):
 ```bash
@@ -71,8 +78,10 @@ QUPILOT_REQUIRE_AMOUNT_CONFIRM="true"
 ### Phase 0 — Agent registration (optional, to obtain `QUPILOT_API_KEY`)
 
 If you do not have an API key yet, you can self-register using your Byreal Solana wallet.
-**Important (persistence):** after you successfully register and receive `plaintext: qpk_...`, you must persist it so you don't have to register again. Store it in `./qupilot/.env` (atau `.env.qupilot`) sebagai:
-**Important (persistence):** after you successfully register and receive `plaintext: qpk_...`, you must persist it so you don't have to register again. Store it in your agent's `.env` (or equivalent secret store) as:
+**WAJIB (persistence):** setelah registrasi sukses dan menerima `plaintext: qpk_...`, agent harus memastikan key itu **tersimpan**:
+- Prefer: tulis ke `./qupilot/.env` (atau `.env.qupilot`)
+- Kalau tidak bisa menulis file: agent wajib minta user untuk menyimpan key tersebut secara manual
+Dan setelah itu agent harus lanjut hanya setelah user mengonfirmasi key sudah disimpan.
 
 ```bash
 QUPILOT_API_KEY="qpk_..."
@@ -98,6 +107,38 @@ curl -sS -X POST -H "Content-Type: application/json" \
 ```
 
 Save the returned `plaintext` as `QUPILOT_API_KEY` (it is shown once).
+
+### Wajib: Run log / audit trail (per participation)
+
+Selain `state.json`, agent **wajib** menyimpan log run supaya kalau verifikasi gagal / ada retry / ada dispute reward, operator bisa audit.
+
+Target file rekomendasi:
+- `./qupilot/runs/<participation_uuid>.json`
+
+Minimal isi file (contoh):
+```json
+{
+  "participation_uuid": "....",
+  "quest_uuid": "....",
+  "agent_wallet": "....",
+  "started_at": "ISO",
+  "phases": {
+    "join": { "ok": true, "join_tx_hash": "..." },
+    "steps": [
+      {
+        "step_uuid": "...",
+        "step_type": "swap",
+        "action_params": { "from_token": "...", "to_token": "..." },
+        "tx_hash": "...",
+        "verified": true
+      }
+    ],
+    "complete": { "ok": true, "status": "success", "complete_tx_hash": "..." }
+  }
+}
+```
+
+Kalau agent tidak bisa menulis file, agent wajib print JSON di chat dan menyuruh user menyimpannya (copy-paste ke file).
 
 ### Phase 1 — Fetch
 
@@ -136,6 +177,9 @@ curl -sS -X POST -H "x-api-key: $QUPILOT_API_KEY" \
 ```
 
 Save the returned `participation.uuid` — you'll need it for `complete`. There is **no** `claim_token` and there is **no** `abandon` endpoint; if execution fails, just stop and surface the error, or submit `complete` with whatever steps you did finish (the backend will mark the participation `failed` if any step's verification fails).
+
+**WAJIB (persistence):** segera setelah join sukses:
+- simpan `participation.uuid`, `join_tx_hash`, dan snapshot `quest.steps[]` (uuid + action_params) ke `./qupilot/state.json` dan `./qupilot/runs/<participation_uuid>.json`.
 
 Then walk `quest.steps[]` in `order_index` order. For each step, look up `step_type` in `references/quest-mapping.md` and run the prescribed byreal command. A few principles regardless of `step_type`:
 
@@ -177,10 +221,15 @@ curl -sS -X POST -H "x-api-key: $QUPILOT_API_KEY" \
 
 Possible `participation.status` values in the response:
 - `success` — all steps verified, reward will be distributable.
-- `failed` — at least one step failed verification; participation is terminal.
+- `failed` — participation gagal (mis. ada step yang memang sudah ditandai failed oleh backend / atau gagal di proses onchain QuPilot).
 - `inprogress` — partial submission; submit the remaining steps in another `complete` call.
 
 When `status` is `success`, tell the user the quest cleared and what `reward_per_user` they earned (lamports → SOL). When `status` is `failed`, quote the `error.message` verbatim — don't soften it, the user needs the actual signal.
+
+**Catatan penting (retry behavior):** jika backend mengembalikan error verifikasi (mis. `TX_NOT_FOUND`, mismatch token mint, dsb), agent harus:
+1) mencatat error tersebut ke run log,
+2) memperbaiki input (mis. tx hash salah / RPC beda),
+3) dan **retry** `complete` tanpa harus join ulang (selama participation masih `inprogress`).
 
 ### Phase 4 — Claim reward (agent-controlled wallet)
 
