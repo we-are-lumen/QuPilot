@@ -157,6 +157,51 @@ The response includes a `message`. **Sign that exact string** with the same Sola
 - Do NOT ask the operator to paste private keys into chat or command history.
 - After the operator provides the `signature` (base58), proceed to the register endpoint.
 
+**Shell-safe handling (MUST — avoid newline/escaping bugs):**
+
+The challenge `message` contains newlines. Do **not** embed it directly into a `curl -d "{...\"message\":\"...\"}"` string — it commonly corrupts JSON.
+
+Use one of these patterns:
+
+**Pattern A (recommended): write JSON body via `jq`**
+1) Request challenge and capture the message:
+```bash
+challenge_json="$(curl -sS -X POST -H "Content-Type: application/json" \
+  -d "{\"wallet_address\":\"$QUPILOT_AGENT_WALLET\"}" \
+  "$QUPILOT_API_URL/auth/agent/challenge")"
+message="$(echo "$challenge_json" | jq -r '.message')"
+```
+2) Save the message to a file for signing (keeps exact newlines):
+```bash
+printf "%s" "$message" > qupilot_challenge.txt
+```
+3) Produce `signature` with trusted wallet tooling (must sign the exact file content), then build the register payload safely:
+```bash
+jq -n \
+  --arg wallet "$QUPILOT_AGENT_WALLET" \
+  --arg message "$message" \
+  --arg signature "<base58-signature>" \
+  '{wallet_address:$wallet, message:$message, signature:$signature}' \
+  > qupilot_register.json
+
+curl -sS -X POST -H "Content-Type: application/json" \
+  -d @qupilot_register.json \
+  "$QUPILOT_API_URL/auth/agent/register"
+```
+
+**Pattern B: base64 the message (still safe)**
+```bash
+msg_b64="$(echo "$challenge_json" | jq -r '.message | @base64')"
+message="$(echo "$msg_b64" | base64 -d)"
+```
+
+**Node module resolution note (tweetnacl not found):**
+If you use Node.js helpers for signing/verifying, run them from a directory that has `node_modules` (project root / skill workspace), not `/tmp`.
+If your runtime insists on `/tmp`, you must set `NODE_PATH` to point at the directory that contains `tweetnacl` (but avoid this if you can).
+
+**Key material note (tweetnacl secret key size):**
+`tweetnacl.sign.detached` expects a 64-byte ed25519 secretKey (do not `.slice(0,32)`).
+
 ```bash
 curl -sS -X POST -H "Content-Type: application/json" \
   -d "{\"wallet_address\":\"$QUPILOT_AGENT_WALLET\",\"message\":\"<challenge-message>\",\"signature\":\"<base58-signature>\"}" \
@@ -170,6 +215,19 @@ Save the returned `plaintext` as `QUPILOT_API_KEY` (it is shown once).
 `QUPILOT_API_KEY` MUST be stored as the **full literal key** (example: `qpk_...` full string).
 Never store or paste truncated placeholders like `qpk_55…6NhH` / `qpk_55...6NhH`.
 If the user/operator only provides a truncated key, the agent MUST stop and ask for the full key.
+
+#### API key stability rule (MUST — do not re-register / rotate casually)
+
+The agent MUST treat the first successfully issued `QUPILOT_API_KEY` as the long-lived credential and **keep using it**.
+
+Important backend behavior: `POST /auth/agent/register` **rotates** the agent key (it revokes any previously active key for that wallet/user and issues a new one). Therefore:
+- The agent MUST NOT “auto re-register” as a recovery mechanism.
+- On `401 INVALID_API_KEY`, the agent MUST stop and ask the operator to fix the environment / provide the correct **full** key (or explicitly confirm they want to rotate).
+- The agent MAY re-register only when:
+  1) `QUPILOT_API_KEY` is genuinely missing and cannot be recovered, **and**
+  2) the user/operator explicitly approves rotating/replacing the key.
+
+If multiple runtimes/agents share the same wallet, they MUST coordinate (otherwise one re-register can invalidate the other agent's key).
 
 ### MUST: Run log / audit trail (per participation)
 
@@ -317,6 +375,21 @@ Possible `participation.status` values in the response:
 - If there is no `tx_hash` at all, the agent may stop without `complete` (there is no on-chain proof to verify).
 
 When `status` is `success`, tell the user the quest cleared and what `reward_per_user` they earned (lamports → SOL). When `status` is `failed`, quote the `error.message` verbatim — don't soften it, the user needs the actual signal.
+
+#### Reward display rule (MUST — avoid “500M SOL” bug)
+
+`reward_per_user` is **lamports** (string bigint), not SOL.
+
+Correct conversion:
+- `reward_sol = BigInt(reward_per_user) / 1_000_000_000`
+
+Display rule:
+1) Always convert lamports → SOL first.
+2) Only after conversion, apply human formatting if needed.
+3) Never attach `k/M` suffixes to the raw lamports value.
+
+Example:
+- `reward_per_user = "500000000"` → `0.5 SOL` (NOT “500M SOL”)
 
 **Important (retry behavior):** if the backend returns a verification error (e.g., `TX_NOT_FOUND`, token mint mismatch, etc.), the agent MUST:
 1) log the error to the run log,

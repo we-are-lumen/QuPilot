@@ -385,7 +385,10 @@ export const syncClaim = async (userId: number, body: SyncClaimBody): Promise<{ 
 const resolveStepRow = async (participationId: number, stepUuid: string): Promise<StepRow> => {
   const stepRow = await supabase
     .from('quest_step_participations')
-    .select('id, status, step_id, quest_steps(uuid, step_type, action_params)')
+    // IMPORTANT: use an inner join so that filtering on quest_steps.uuid is applied correctly.
+    // Without `!inner`, PostgREST may ignore the embedded filter and return multiple rows,
+    // causing `maybeSingle()` to throw PGRST116.
+    .select('id, status, step_id, quest_steps!inner(uuid, step_type, action_params)')
     .eq('participation_id', participationId)
     .eq('quest_steps.uuid', stepUuid)
     .maybeSingle();

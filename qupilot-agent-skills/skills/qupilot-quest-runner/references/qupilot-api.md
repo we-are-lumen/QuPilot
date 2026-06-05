@@ -15,9 +15,16 @@ Source of truth for the `qupilot-quest-runner` skill. Only the endpoints an AI a
 **Important:** `QUPILOT_API_KEY` must be the **full literal key** (e.g. `qpk_...` complete string).
 Do not use truncated placeholders like `qpk_55…6NhH` / `qpk_55...6NhH` — they will fail with `INVALID_API_KEY`.
 
+**Key rotation warning:** `POST /auth/agent/register` rotates the agent API key (revokes any previously active key for that wallet/user and issues a new one). Agents should not re-register unless they intentionally want to rotate/replace the key.
+
+**Shell escaping warning (challenge messages):** challenge `message` includes newlines. Do not inline it into a quoted JSON string in shell; prefer writing a JSON file via `jq` and passing `-d @file.json`.
+
 ### Reward amounts
 
 All reward fields (`total_reward_pool`, `reward_per_user`, `total_reward_distributed`, `claimed[].amount`) are `bigint` in the DB and sent as **string numerics** in JSON (e.g. `"1000000"`) to avoid JS precision loss. Reward token is always `SOL` (lamports).
+
+**Display rule:** convert lamports → SOL by dividing by `1e9` before any `k/M` formatting.
+Example: `"500000000"` lamports = `0.5 SOL` (not “500M SOL”).
 
 ---
 
