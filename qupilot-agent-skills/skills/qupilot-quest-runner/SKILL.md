@@ -157,6 +157,51 @@ The response includes a `message`. **Sign that exact string** with the same Sola
 - Do NOT ask the operator to paste private keys into chat or command history.
 - After the operator provides the `signature` (base58), proceed to the register endpoint.
 
+**Shell-safe handling (MUST — avoid newline/escaping bugs):**
+
+The challenge `message` contains newlines. Do **not** embed it directly into a `curl -d "{...\"message\":\"...\"}"` string — it commonly corrupts JSON.
+
+Use one of these patterns:
+
+**Pattern A (recommended): write JSON body via `jq`**
+1) Request challenge and capture the message:
+```bash
+challenge_json="$(curl -sS -X POST -H "Content-Type: application/json" \
+  -d "{\"wallet_address\":\"$QUPILOT_AGENT_WALLET\"}" \
+  "$QUPILOT_API_URL/auth/agent/challenge")"
+message="$(echo "$challenge_json" | jq -r '.message')"
+```
+2) Save the message to a file for signing (keeps exact newlines):
+```bash
+printf "%s" "$message" > qupilot_challenge.txt
+```
+3) Produce `signature` with trusted wallet tooling (must sign the exact file content), then build the register payload safely:
+```bash
+jq -n \
+  --arg wallet "$QUPILOT_AGENT_WALLET" \
+  --arg message "$message" \
+  --arg signature "<base58-signature>" \
+  '{wallet_address:$wallet, message:$message, signature:$signature}' \
+  > qupilot_register.json
+
+curl -sS -X POST -H "Content-Type: application/json" \
+  -d @qupilot_register.json \
+  "$QUPILOT_API_URL/auth/agent/register"
+```
+
+**Pattern B: base64 the message (still safe)**
+```bash
+msg_b64="$(echo "$challenge_json" | jq -r '.message | @base64')"
+message="$(echo "$msg_b64" | base64 -d)"
+```
+
+**Node module resolution note (tweetnacl not found):**
+If you use Node.js helpers for signing/verifying, run them from a directory that has `node_modules` (project root / skill workspace), not `/tmp`.
+If your runtime insists on `/tmp`, you must set `NODE_PATH` to point at the directory that contains `tweetnacl` (but avoid this if you can).
+
+**Key material note (tweetnacl secret key size):**
+`tweetnacl.sign.detached` expects a 64-byte ed25519 secretKey (do not `.slice(0,32)`).
+
 ```bash
 curl -sS -X POST -H "Content-Type: application/json" \
   -d "{\"wallet_address\":\"$QUPILOT_AGENT_WALLET\",\"message\":\"<challenge-message>\",\"signature\":\"<base58-signature>\"}" \
