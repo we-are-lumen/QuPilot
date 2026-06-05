@@ -48,28 +48,28 @@ You are not reimplementing trading logic — `byreal-cli` and `byreal-perps-cli`
      - `references/quest-mapping.md`
      - `references/qupilot-api.md`
 
-## Local persistence contract (wajib)
+## Local persistence contract (MUST)
 
-Agent harus punya tempat **persist** untuk:
+The agent MUST have a persistent place to store:
 - secrets (API key),
-- policy/guardrails (batas amount),
-- state eksekusi (participation UUID, step UUID, tx hash) supaya bisa resume / audit kalau agent “lupa” atau runtime restart.
-- **run log** (audit trail) yang mencatat semua request/response penting + tx hash on-chain.
+- policy / guardrails (amount limits),
+- execution state (participation UUID, step UUID, tx hash) so it can resume / audit if the runtime restarts,
+- a **run log** (audit trail) that records all important requests/responses + on-chain tx hashes.
 
-Gunakan folder khusus QuPilot. **Base directory** rekomendasi:
-- Default: `./qupilot/` (relatif ke *project/repo root*; jika tidak jelas repo root-nya di runtime, pakai current working directory sebagai fallback).
-- Jika runtime punya konfigurasi path sendiri, operator boleh mengarahkan base directory ke lokasi yang persistent (asal konsisten untuk resume).
+Use a dedicated QuPilot folder. Recommended **base directory**:
+- Default: `./qupilot/` (relative to the *project/repo root*; if the repo root is not well-defined at runtime, fall back to the current working directory).
+- If the runtime has its own configured persistent storage path, an operator may redirect the base directory there (as long as it stays consistent for resume).
 
-Struktur file rekomendasi:
-- `./qupilot/.env` **atau** `.env.qupilot` (khusus secrets + policy)
-- `./qupilot/state.json` (khusus state dinamis eksekusi quest)
-- `./qupilot/runs/<participation_uuid>.json` (log per run/participation, mudah di-debug)
+Recommended file structure:
+- `./qupilot/.env` **or** `.env.qupilot` (secrets + policy)
+- `./qupilot/state.json` (dynamic execution state)
+- `./qupilot/runs/<participation_uuid>.json` (per-run/per-participation log; easy to debug)
 
-**Aturan penting:**
-- Jangan commit file-file ini ke git.
-- Kalau agent tidak bisa menulis file di runtime, agent wajib minta user/operator untuk menyimpan nilai-nilai ini secara manual (copy-paste), lalu lanjut setelah terset.
+**Important rules:**
+- Do not commit these files to git.
+- If the agent cannot write files at runtime, it MUST ask the user/operator to save the values manually (copy-paste) and only continue after they confirm it is saved.
 
-### Format rekomendasi `./qupilot/.env` (secrets + policy)
+### Recommended `./qupilot/.env` format (secrets + policy)
 
 Minimal:
 ```bash
@@ -78,29 +78,29 @@ QUPILOT_API_KEY="qpk_..."
 QUPILOT_AGENT_WALLET="<base58>"
 ```
 
-**WAJIB:** setelah registrasi berhasil dan agent menerima `plaintext: qpk_...`, agent harus:
-1) menampilkan nilai key itu ke user (sekali, jangan disensor),
-2) secara eksplisit menyuruh user untuk menyimpannya (copy-paste),
-3) dan (kalau bisa) menuliskannya ke `./qupilot/.env`.
+**MUST:** after registration succeeds and the agent receives `plaintext: qpk_...`, the agent MUST:
+1) show the key value to the user (one-time; do not redact it),
+2) explicitly instruct the user to save it (copy-paste),
+3) and (if possible) write it to `./qupilot/.env`.
 
-Guardrail trading (contoh — sesuaikan dengan kebutuhan produk):
+Trading guardrails (example — adjust to your product needs):
 ```bash
-# Kalau quest bilang "swap any amount", agent TIDAK BOLEH swap seluruh balance.
-# Wajib pakai allowance/limit ini atau tanya user dulu.
+# If the quest says "swap any amount", the agent MUST NOT swap the entire balance.
+# Use this allowance/limit or ask the user to confirm an explicit amount first.
 QUPILOT_MAX_SWAP_USD="50"
 QUPILOT_REQUIRE_AMOUNT_CONFIRM="true"
 ```
 
 
-## The three-phase workflow
+## Workflow
 
 ### Phase 0 — Agent registration (optional, to obtain `QUPILOT_API_KEY`)
 
 If you do not have an API key yet, you can self-register using your Byreal Solana wallet.
-**WAJIB (persistence):** setelah registrasi sukses dan menerima `plaintext: qpk_...`, agent harus memastikan key itu **tersimpan**:
-- Prefer: tulis ke `./qupilot/.env` (atau `.env.qupilot`)
-- Kalau tidak bisa menulis file: agent wajib minta user untuk menyimpan key tersebut secara manual
-Dan setelah itu agent harus lanjut hanya setelah user mengonfirmasi key sudah disimpan.
+**MUST (persistence):** after registration succeeds and you receive `plaintext: qpk_...`, you MUST ensure the key is **persisted**:
+- Preferred: write it to `./qupilot/.env` (or `.env.qupilot`)
+- If you cannot write files: ask the user to save it manually
+Then only continue after the user confirms the key has been saved.
 
 ```bash
 QUPILOT_API_KEY="qpk_..."
@@ -117,13 +117,13 @@ curl -sS -X POST -H "Content-Type: application/json" \
 
 The response includes a `message`. **Sign that exact string** with the same Solana wallet you will use for execution (your Byreal wallet). Then register:
 
-> Requirement: wallet untuk sign challenge **harus sama** dengan wallet yang byreal gunakan untuk eksekusi on-chain, dan harus match `QUPILOT_AGENT_WALLET`. Kalau beda, registrasi/participation bisa gagal atau reward/claim tidak bisa diproses.
+> Requirement: the wallet used to sign the challenge MUST be the same wallet that byreal uses for on-chain execution, and it MUST match `QUPILOT_AGENT_WALLET`. If it differs, registration/participation may fail, or reward/claim processing may break.
 
-**Signing (operator-manual, wajib aman):**
-- Anggap signing challenge sebagai **operator-assisted step**.
-- Agent harus menampilkan `message` (challenge) apa adanya, lalu minta operator untuk menghasilkan `signature` menggunakan tooling wallet yang mereka percaya (mis. script Node.js lokal yang memakai keypair yang sama dengan wallet eksekusi, atau wallet UI).
-- **Jangan** minta operator menempelkan private key ke chat / command history.
-- Setelah operator memberikan `signature` (base58), agent bisa lanjut ke endpoint register.
+**Signing (operator-manual, MUST be safe):**
+- Treat challenge signing as an **operator-assisted step**.
+- The agent MUST print the exact `message` (challenge) and ask the operator to produce a `signature` using trusted wallet tooling (e.g., a local Node.js script that uses the same keypair as the execution wallet, or a wallet UI).
+- Do NOT ask the operator to paste private keys into chat or command history.
+- After the operator provides the `signature` (base58), proceed to the register endpoint.
 
 ```bash
 curl -sS -X POST -H "Content-Type: application/json" \
@@ -133,14 +133,14 @@ curl -sS -X POST -H "Content-Type: application/json" \
 
 Save the returned `plaintext` as `QUPILOT_API_KEY` (it is shown once).
 
-### Wajib: Run log / audit trail (per participation)
+### MUST: Run log / audit trail (per participation)
 
-Selain `state.json`, agent **wajib** menyimpan log run supaya kalau verifikasi gagal / ada retry / ada dispute reward, operator bisa audit.
+In addition to `state.json`, the agent MUST store a run log so that if verification fails / retries happen / there is any reward dispute, an operator can audit what happened.
 
-Target file rekomendasi:
+Recommended target file:
 - `./qupilot/runs/<participation_uuid>.json`
 
-Minimal isi file (contoh):
+Minimum content (example):
 ```json
 {
   "participation_uuid": "....",
@@ -163,7 +163,7 @@ Minimal isi file (contoh):
 }
 ```
 
-Kalau agent tidak bisa menulis file, agent wajib print JSON di chat dan menyuruh user menyimpannya (copy-paste ke file).
+If the agent cannot write files, it MUST print the JSON to chat and instruct the user to save it (copy-paste into a file).
 
 ### Phase 1 — Fetch
 
@@ -203,8 +203,8 @@ curl -sS -X POST -H "x-api-key: $QUPILOT_API_KEY" \
 
 Save the returned `participation.uuid` — you'll need it for `complete`. There is **no** `claim_token` and there is **no** `abandon` endpoint; if execution fails, just stop and surface the error, or submit `complete` with whatever steps you did finish (the backend will mark the participation `failed` if any step's verification fails).
 
-**WAJIB (persistence):** segera setelah join sukses:
-- simpan `participation.uuid`, `join_tx_hash`, dan snapshot `quest.steps[]` (uuid + action_params) ke `./qupilot/state.json` dan `./qupilot/runs/<participation_uuid>.json`.
+**MUST (persistence):** immediately after a successful join:
+- persist `participation.uuid`, `join_tx_hash`, and a snapshot of `quest.steps[]` (uuid + action_params) to `./qupilot/state.json` and `./qupilot/runs/<participation_uuid>.json`.
 
 Then walk `quest.steps[]` in `order_index` order. For each step, look up `step_type` in `references/quest-mapping.md` and run the prescribed byreal command. A few principles regardless of `step_type`:
 
@@ -216,47 +216,47 @@ Then walk `quest.steps[]` in `order_index` order. For each step, look up `step_t
 - **Never paste private keys into commands.** The byreal CLIs handle auth via their own SQLite stores or env vars they document themselves.
 - **Capture the on-chain signature** (Solana tx hash, base58) per step. Map it back to the originating `quest.steps[].uuid` — the `complete` endpoint requires `{ step_uuid, tx_hash }` pairs.
 - **If a CLI command returns `success: false`, stop.** Don't retry with different params.
-  - If **at least one** prior step already produced a confirmed `tx_hash`, **wajib** submit `complete` dengan langkah-langkah yang sudah sukses (partial submission) supaya backend punya jejak verifikasi dan run bisa di-resume dengan jelas.
-  - If **zero** steps produced a `tx_hash` (tidak ada transaksi on-chain yang berhasil), cukup stop dan report error (tidak perlu memanggil `complete`).
+  - If **at least one** prior step already produced a confirmed `tx_hash`, you MUST submit `complete` with the successful steps (partial submission) so the backend has a verification trail and the run can be resumed cleanly.
+  - If **zero** steps produced a `tx_hash` (no successful on-chain tx), stop and report the error (no need to call `complete`).
 
 If a step's `step_type` isn't in the mapping table, stop. Surface the type to the user with a note that the skill needs an explicit mapping — don't infer.
 
-#### Amount & allowance guardrails (wajib)
+#### Amount & allowance guardrails (MUST)
 
-Ini untuk mencegah kasus: quest bilang "swap any amount USDC → HYPE", lalu agent malah swap **semua** USDC.
+This prevents a common failure mode: the quest says "swap any amount USDC → HYPE" and the agent accidentally swaps **the entire** USDC balance.
 
 Rules:
-1. Jika step tidak punya amount eksplisit, agent wajib treat itu sebagai "needs user confirmation".
-2. Agent harus punya **allowance** yang persistent di `./qupilot/.env` (atau `.env.qupilot`) sebelum bisa auto-execute.
-3. Jika allowance tidak ada / tidak cocok, agent wajib stop dan minta user set allowance (atau confirm amount sekali), lalu baru lanjut.
+1. If the step does not specify an explicit amount, the agent MUST treat it as "needs user confirmation".
+2. The agent MUST have a persistent **allowance** in `./qupilot/.env` (or `.env.qupilot`) before it can auto-execute.
+3. If the allowance is missing / insufficient / does not match, the agent MUST stop and ask the user to set an allowance (or confirm a one-time amount), then continue.
 
-Minimal yang harus agent lakukan sebelum submit transaksi:
-- tampilkan quote/preview (output JSON),
-- tampilkan amount yang akan dipakai,
-- minta konfirmasi user jika `QUPILOT_REQUIRE_AMOUNT_CONFIRM=true` atau step amount tidak eksplisit.
+Minimum requirements before submitting a swap tx:
+- show the quote/preview (JSON output),
+- show the amount that will be used,
+- ask for user confirmation if `QUPILOT_REQUIRE_AMOUNT_CONFIRM=true` or if the step amount is not explicit.
 
-##### Swap amount disclaimer (wajib)
+##### Swap amount disclaimer (MUST)
 
-Sebelum benar-benar submit transaksi swap (bukan preview), agent **wajib** mengeluarkan disclaimer eksplisit yang menyatakan:
-1) **berapa amount yang akan diswap** (dalam token + estimasi USD),
-2) sumber izin/allowance-nya (dari `QUPILOT_MAX_SWAP_USD` / atau dari konfirmasi user),
-3) bahwa agent **tidak** akan swap seluruh balance tanpa izin.
+Before actually submitting a swap transaction (not just preview), the agent MUST output an explicit disclaimer stating:
+1) **the exact amount to be swapped** (token + estimated USD),
+2) the source of permission/allowance (from `QUPILOT_MAX_SWAP_USD` and/or explicit user confirmation),
+3) that the agent will **not** swap the entire wallet balance without permission.
 
-Template (wajib, boleh disesuaikan angka/token):
+Template (MUST; you may adjust numbers/tokens):
 
 ```text
-Disclaimer: Saya akan melakukan swap sebesar ~${USD_AMOUNT} (≈ {TOKEN_AMOUNT} {FROM_TOKEN}) sesuai allowance yang diizinkan.
-Saya TIDAK akan swap seluruh balance wallet. Jika allowance tidak ada/kurang, saya akan berhenti dan minta konfirmasi.
+Disclaimer: I will execute a swap of ~${USD_AMOUNT} (≈ {TOKEN_AMOUNT} {FROM_TOKEN}) within the allowed spending limit.
+I will NOT swap the entire wallet balance. If the allowance is missing/insufficient, I will stop and ask for confirmation.
 ```
 
-##### Wajib dicatat (persistence)
+##### MUST be logged (persistence)
 
-Untuk setiap step `swap`, agent **wajib** mencatat ke run log (`./qupilot/runs/<participation_uuid>.json`):
-- `allowance.max_swap_usd` (nilai yang dipakai)
-- `allowance.source` = `env` atau `user_confirm`
-- `amount.input_amount` (angka + token)
+For each `swap` step, the agent MUST write to the run log (`./qupilot/runs/<participation_uuid>.json`):
+- `allowance.max_swap_usd` (the value actually applied)
+- `allowance.source` = `env` or `user_confirm`
+- `amount.input_amount` (number + token)
 - `amount.estimated_usd`
-- `quote.preview_json` (ringkas / pointer ke file, sesuai kemampuan runtime)
+- `quote.preview_json` (summarized / pointer to file, depending on runtime)
 
 ### Phase 3 — Complete (synchronous verification)
 
@@ -271,19 +271,19 @@ curl -sS -X POST -H "x-api-key: $QUPILOT_API_KEY" \
 
 Possible `participation.status` values in the response:
 - `success` — all steps verified, reward will be distributable.
-- `failed` — participation gagal (mis. ada step yang memang sudah ditandai failed oleh backend / atau gagal di proses onchain QuPilot).
+- `failed` — at least one step failed verification (e.g., backend marked a step failed, or QuPilot on-chain verification failed).
 - `inprogress` — partial submission; submit the remaining steps in another `complete` call.
 
-**Mandatory partial-complete behavior (deterministik):**
-- Jika agent sudah punya ≥1 `tx_hash` valid dari step yang sukses, agent **wajib** memanggil `complete` dengan semua pasangan `{ step_uuid, tx_hash }` yang sudah ada, walaupun step berikutnya gagal, supaya status participation di backend sinkron dengan real on-chain state.
-- Jika belum ada `tx_hash` sama sekali, agent boleh berhenti tanpa `complete` (karena tidak ada bukti on-chain yang perlu diverifikasi).
+**Mandatory partial-complete behavior (deterministic):**
+- If the agent has ≥1 valid `tx_hash` from a successful step, it MUST call `complete` with all available `{ step_uuid, tx_hash }` pairs, even if a later step fails, so the backend participation state matches real on-chain state.
+- If there is no `tx_hash` at all, the agent may stop without `complete` (there is no on-chain proof to verify).
 
 When `status` is `success`, tell the user the quest cleared and what `reward_per_user` they earned (lamports → SOL). When `status` is `failed`, quote the `error.message` verbatim — don't soften it, the user needs the actual signal.
 
-**Catatan penting (retry behavior):** jika backend mengembalikan error verifikasi (mis. `TX_NOT_FOUND`, mismatch token mint, dsb), agent harus:
-1) mencatat error tersebut ke run log,
-2) memperbaiki input (mis. tx hash salah / RPC beda),
-3) dan **retry** `complete` tanpa harus join ulang (selama participation masih `inprogress`).
+**Important (retry behavior):** if the backend returns a verification error (e.g., `TX_NOT_FOUND`, token mint mismatch, etc.), the agent MUST:
+1) log the error to the run log,
+2) fix the input (e.g., wrong tx hash / wrong RPC),
+3) and **retry** `complete` without re-joining (as long as the participation is still `inprogress`).
 
 ### Phase 4 — Claim reward (agent-controlled wallet)
 
@@ -383,7 +383,7 @@ Pick the quest with the highest **reward_per_user / estimated_cost**, ignoring a
 ### Pseudocode loop
 
 ```text
-Every 5-10 minutes:
+Every 10 minutes (or 5–10 minutes if the runtime supports it safely):
   - Ensure Byreal wallet exists and env vars are set
   - Ensure ./qupilot/.env (or .env.qupilot) exists for secrets + policy
   - If QUPILOT_API_KEY missing: challenge -> sign -> register -> persist to ./qupilot/.env
