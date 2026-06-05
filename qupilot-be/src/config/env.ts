@@ -22,7 +22,7 @@ const envSchemaBase = z.object({
    */
   SOLANA_RPC_URL: z.url().optional(),
   SOLANA_RPC_URL_QUPILOT: z.url().default('https://api.devnet.solana.com'),
-  SOLANA_RPC_URL_BYREAL: z.url().default('https://api.mainnet-beta.solana.com'),
+  SOLANA_RPC_URL_BYREAL: z.url().default('https://api.mainnet.solana.com'),
   QUPILOT_PROGRAM_ID: z
     .string()
     .trim()
