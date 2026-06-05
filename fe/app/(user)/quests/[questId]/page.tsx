@@ -12,7 +12,9 @@ import {
   FiCpu,
   FiAward,
   FiClock,
+  FiExternalLink,
 } from "react-icons/fi";
+import { SOLANA_RPC_URL } from "@/config";
 import { FaCoins } from "react-icons/fa6";
 import { useQuery } from "@tanstack/react-query";
 import { getPublicQuestDetail } from "@/lib/api/quests";
@@ -28,7 +30,7 @@ const formatReward = (rewardStr?: string) => {
         maximumFractionDigits: 6,
       }).format(parsed) + " SOL"
     );
-  } catch (error) {
+  } catch {
     return rewardStr || "0 SOL";
   }
 };
@@ -141,24 +143,43 @@ export default function UserQuestDetailPage() {
           </div>
 
           {/* Quest ID Pill Header */}
-          <div className="flex items-center gap-2 bg-white border border-[#f8f4ef] rounded-full px-4 py-2 self-start md:self-auto shadow-soft">
-            <span className="text-mono text-[#6b6560] tracking-wide font-medium">
-              {quest.uuid}
-            </span>
-            <Button
-              isIconOnly
-              onPress={handleCopyId}
-              variant="tertiary"
-              className="w-8 h-8 rounded-full bg-[#f8f4ef] hover:bg-[#fbe3df] transition-all flex items-center justify-center p-0"
-              aria-label="Copy Quest ID"
-            >
-              {copiedId ? (
-                <FiCheck className="w-4 h-4 text-[#10B981]" />
-              ) : (
-                <FiCopy className="w-4 h-4 text-[#a63420]" />
-              )}
-            </Button>
-          </div>
+          {quest.quest_pool_pda ? (
+            <div className="flex items-center gap-2 bg-white border border-[#f8f4ef] rounded-full px-4 py-2 self-start md:self-auto shadow-soft">
+              <span className="text-xs text-[#6b6560] font-bold uppercase tracking-wider select-none mr-1">
+                Pool PDA:
+              </span>
+              <a
+                href={`https://solscan.io/account/${quest.quest_pool_pda}${SOLANA_RPC_URL.includes("devnet") ? "?cluster=devnet" : ""}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-mono text-[#a63420] hover:underline font-bold flex items-center gap-1.5"
+              >
+                <span className="tracking-wide text-xs">
+                  {quest.quest_pool_pda.slice(0, 6)}...{quest.quest_pool_pda.slice(-4)}
+                </span>
+                <FiExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-white border border-[#f8f4ef] rounded-full px-4 py-2 self-start md:self-auto shadow-soft">
+              <span className="text-mono text-[#6b6560] tracking-wide font-medium">
+                {quest.uuid}
+              </span>
+              <Button
+                isIconOnly
+                onPress={handleCopyId}
+                variant="tertiary"
+                className="w-8 h-8 rounded-full bg-[#f8f4ef] hover:bg-[#fbe3df] transition-all flex items-center justify-center p-0"
+                aria-label="Copy Quest ID"
+              >
+                {copiedId ? (
+                  <FiCheck className="w-4 h-4 text-[#10B981]" />
+                ) : (
+                  <FiCopy className="w-4 h-4 text-[#a63420]" />
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 

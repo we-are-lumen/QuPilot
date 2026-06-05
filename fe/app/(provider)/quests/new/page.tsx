@@ -16,6 +16,9 @@ import {
   DatePicker,
   toast,
   cn,
+  Autocomplete,
+  SearchField,
+  useFilter,
 } from "@heroui/react";
 import type { Key } from "@heroui/react";
 import { getLocalTimeZone, today } from "@internationalized/date";
@@ -94,6 +97,7 @@ const formatValidationIssue = (issue: unknown) => {
 export default function CreateQuestPage() {
   const router = useRouter();
   const byrealTokensQuery = useByrealTokens();
+  const { contains } = useFilter({ sensitivity: "base" });
   const byrealTokens = useMemo(
     () => byrealTokensQuery.data?.tokens ?? [],
     [byrealTokensQuery.data?.tokens],
@@ -213,18 +217,6 @@ export default function CreateQuestPage() {
     setSteps(newSteps);
   };
 
-  const addParam = (stepIndex: number) => {
-    const newSteps = [...steps];
-    newSteps[stepIndex].params.push({ key: "", value: "" });
-    setSteps(newSteps);
-  };
-
-  const removeParam = (stepIndex: number, paramIndex: number) => {
-    const newSteps = [...steps];
-    newSteps[stepIndex].params.splice(paramIndex, 1);
-    setSteps(newSteps);
-  };
-
   const updateParam = (stepIndex: number, paramIndex: number, field: "key" | "value", val: string) => {
     const newSteps = [...steps];
     newSteps[stepIndex].params[paramIndex][field] = val;
@@ -234,49 +226,60 @@ export default function CreateQuestPage() {
   const renderParamValueControl = (stepIndex: number, paramIndex: number, param: StepParam) => {
     if (isByrealTokenParam(param.key) && hasByrealTokenDropdown) {
       return (
-        <Select
+        <Autocomplete
           aria-label={`Select ${param.key} token`}
           isDisabled={isLoading || byrealTokensQuery.isLoading}
           value={param.value}
-          onChange={(key) => key && updateParam(stepIndex, paramIndex, "value", String(key))}
+          onChange={(key) => updateParam(stepIndex, paramIndex, "value", key ? String(key) : "")}
           className="w-full flex flex-col"
+          selectionMode="single"
         >
-          <Select.Trigger className="rounded-md border border-[#e8e2d9] bg-white px-2 py-1 text-sm shadow-sm focus-visible:border-[#a63420] flex items-center justify-between min-h-8 cursor-pointer">
-            <Select.Value />
-            <Select.Indicator className="ml-2" />
-          </Select.Trigger>
-          <Select.Popover className="bg-white border border-[#dfbfb9] rounded-md shadow-lg max-h-80 overflow-auto">
-            <ListBox className="p-1">
-              {sortedByrealTokens.map((token) => (
-                <ListBox.Item
-                  key={token.mint}
-                  id={token.mint}
-                  textValue={getTokenLabel(token)}
-                  className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between gap-3"
-                >
-                  <span className="flex items-center gap-3 min-w-0">
-                    {token.logo_uri ? (
-                      <span
-                        aria-hidden="true"
-                        className="size-6 shrink-0 rounded-full bg-[#f8f4ef] border border-[#e8e2d9] bg-cover bg-center"
-                        style={{ backgroundImage: `url(${token.logo_uri})` }}
-                      />
-                    ) : (
-                      <span className="size-6 rounded-full bg-[#f5ddd9] text-[#a63420] text-[10px] font-extrabold flex items-center justify-center">
-                        {token.symbol.slice(0, 2)}
+          <Autocomplete.Trigger className="rounded-md border border-[#e8e2d9] bg-white pl-2 pr-8 py-1 text-sm shadow-sm focus-visible:border-[#a63420] flex items-center justify-between min-h-8 cursor-pointer">
+            <Autocomplete.Value />
+            <Autocomplete.ClearButton />
+            <Autocomplete.Indicator />
+          </Autocomplete.Trigger>
+          <Autocomplete.Popover className="bg-white border border-[#dfbfb9] rounded-md shadow-lg max-h-80 overflow-auto w-(--trigger-width)">
+            <Autocomplete.Filter filter={contains}>
+              <SearchField autoFocus name="search" variant="secondary" className="p-1">
+                <SearchField.Group className="flex items-center gap-1 border border-[#dfbfb9] rounded-md px-2 py-1 bg-white">
+                  <SearchField.SearchIcon className="text-gray-400 size-4" />
+                  <SearchField.Input placeholder="Search tokens..." className="w-full text-xs outline-none bg-transparent" />
+                  <SearchField.ClearButton />
+                </SearchField.Group>
+              </SearchField>
+              <ListBox className="p-1" renderEmptyState={() => <div className="p-2 text-xs text-gray-500">No results found</div>}>
+                {sortedByrealTokens.map((token) => (
+                  <ListBox.Item
+                    key={token.mint}
+                    id={token.mint}
+                    textValue={getTokenLabel(token)}
+                    className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between gap-3"
+                  >
+                    <span className="flex items-center gap-3 min-w-0">
+                      {token.logo_uri ? (
+                        <span
+                          aria-hidden="true"
+                          className="size-6 shrink-0 rounded-full bg-[#f8f4ef] border border-[#e8e2d9] bg-cover bg-center"
+                          style={{ backgroundImage: `url(${token.logo_uri})` }}
+                        />
+                      ) : (
+                        <span className="size-6 rounded-full bg-[#f5ddd9] text-[#a63420] text-[10px] font-extrabold flex items-center justify-center">
+                          {token.symbol.slice(0, 2)}
+                        </span>
+                      )}
+                      <span className="flex flex-col min-w-0">
+                        <span className="font-bold truncate">{token.symbol}</span>
+                        <span className="text-[11px] text-[#6b6560] truncate">{token.name}</span>
                       </span>
-                    )}
-                    <span className="flex flex-col min-w-0">
-                      <span className="font-bold truncate">{token.symbol}</span>
-                      <span className="text-[11px] text-[#6b6560] truncate">{token.name}</span>
                     </span>
-                  </span>
-                  <ListBox.ItemIndicator />
-                </ListBox.Item>
-              ))}
-            </ListBox>
-          </Select.Popover>
-        </Select>
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Autocomplete.Filter>
+          </Autocomplete.Popover>
+        </Autocomplete>
       );
     }
 
@@ -563,118 +566,113 @@ export default function CreateQuestPage() {
               Define the sequential steps the AI Agent will execute. Add custom parameter keys and values representing constraints or actions.
             </p>
 
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col">
               {steps.map((step, sIdx) => (
-                <div key={step.step} className="bg-[#f8f4ef]/50 border border-[#dfbfb9]/40 rounded-2xl p-6 flex flex-col gap-5">
-                  <div className="flex items-center justify-between border-b border-[#dfbfb9]/30 pb-2">
-                    <span className="font-nunito font-extrabold text-sm text-[#a63420] tracking-wider uppercase">
-                      Step {step.step}
-                    </span>
-                    {steps.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="tertiary"
-                        onPress={() => removeStep(sIdx)}
-                        className="text-[#a63420] bg-transparent border-0 p-1 hover:text-[#8c2a1a] flex items-center gap-1 cursor-pointer text-xs"
-                      >
-                        <FiTrash2 /> Remove Step
-                      </Button>
-                    )}
+                <div key={step.step} className="relative pl-10 pb-8">
+                  {/* Connecting Line */}
+                  <div className="absolute left-3.75 top-8 bottom-0 w-[2px] border-l-2 border-dashed border-[#dfbfb9]" />
+
+                  {/* Timeline Dot */}
+                  <div className="absolute left-0 top-0 size-8 rounded-full bg-[#008282] text-white flex items-center justify-center font-nunito font-extrabold text-sm shadow-sm border-2 border-white ring-4 ring-white">
+                    {step.step}
                   </div>
 
-                  {/* Step Type Selection */}
-                  <div className="w-full">
-                    <Select
-                      isRequired
-                      isDisabled={isLoading}
-                      value={step.stepType}
-                      onChange={(key) => key && updateStepType(sIdx, key as StepType)}
-                      className="w-full flex flex-col"
-                    >
-                      <Label className="text-[#1f1b18] text-xs font-bold tracking-wide mb-1.5">Step Type</Label>
-                      <Select.Trigger className="rounded-md border border-[#dfbfb9] bg-white px-3 py-2 text-sm shadow-sm focus-visible:border-[#a63420] flex items-center justify-between min-h-10 cursor-pointer">
-                        <Select.Value />
-                        <Select.Indicator className="ml-2" />
-                      </Select.Trigger>
-                      <Select.Popover className="bg-white border border-[#dfbfb9] rounded-md shadow-lg">
-                        <ListBox className="p-1">
-                          <ListBox.Item id="swap" textValue="Token Swap" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
-                            Token Swap (swap)
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                          <ListBox.Item id="clmm_open" textValue="Open CLMM Position" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
-                            Open CLMM Position (clmm_open)
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                          <ListBox.Item id="clmm_close" textValue="Close CLMM Position" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
-                            Close CLMM Position (clmm_close)
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                          <ListBox.Item id="clmm_copy" textValue="Copy Strategy" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
-                            Copy Strategy (clmm_copy)
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                  </div>
-
-                  {/* Step Parameter rows */}
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-[#1f1b18] text-xs font-bold tracking-wide">Action Parameters</span>
-                      {byrealTokensQuery.isError && (
-                        <span className="text-[11px] text-[#a63420] font-semibold">
-                          Byreal token list unavailable. Manual mint input is active.
-                        </span>
-                      )}
-                    </div>
-                    {step.params.map((p, pIdx) => (
-                      <div key={pIdx} className="flex flex-wrap items-center gap-3">
-                        <div className="flex-1 min-w-37.5">
-                          <Input
-                            placeholder="Parameter Key (e.g., min_amount)"
-                            value={p.key}
-                            onChange={(e) => updateParam(sIdx, pIdx, "key", e.target.value)}
-                            disabled={isLoading}
-                            className="rounded-md border border-[#e8e2d9] px-2 py-1 text-sm bg-white"
-                          />
-                        </div>
-                        <div className="flex-2 min-w-50">
-                          {renderParamValueControl(sIdx, pIdx, p)}
-                        </div>
+                  {/* Step Container Box */}
+                  <div className="bg-[#f8f4ef]/50 border border-[#dfbfb9]/40 rounded-2xl p-6 flex flex-col gap-5 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-[#dfbfb9]/30 pb-2">
+                      <span className="font-nunito font-extrabold text-sm text-[#008282] tracking-wider uppercase">
+                        Configure Step {step.step}
+                      </span>
+                      {steps.length > 1 && (
                         <Button
                           type="button"
                           variant="tertiary"
-                          onPress={() => removeParam(sIdx, pIdx)}
-                          className="text-[#a63420] hover:text-[#8c2a1a] p-2 bg-transparent min-w-0"
-                          isDisabled={isLoading}
+                          onPress={() => removeStep(sIdx)}
+                          className="text-[#a63420] bg-transparent border-0 p-1 hover:text-[#8c2a1a] flex items-center gap-1 cursor-pointer text-xs"
                         >
-                          <FiTrash2 className="text-base" />
+                          <FiTrash2 /> Remove Step
                         </Button>
-                      </div>
-                    ))}
-                  </div>
+                      )}
+                    </div>
 
-                  <div className="flex justify-start">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onPress={() => addParam(sIdx)}
-                      className="bg-transparent border border-[#dfbfb9] text-[#1f1b18] hover:bg-[#dfbfb9]/20 text-xs px-3 py-1.5 rounded-full flex items-center gap-1 cursor-pointer"
-                      isDisabled={isLoading}
-                    >
-                      <FiPlus /> Add Parameter Field
-                    </Button>
+                    {/* Step Type Selection */}
+                    <div className="w-full">
+                      <Select
+                        isRequired
+                        isDisabled={isLoading}
+                        value={step.stepType}
+                        onChange={(key) => key && updateStepType(sIdx, key as StepType)}
+                        className="w-full flex flex-col"
+                      >
+                        <Label className="text-[#1f1b18] text-xs font-bold tracking-wide mb-1.5">Step Type</Label>
+                        <Select.Trigger className="rounded-md border border-[#dfbfb9] bg-white px-3 py-2 text-sm shadow-sm focus-visible:border-[#a63420] flex items-center justify-between min-h-10 cursor-pointer">
+                          <Select.Value />
+                          <Select.Indicator className="ml-2" />
+                        </Select.Trigger>
+                        <Select.Popover className="bg-white border border-[#dfbfb9] rounded-md shadow-lg">
+                          <ListBox className="p-1">
+                            <ListBox.Item id="swap" textValue="Token Swap" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                              Token Swap (swap)
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                            <ListBox.Item id="clmm_open" textValue="Open CLMM Position" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                              Open CLMM Position (clmm_open)
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                            <ListBox.Item id="clmm_close" textValue="Close CLMM Position" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                              Close CLMM Position (clmm_close)
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                            <ListBox.Item id="clmm_copy" textValue="Copy Strategy" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                              Copy Strategy (clmm_copy)
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                    </div>
+
+                    {/* Step Parameter rows */}
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-[#1f1b18] text-xs font-bold tracking-wide">Action Parameters</span>
+                        {byrealTokensQuery.isError && (
+                          <span className="text-[11px] text-[#a63420] font-semibold">
+                            Byreal token list unavailable. Manual mint input is active.
+                          </span>
+                        )}
+                      </div>
+                      {step.params.map((p, pIdx) => (
+                        <div key={pIdx} className="flex flex-wrap items-center gap-3">
+                          <div className="flex-1 min-w-37.5">
+                            <Input
+                              placeholder="Parameter Key (e.g., min_amount)"
+                              value={p.key}
+                              onChange={(e) => updateParam(sIdx, pIdx, "key", e.target.value)}
+                              disabled={isLoading}
+                              className="rounded-md border border-[#e8e2d9] px-2 py-1 text-sm bg-white"
+                            />
+                          </div>
+                          <div className="flex-2 min-w-50">
+                            {renderParamValueControl(sIdx, pIdx, p)}
+                          </div>
+
+                        </div>
+                      ))}
+                    </div>
+
                   </div>
                 </div>
               ))}
 
-              <div className="flex justify-center pt-2">
+              <div className="relative pl-10 pb-4">
+                {/* Timeline Dot placeholder for next step */}
+                <div className="absolute left-1.5 top-2.5 size-5 rounded-full border-2 border-dashed border-[#008282] bg-white" />
+
                 <Button
                   type="button"
                   onPress={addStep}
-                  className="bg-white border-2 border-[#a63420] text-[#a63420] hover:bg-[#a63420]/5 font-bold py-2.5 px-6 rounded-full flex items-center gap-2 transition-all cursor-pointer text-sm"
+                  className="bg-white border-2 border-[#a63420] text-[#a63420] hover:bg-[#a63420]/5 font-bold py-2 px-5 rounded-full flex items-center gap-2 transition-all cursor-pointer text-sm shadow-sm"
                   isDisabled={isLoading}
                 >
                   <FiPlus className="text-lg" /> Add Next Step
@@ -717,13 +715,13 @@ export default function CreateQuestPage() {
               </TextField>
 
               <div className="md:col-span-2">
-                <TextField isRequired isDisabled={isLoading}>
+                <TextField isReadOnly isDisabled={isLoading}>
                   <Label className="text-[#1f1b18] text-sm font-bold tracking-wide mb-1">Reward Token</Label>
                   <Input
                     value={rewardToken}
-                    onChange={(e) => handleTokenChange(e.target.value)}
+                    readOnly
                     placeholder="SOL"
-                    className="rounded-md border border-[#e8e2d9] px-3 py-2.5 text-base shadow-sm focus-visible:border-[#a63420] font-mono"
+                    className="rounded-md border border-[#e8e2d9] px-3 py-2.5 text-base shadow-sm font-mono bg-[#f8f4ef]/50 cursor-not-allowed text-[#6b6560]"
                   />
                 </TextField>
                 {tokenError && (
