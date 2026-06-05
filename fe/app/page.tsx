@@ -1095,9 +1095,9 @@ function LandingPageContent() {
                 value={platformStats.rewardsText}
                 label="Total Rewards Earned"
                 caption="Distributed to winners"
-                icon={<SolanaIcon size={24} />}
-                iconBgClass="bg-[#fff2be]"
-                iconColorClass="text-[#a63420]"
+                icon={<SolanaIcon size={30} />}
+                iconBgClass="bg-[#181420] ring-1 ring-[#14F195]/35 shadow-[0_10px_28px_rgba(20,241,149,0.22),inset_0_1px_0_rgba(255,255,255,0.12)]"
+                iconColorClass="text-white"
               />
               <StatBadge
                 value={platformStats.slotsClaimedText}
