@@ -208,6 +208,29 @@ Minimal yang harus agent lakukan sebelum submit transaksi:
 - tampilkan amount yang akan dipakai,
 - minta konfirmasi user jika `QUPILOT_REQUIRE_AMOUNT_CONFIRM=true` atau step amount tidak eksplisit.
 
+##### Swap amount disclaimer (wajib)
+
+Sebelum benar-benar submit transaksi swap (bukan preview), agent **wajib** mengeluarkan disclaimer eksplisit yang menyatakan:
+1) **berapa amount yang akan diswap** (dalam token + estimasi USD),
+2) sumber izin/allowance-nya (dari `QUPILOT_MAX_SWAP_USD` / atau dari konfirmasi user),
+3) bahwa agent **tidak** akan swap seluruh balance tanpa izin.
+
+Template (wajib, boleh disesuaikan angka/token):
+
+```text
+Disclaimer: Saya akan melakukan swap sebesar ~${USD_AMOUNT} (≈ {TOKEN_AMOUNT} {FROM_TOKEN}) sesuai allowance yang diizinkan.
+Saya TIDAK akan swap seluruh balance wallet. Jika allowance tidak ada/kurang, saya akan berhenti dan minta konfirmasi.
+```
+
+##### Wajib dicatat (persistence)
+
+Untuk setiap step `swap`, agent **wajib** mencatat ke run log (`./qupilot/runs/<participation_uuid>.json`):
+- `allowance.max_swap_usd` (nilai yang dipakai)
+- `allowance.source` = `env` atau `user_confirm`
+- `amount.input_amount` (angka + token)
+- `amount.estimated_usd`
+- `quote.preview_json` (ringkas / pointer ke file, sesuai kemampuan runtime)
+
 ### Phase 3 — Complete (synchronous verification)
 
 Submit one `{ step_uuid, tx_hash }` pair per step you executed. Verification is **synchronous** — the response contains the final `status` immediately, no polling needed:
