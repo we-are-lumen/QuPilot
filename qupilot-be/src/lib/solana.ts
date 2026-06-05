@@ -16,11 +16,8 @@ const hasEnv = (k: string): boolean => {
 };
 
 const resolveRpcUrl = (purpose: SolanaRpcPurpose): string => {
-  // Legacy override: if SOLANA_RPC_URL is set and the purpose-specific var isn't set,
-  // use the legacy value (keeps old deployments working).
   if (purpose === 'byreal') {
     if (hasEnv('SOLANA_RPC_URL_BYREAL')) return env.SOLANA_RPC_URL_BYREAL;
-    if (hasEnv('SOLANA_RPC_URL')) return process.env.SOLANA_RPC_URL as string;
     return env.SOLANA_RPC_URL_BYREAL;
   }
 
@@ -154,15 +151,29 @@ const isValidSignature = (s: string): boolean => {
   return typeof s === 'string' && s.length >= 64 && s.length <= 128 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(s);
 };
 
+const getParsedTxWithRetry = async (
+  conn: Connection,
+  signature: string,
+): Promise<ParsedTransactionWithMeta | null> => {
+  // RPCs can lag even when explorers show "finalized". Retry a bit before declaring TX_NOT_FOUND.
+  const delaysMs = [0, 1000, 2000, 4000, 8000];
+  for (const d of delaysMs) {
+    if (d > 0) await new Promise((r) => setTimeout(r, d));
+    const tx = await conn.getParsedTransaction(signature, {
+      commitment: 'confirmed',
+      maxSupportedTransactionVersion: 0,
+    });
+    if (tx) return tx;
+  }
+  return null;
+};
+
 export const verifySolanaTxBasic = async (signature: string): Promise<boolean> => {
   if (!isValidSignature(signature)) return false;
 
   // Generic helper: default to Byreal/mainnet because most external tx checks are swaps.
   const conn = getSolanaConnection('byreal');
-  const tx = await conn.getParsedTransaction(signature, {
-    commitment: 'confirmed',
-    maxSupportedTransactionVersion: 0,
-  });
+  const tx = await getParsedTxWithRetry(conn, signature);
 
   if (!tx || !tx.meta) return false;
   return tx.meta.err === null;
@@ -215,10 +226,7 @@ export const verifySolanaSwapTx = async (input: VerifySwapInput): Promise<Verify
   if (!toTok) return { ok: false, reason: 'UNKNOWN_TO_TOKEN' };
 
   const conn = getSolanaConnection('byreal');
-  const tx: ParsedTransactionWithMeta | null = await conn.getParsedTransaction(input.signature, {
-    commitment: 'confirmed',
-    maxSupportedTransactionVersion: 0,
-  });
+  const tx: ParsedTransactionWithMeta | null = await getParsedTxWithRetry(conn, input.signature);
 
   if (!tx || !tx.meta) return { ok: false, reason: 'TX_NOT_FOUND' };
   if (tx.meta.err !== null) return { ok: false, reason: 'TX_FAILED' };
@@ -299,10 +307,7 @@ export const verifySolanaSwapTxBasic = async (input: VerifySwapBasicInput): Prom
   }
 
   const conn = getSolanaConnection('byreal');
-  const tx: ParsedTransactionWithMeta | null = await conn.getParsedTransaction(input.signature, {
-    commitment: 'confirmed',
-    maxSupportedTransactionVersion: 0,
-  });
+  const tx: ParsedTransactionWithMeta | null = await getParsedTxWithRetry(conn, input.signature);
 
   if (!tx || !tx.meta) return { ok: false, reason: 'TX_NOT_FOUND' };
   if (tx.meta.err !== null) return { ok: false, reason: 'TX_FAILED' };
@@ -371,10 +376,7 @@ export const verifySolanaClmmOpenTx = async (input: VerifyClmmOpenInput): Promis
   }
 
   const conn = getSolanaConnection('byreal');
-  const tx = await conn.getParsedTransaction(input.signature, {
-    commitment: 'confirmed',
-    maxSupportedTransactionVersion: 0,
-  });
+  const tx = await getParsedTxWithRetry(conn, input.signature);
   if (!tx || !tx.meta) return { ok: false, reason: 'TX_NOT_FOUND' };
   if (tx.meta.err !== null) return { ok: false, reason: 'TX_FAILED' };
 
@@ -400,10 +402,7 @@ export const verifySolanaClmmCloseTx = async (input: VerifyClmmCloseInput): Prom
   }
 
   const conn = getSolanaConnection('byreal');
-  const tx = await conn.getParsedTransaction(input.signature, {
-    commitment: 'confirmed',
-    maxSupportedTransactionVersion: 0,
-  });
+  const tx = await getParsedTxWithRetry(conn, input.signature);
   if (!tx || !tx.meta) return { ok: false, reason: 'TX_NOT_FOUND' };
   if (tx.meta.err !== null) return { ok: false, reason: 'TX_FAILED' };
 
@@ -440,10 +439,7 @@ export const verifySolanaClmmCopyTxBasic = async (
   }
 
   const conn = getSolanaConnection('byreal');
-  const tx = await conn.getParsedTransaction(input.signature, {
-    commitment: 'confirmed',
-    maxSupportedTransactionVersion: 0,
-  });
+  const tx = await getParsedTxWithRetry(conn, input.signature);
   if (!tx || !tx.meta) return { ok: false, reason: 'TX_NOT_FOUND' };
   if (tx.meta.err !== null) return { ok: false, reason: 'TX_FAILED' };
 
