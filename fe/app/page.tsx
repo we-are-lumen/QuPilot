@@ -7,7 +7,6 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Button, Card, ProgressBar, toast, Skeleton, ScrollShadow } from "@heroui/react";
 import {
   FaRocket,
-  FaCoins,
   FaDiscord,
   FaXTwitter,
   FaComments,
@@ -22,6 +21,7 @@ import { usePublicQuests } from "@/lib/hooks/useQuests";
 import { usePublicStats } from "@/lib/hooks/usePublicStats";
 import type { IQuestStep } from "@/lib/types/quests";
 import AuthModal from "./components/AuthModal";
+import SolanaIcon from "./components/SolanaIcon";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGLTF, OrbitControls, Environment, Float } from "@react-three/drei";
@@ -1105,7 +1105,7 @@ function LandingPageContent() {
             <StatBadge
               value={platformStats.rewardsText}
               label="Total Rewards Earned"
-              icon={<FaCoins />}
+              icon={<SolanaIcon size={24} />}
               iconBgClass="bg-accent-light"
               iconColorClass="text-accent"
             />
