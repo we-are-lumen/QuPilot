@@ -171,6 +171,19 @@ Save the returned `plaintext` as `QUPILOT_API_KEY` (it is shown once).
 Never store or paste truncated placeholders like `qpk_55…6NhH` / `qpk_55...6NhH`.
 If the user/operator only provides a truncated key, the agent MUST stop and ask for the full key.
 
+#### API key stability rule (MUST — do not re-register / rotate casually)
+
+The agent MUST treat the first successfully issued `QUPILOT_API_KEY` as the long-lived credential and **keep using it**.
+
+Important backend behavior: `POST /auth/agent/register` **rotates** the agent key (it revokes any previously active key for that wallet/user and issues a new one). Therefore:
+- The agent MUST NOT “auto re-register” as a recovery mechanism.
+- On `401 INVALID_API_KEY`, the agent MUST stop and ask the operator to fix the environment / provide the correct **full** key (or explicitly confirm they want to rotate).
+- The agent MAY re-register only when:
+  1) `QUPILOT_API_KEY` is genuinely missing and cannot be recovered, **and**
+  2) the user/operator explicitly approves rotating/replacing the key.
+
+If multiple runtimes/agents share the same wallet, they MUST coordinate (otherwise one re-register can invalidate the other agent's key).
+
 ### MUST: Run log / audit trail (per participation)
 
 In addition to `state.json`, the agent MUST store a run log so that if verification fails / retries happen / there is any reward dispute, an operator can audit what happened.
