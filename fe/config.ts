@@ -7,3 +7,5 @@ export const QUPILOT_PROGRAM_ID =
 
 export const QUPILOT_ADMIN_PUBKEY =
   process.env.NEXT_PUBLIC_QUPILOT_ADMIN_PUBKEY || '3zFoEaDez9D5F7J6RRAhJgwsXKQyDdkZ2NxKZVMybhKT';
+
+export const BYREAL_API_URL = process.env.BYREAL_API_URL || 'https://api2.byreal.io';

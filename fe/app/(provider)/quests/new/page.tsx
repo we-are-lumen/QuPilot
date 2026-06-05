@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Button,
@@ -24,6 +24,8 @@ import { FiTarget, FiGift, FiSliders, FiPlus, FiTrash2, FiClock } from "react-ic
 import { LuRocket } from "react-icons/lu";
 import { createQuest } from "@/lib/api/quests";
 import type { ICreateQuestPayload, Protocol, StepType } from "@/lib/types/quests";
+import type { IByrealToken } from "@/lib/types/byreal";
+import { useByrealTokens } from "@/lib/hooks/useByrealTokens";
 import { parseSolToLamports } from "@/lib/utils/format";
 import { createQuestDepositTx, isSolanaWalletInstalled } from "@/lib/utils/wallet";
 import { QUPILOT_PROGRAM_ID } from "@/config";
@@ -39,8 +41,68 @@ interface ActionStep {
   params: StepParam[];
 }
 
+const BYREAL_TOKEN_PARAM_KEYS = new Set([
+  "from_token",
+  "to_token",
+  "from_mint",
+  "to_mint",
+  "token0_mint",
+  "token1_mint",
+]);
+
+const isByrealTokenParam = (key: string) => BYREAL_TOKEN_PARAM_KEYS.has(key.trim());
+
+const getTokenLabel = (token: IByrealToken) => `${token.symbol} - ${token.name}`;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const stringifyUnknownError = (err: unknown) => {
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+};
+
+const getUnknownErrorMessage = (err: unknown, fallback: string) => {
+  if (err instanceof Error && err.message) return err.message;
+  const raw = stringifyUnknownError(err);
+  return raw || fallback;
+};
+
+const getBackendError = (err: unknown) => {
+  if (!isRecord(err)) return undefined;
+  const response = err.response;
+  if (!isRecord(response)) return undefined;
+  const data = response.data;
+  if (!isRecord(data)) return undefined;
+  const error = data.error;
+  return isRecord(error) ? error : undefined;
+};
+
+const getBackendErrorMessage = (backendError: Record<string, unknown> | undefined, fallback: string) =>
+  typeof backendError?.message === "string" ? backendError.message : fallback;
+
+const formatValidationIssue = (issue: unknown) => {
+  if (!isRecord(issue)) return "Unknown validation issue";
+  const path = typeof issue.path === "string" ? issue.path : "payload";
+  const message = typeof issue.message === "string" ? issue.message : "Invalid value";
+  return `${path}: ${message}`;
+};
+
 export default function CreateQuestPage() {
   const router = useRouter();
+  const byrealTokensQuery = useByrealTokens();
+  const byrealTokens = useMemo(
+    () => byrealTokensQuery.data?.tokens ?? [],
+    [byrealTokensQuery.data?.tokens],
+  );
+  const hasByrealTokenDropdown = byrealTokens.length > 0;
+  const sortedByrealTokens = useMemo(
+    () => [...byrealTokens].sort((a, b) => a.symbol.localeCompare(b.symbol)),
+    [byrealTokens],
+  );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   
@@ -169,6 +231,66 @@ export default function CreateQuestPage() {
     setSteps(newSteps);
   };
 
+  const renderParamValueControl = (stepIndex: number, paramIndex: number, param: StepParam) => {
+    if (isByrealTokenParam(param.key) && hasByrealTokenDropdown) {
+      return (
+        <Select
+          aria-label={`Select ${param.key} token`}
+          isDisabled={isLoading || byrealTokensQuery.isLoading}
+          value={param.value}
+          onChange={(key) => key && updateParam(stepIndex, paramIndex, "value", String(key))}
+          className="w-full flex flex-col"
+        >
+          <Select.Trigger className="rounded-md border border-[#e8e2d9] bg-white px-2 py-1 text-sm shadow-sm focus-visible:border-[#a63420] flex items-center justify-between min-h-8 cursor-pointer">
+            <Select.Value />
+            <Select.Indicator className="ml-2" />
+          </Select.Trigger>
+          <Select.Popover className="bg-white border border-[#dfbfb9] rounded-md shadow-lg max-h-80 overflow-auto">
+            <ListBox className="p-1">
+              {sortedByrealTokens.map((token) => (
+                <ListBox.Item
+                  key={token.mint}
+                  id={token.mint}
+                  textValue={getTokenLabel(token)}
+                  className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between gap-3"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    {token.logo_uri ? (
+                      <span
+                        aria-hidden="true"
+                        className="size-6 shrink-0 rounded-full bg-[#f8f4ef] border border-[#e8e2d9] bg-cover bg-center"
+                        style={{ backgroundImage: `url(${token.logo_uri})` }}
+                      />
+                    ) : (
+                      <span className="size-6 rounded-full bg-[#f5ddd9] text-[#a63420] text-[10px] font-extrabold flex items-center justify-center">
+                        {token.symbol.slice(0, 2)}
+                      </span>
+                    )}
+                    <span className="flex flex-col min-w-0">
+                      <span className="font-bold truncate">{token.symbol}</span>
+                      <span className="text-[11px] text-[#6b6560] truncate">{token.name}</span>
+                    </span>
+                  </span>
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
+      );
+    }
+
+    return (
+      <Input
+        placeholder="Parameter Value (e.g., 100)"
+        value={param.value}
+        onChange={(e) => updateParam(stepIndex, paramIndex, "value", e.target.value)}
+        disabled={isLoading}
+        className="rounded-md border border-[#e8e2d9] px-2 py-1 text-sm bg-white"
+      />
+    );
+  };
+
   // Submit Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -216,7 +338,7 @@ export default function CreateQuestPage() {
 
     // Format steps array for the API payload
     const formattedSteps = steps.map((s) => {
-      const stepObj: Record<string, any> = {};
+      const stepObj: Record<string, unknown> = {};
       s.params.forEach((p) => {
         const key = p.key.trim();
         const rawVal = p.value.trim();
@@ -297,15 +419,8 @@ export default function CreateQuestPage() {
         });
         setTxHash(depositSignature);
       }
-    } catch (err: any) {
-      const raw = (() => {
-        try {
-          return JSON.stringify(err);
-        } catch {
-          return String(err);
-        }
-      })();
-      toast.danger(err?.message || raw || "Failed to deposit on-chain. Please try again.");
+    } catch (err: unknown) {
+      toast.danger(getUnknownErrorMessage(err, "Failed to deposit on-chain. Please try again."));
       setIsLoading(false);
       setStatusText("");
       return;
@@ -329,17 +444,17 @@ export default function CreateQuestPage() {
       await createQuest(payload);
       toast.success("Quest successfully launched!");
       router.push("/dashboard");
-    } catch (err: any) {
-      const backendError = err?.response?.data?.error;
-      if (backendError?.code === "VALIDATION_ERROR" && backendError.issues) {
+    } catch (err: unknown) {
+      const backendError = getBackendError(err);
+      if (backendError?.code === "VALIDATION_ERROR" && Array.isArray(backendError.issues)) {
         const issuesMsg = backendError.issues
-          .map((i: any) => `${i.path}: ${i.message}`)
+          .map(formatValidationIssue)
           .join(", ");
         toast.danger(`Validation error: ${issuesMsg}`);
       } else if (backendError?.code === "DEPOSIT_TX_SIGNER_MISMATCH") {
-        toast.danger(backendError?.message || "Deposit transaction signer doesn't match your provider wallet.");
+        toast.danger(getBackendErrorMessage(backendError, "Deposit transaction signer doesn't match your provider wallet."));
       } else {
-        toast.danger(backendError?.message || "Failed to launch quest. Please check parameters.");
+        toast.danger(getBackendErrorMessage(backendError, "Failed to launch quest. Please check parameters."));
       }
     } finally {
       setIsLoading(false);
@@ -506,7 +621,14 @@ export default function CreateQuestPage() {
 
                   {/* Step Parameter rows */}
                   <div className="flex flex-col gap-3">
-                    <span className="text-[#1f1b18] text-xs font-bold tracking-wide">Action Parameters</span>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[#1f1b18] text-xs font-bold tracking-wide">Action Parameters</span>
+                      {byrealTokensQuery.isError && (
+                        <span className="text-[11px] text-[#a63420] font-semibold">
+                          Byreal token list unavailable. Manual mint input is active.
+                        </span>
+                      )}
+                    </div>
                     {step.params.map((p, pIdx) => (
                       <div key={pIdx} className="flex flex-wrap items-center gap-3">
                         <div className="flex-1 min-w-37.5">
@@ -519,13 +641,7 @@ export default function CreateQuestPage() {
                           />
                         </div>
                         <div className="flex-2 min-w-50">
-                          <Input
-                            placeholder="Parameter Value (e.g., 100)"
-                            value={p.value}
-                            onChange={(e) => updateParam(sIdx, pIdx, "value", e.target.value)}
-                            disabled={isLoading}
-                            className="rounded-md border border-[#e8e2d9] px-2 py-1 text-sm bg-white"
-                          />
+                          {renderParamValueControl(sIdx, pIdx, p)}
                         </div>
                         <Button
                           type="button"
