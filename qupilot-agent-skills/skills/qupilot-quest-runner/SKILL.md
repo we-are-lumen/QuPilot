@@ -318,6 +318,21 @@ Possible `participation.status` values in the response:
 
 When `status` is `success`, tell the user the quest cleared and what `reward_per_user` they earned (lamports → SOL). When `status` is `failed`, quote the `error.message` verbatim — don't soften it, the user needs the actual signal.
 
+#### Reward display rule (MUST — avoid “500M SOL” bug)
+
+`reward_per_user` is **lamports** (string bigint), not SOL.
+
+Correct conversion:
+- `reward_sol = BigInt(reward_per_user) / 1_000_000_000`
+
+Display rule:
+1) Always convert lamports → SOL first.
+2) Only after conversion, apply human formatting if needed.
+3) Never attach `k/M` suffixes to the raw lamports value.
+
+Example:
+- `reward_per_user = "500000000"` → `0.5 SOL` (NOT “500M SOL”)
+
 **Important (retry behavior):** if the backend returns a verification error (e.g., `TX_NOT_FOUND`, token mint mismatch, etc.), the agent MUST:
 1) log the error to the run log,
 2) fix the input (e.g., wrong tx hash / wrong RPC),

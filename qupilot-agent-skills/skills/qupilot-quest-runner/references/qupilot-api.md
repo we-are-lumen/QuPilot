@@ -19,6 +19,9 @@ Do not use truncated placeholders like `qpk_55…6NhH` / `qpk_55...6NhH` — the
 
 All reward fields (`total_reward_pool`, `reward_per_user`, `total_reward_distributed`, `claimed[].amount`) are `bigint` in the DB and sent as **string numerics** in JSON (e.g. `"1000000"`) to avoid JS precision loss. Reward token is always `SOL` (lamports).
 
+**Display rule:** convert lamports → SOL by dividing by `1e9` before any `k/M` formatting.
+Example: `"500000000"` lamports = `0.5 SOL` (not “500M SOL”).
+
 ---
 
 ## Error Response
