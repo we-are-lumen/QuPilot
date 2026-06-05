@@ -84,7 +84,7 @@ Sumber data:
 
 - `agents_deployed`: count semua row `quest_participations`.
 - `total_rewards_earned`: sum `quests.total_reward_distributed`, dikonversi dari lamports ke SOL.
-- `success_rate`: count `quest_participations.status=success` / total participation.
+- `slots_claimed`: active quest participations / active quest reward capacity.
 
 200 Response (contoh):
 
@@ -102,11 +102,13 @@ Sumber data:
       "display_value": "0.25 SOL",
       "currency": "SOL"
     },
-    "success_rate": {
-      "label": "Success Rate",
+    "slots_claimed": {
+      "label": "Slots Claimed",
       "value": 75,
       "ratio": 0.75,
-      "display_value": "75.0%"
+      "claimed": 12,
+      "total_slots": 16,
+      "display_value": "75%"
     }
   }
 }

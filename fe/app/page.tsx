@@ -14,7 +14,7 @@ import {
   FaBuilding,
   FaRobot,
 } from "react-icons/fa6";
-import { FiX, FiCpu, FiTarget } from "react-icons/fi";
+import { FiX, FiCpu, FiZap } from "react-icons/fi";
 import { getUserData, clearAuth } from "@/lib/utils/auth";
 import { disconnectWallet } from "@/lib/utils/wallet";
 import { usePublicQuests } from "@/lib/hooks/useQuests";
@@ -83,12 +83,14 @@ const STEP_ICON_MAP: Record<string, React.ReactNode> = {
 function StatBadge({
   value,
   label,
+  caption,
   icon,
   iconBgClass,
   iconColorClass,
 }: {
   value: string;
   label: string;
+  caption: string;
   icon: React.ReactNode;
   iconBgClass: string;
   iconColorClass: string;
@@ -174,15 +176,26 @@ function StatBadge({
   const displayString = parsed.prefix + formattedVal + parsed.suffix;
 
   return (
-    <div ref={containerRef} className="flex items-center gap-4 px-8 py-2">
+    <div
+      ref={containerRef}
+      className="group relative flex min-w-0 flex-1 items-center gap-4 px-5 py-4 sm:px-7"
+    >
       <div
-        className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-xl ${iconBgClass} ${iconColorClass}`}
+        className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition-transform duration-300 group-hover:scale-105 ${iconBgClass} ${iconColorClass}`}
       >
+        <span className="absolute inset-0 rounded-full bg-white/35 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         {icon}
       </div>
       <div className="flex flex-col min-w-0">
-        <span className="text-h1 text-[#1F1B18]">{displayString}</span>
-        <span className="text-label text-text-secondary">{label}</span>
+        <span className="text-[34px] leading-none sm:text-[40px] font-extrabold tracking-normal text-[#1F1B18]">
+          {displayString}
+        </span>
+        <span className="mt-1 text-[13px] font-extrabold uppercase tracking-[0.08em] text-text-secondary">
+          {label}
+        </span>
+        <span className="mt-1 text-[12px] font-semibold text-text-muted">
+          {caption}
+        </span>
       </div>
     </div>
   );
@@ -564,21 +577,21 @@ function LandingPageContent() {
       return {
         agentsText: statsData.stats.agents_deployed.display_value,
         rewardsText: statsData.stats.total_rewards_earned.display_value,
-        successRateText: statsData.stats.success_rate.display_value,
+        slotsClaimedText: statsData.stats.slots_claimed.display_value,
       };
     }
 
     if (!questsData?.quests || questsData.quests.length === 0) {
       return {
-        agentsText: "12.845",
-        rewardsText: "2.48M SOL",
-        successRateText: "99.6%",
+        agentsText: "0",
+        rewardsText: "0 SOL",
+        slotsClaimedText: "0%",
       };
     }
 
     let totalParticipations = 0;
-    let totalRewardsUsd = 0;
-    let totalSuccessRuns = 0;
+    let totalRewardsSol = 0;
+    let totalSlots = 0;
 
     questsData.quests.forEach((q) => {
       // 1. Participations / Agents deployed
@@ -587,46 +600,28 @@ function LandingPageContent() {
 
       // 2. Rewards Distributed
       const dist = parseFloat(q.total_reward_distributed) || 0;
-      const token = q.reward_token || "USDT";
-      if (token === "SOL") {
-        // Assume 1 SOL = ~150 USD
-        totalRewardsUsd += (dist / 1e9) * 150;
-      } else {
-        totalRewardsUsd += dist;
-      }
+      totalRewardsSol += dist / 1e9;
 
-      // 3. Success runs count (total_reward_distributed / reward_per_user)
+      // 3. Reward slots capacity from the active public quest list.
+      const rewardPool = parseFloat(q.total_reward_pool) || 0;
       const rewardPerUser = parseFloat(q.reward_per_user) || 0;
       if (rewardPerUser > 0) {
-        totalSuccessRuns += Math.floor(dist / rewardPerUser);
+        totalSlots += Math.floor(rewardPool / rewardPerUser);
       }
     });
 
-    // Formatting Agents Deployed: base is 12842
-    const finalAgents = 12842 + totalParticipations;
-    const agentsText = finalAgents.toLocaleString();
-
-    // Formatting Rewards Distributed: base is $2.48M
-    let rewardsText = "$2.48M";
-    const finalRewardsUsd = 2480000 + totalRewardsUsd;
-    if (finalRewardsUsd < 1000000) {
-      rewardsText = `$${(finalRewardsUsd / 1000).toFixed(1)}k`;
-    } else {
-      rewardsText = `$${(finalRewardsUsd / 1000000).toFixed(2)}M`;
-    }
-
-    // Formatting Success Rate: default 98.6%
-    let successRateText = "98.6%";
-    if (totalParticipations > 0 && totalSuccessRuns > 0) {
-      const calculatedRate = totalSuccessRuns / totalParticipations;
-      const rate = Math.min(0.999, 0.986 + (calculatedRate - 0.5) * 0.02);
-      successRateText = `${(rate * 100).toFixed(1)}%`;
-    }
+    const agentsText = totalParticipations.toLocaleString();
+    const rewardsText =
+      totalRewardsSol >= 1
+        ? `${totalRewardsSol.toFixed(2).replace(/\.?0+$/, "")} SOL`
+        : `${totalRewardsSol.toFixed(4).replace(/\.?0+$/, "")} SOL`;
+    const slotsClaimedRatio = totalSlots > 0 ? Math.min(totalParticipations / totalSlots, 1) : 0;
+    const slotsClaimedText = `${(slotsClaimedRatio * 100).toFixed(1).replace(/\.0$/, "")}%`;
 
     return {
       agentsText,
       rewardsText,
-      successRateText,
+      slotsClaimedText,
     };
   }, [questsData, statsData]);
 
@@ -1083,43 +1078,36 @@ function LandingPageContent() {
 
         {/* ── Trust / Stats Bar ── */}
         <div className="relative z-10 max-w-7xl mx-auto mt-3xl">
-          <div
-            className="flex flex-col lg:flex-row items-stretch justify-around gap-6 lg:gap-0 rounded-[24px] py-6 px-4"
-            style={{
-              background: "#FFFFFF",
-              border: "1px solid rgba(223,191,185,0.4)",
-              boxShadow: "0px 8px 32px 0px rgba(166,52,32,0.05)",
-            }}
-          >
-            <StatBadge
-              value={platformStats.agentsText}
-              label="Agents Deployed"
-              icon={<FaRobot />}
-              iconBgClass="bg-secondary-light"
-              iconColorClass="text-secondary"
-            />
-            <div
-              className="hidden lg:block w-px self-stretch"
-              style={{ background: "rgba(223,191,185,0.5)" }}
-            />
-            <StatBadge
-              value={platformStats.rewardsText}
-              label="Total Rewards Earned"
-              icon={<SolanaIcon size={24} />}
-              iconBgClass="bg-accent-light"
-              iconColorClass="text-accent"
-            />
-            <div
-              className="hidden lg:block w-px self-stretch"
-              style={{ background: "rgba(223,191,185,0.5)" }}
-            />
-            <StatBadge
-              value={platformStats.successRateText}
-              label="Success Rate"
-              icon={<FiTarget />}
-              iconBgClass="bg-success-light"
-              iconColorClass="text-success"
-            />
+          <div className="relative overflow-hidden rounded-[28px] border border-[#ead8d2] bg-white/92 px-3 py-3 shadow-[0_24px_70px_rgba(166,52,32,0.10)] backdrop-blur-xl">
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent" />
+            <div className="pointer-events-none absolute -left-16 -top-20 h-48 w-48 rounded-full bg-[#fff0bd]/50 blur-3xl" />
+            <div className="pointer-events-none absolute -right-20 -bottom-24 h-56 w-56 rounded-full bg-[#d8fff0]/55 blur-3xl" />
+            <div className="relative grid grid-cols-1 divide-y divide-[#ead8d2] lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+              <StatBadge
+                value={platformStats.agentsText}
+                label="Agents Deployed"
+                caption="Pilots already moving"
+                icon={<FaRobot />}
+                iconBgClass="bg-[#eee7ff]"
+                iconColorClass="text-[#7c5ce6]"
+              />
+              <StatBadge
+                value={platformStats.rewardsText}
+                label="Total Rewards Earned"
+                caption="Distributed to winners"
+                icon={<SolanaIcon size={24} />}
+                iconBgClass="bg-[#fff2be]"
+                iconColorClass="text-[#a63420]"
+              />
+              <StatBadge
+                value={platformStats.slotsClaimedText}
+                label="Slots Claimed"
+                caption="Active quest capacity"
+                icon={<FiZap />}
+                iconBgClass="bg-[#ccf8e4]"
+                iconColorClass="text-[#0dbb86]"
+              />
+            </div>
           </div>
         </div>
       </section>

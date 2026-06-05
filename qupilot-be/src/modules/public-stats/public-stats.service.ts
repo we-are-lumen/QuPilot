@@ -11,8 +11,10 @@ export type PublicStats = {
   total_rewards_earned: PublicStatMetric & {
     currency: 'SOL';
   };
-  success_rate: PublicStatMetric & {
+  slots_claimed: PublicStatMetric & {
     ratio: number;
+    claimed: number;
+    total_slots: number;
   };
 };
 
@@ -46,6 +48,12 @@ type QuestRewardRow = {
   total_reward_distributed: string | number;
 };
 
+type ActiveQuestSlotsRow = {
+  total_reward_pool: string | number;
+  reward_per_user: string | number;
+  quest_participations?: Array<{ count: number }>;
+};
+
 const getTotalRewardDistributedLamports = async (): Promise<bigint> => {
   const { data, error } = await supabase.from('quests').select('total_reward_distributed');
   if (error) throw error;
@@ -56,15 +64,43 @@ const getTotalRewardDistributedLamports = async (): Promise<bigint> => {
   );
 };
 
+const getActiveSlots = async (): Promise<{ claimed: number; total_slots: number; ratio: number }> => {
+  const { data, error } = await supabase
+    .from('quests')
+    .select('total_reward_pool, reward_per_user, quest_participations(count)')
+    .gt('expires_at', new Date().toISOString());
+
+  if (error) throw error;
+
+  const rows = (data ?? []) as ActiveQuestSlotsRow[];
+  const totals = rows.reduce(
+    (acc, row) => {
+      const rewardPool = BigInt(String(row.total_reward_pool ?? 0));
+      const rewardPerUser = BigInt(String(row.reward_per_user ?? 0));
+      const questSlots = rewardPerUser > 0n ? Number(rewardPool / rewardPerUser) : 0;
+
+      return {
+        claimed: acc.claimed + (row.quest_participations?.[0]?.count ?? 0),
+        total_slots: acc.total_slots + questSlots,
+      };
+    },
+    { claimed: 0, total_slots: 0 },
+  );
+
+  return {
+    ...totals,
+    ratio: totals.total_slots > 0 ? Math.min(totals.claimed / totals.total_slots, 1) : 0,
+  };
+};
+
 export const getPublicStats = async (): Promise<PublicStats> => {
-  const [totalParticipations, successParticipations, totalRewardDistributedLamports] = await Promise.all([
+  const [totalParticipations, totalRewardDistributedLamports, activeSlots] = await Promise.all([
     getParticipationCount(),
-    getParticipationCount('success'),
     getTotalRewardDistributedLamports(),
+    getActiveSlots(),
   ]);
 
-  const successRatio = totalParticipations > 0 ? successParticipations / totalParticipations : 0;
-  const successPercent = successRatio * 100;
+  const slotsClaimedPercent = activeSlots.ratio * 100;
 
   return {
     agents_deployed: {
@@ -78,11 +114,13 @@ export const getPublicStats = async (): Promise<PublicStats> => {
       display_value: formatSol(totalRewardDistributedLamports),
       currency: 'SOL',
     },
-    success_rate: {
-      label: 'Success Rate',
-      value: Number(successPercent.toFixed(1)),
-      ratio: Number(successRatio.toFixed(4)),
-      display_value: `${successPercent.toFixed(1).replace(/\.0$/, '')}%`,
+    slots_claimed: {
+      label: 'Slots Claimed',
+      value: Number(slotsClaimedPercent.toFixed(1)),
+      ratio: Number(activeSlots.ratio.toFixed(4)),
+      claimed: activeSlots.claimed,
+      total_slots: activeSlots.total_slots,
+      display_value: `${slotsClaimedPercent.toFixed(1).replace(/\.0$/, '')}%`,
     },
   };
 };
