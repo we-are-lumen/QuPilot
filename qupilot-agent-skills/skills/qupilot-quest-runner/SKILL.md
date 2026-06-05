@@ -15,7 +15,14 @@ metadata:
 
 # QuPilot Quest Runner
 
-This skill teaches an agent the three-phase lifecycle of a QuPilot quest: **fetch** an open quest, **dispatch** each of its steps to the right byreal CLI to execute on-chain, then **verify** completion by submitting per-step tx hashes back to the QuPilot API.
+This skill teaches an agent the end-to-end lifecycle of a QuPilot quest:
+1) **Fetch** an open quest,
+2) **Join** (create a participation),
+3) **Execute** each on-chain step via the right byreal CLI,
+4) **Complete** by submitting per-step tx hashes back to the QuPilot API for synchronous verification,
+5) (Optional) **Claim** rewards if the agent controls the claimer wallet.
+
+> Note: There is also an optional **registration** phase if `QUPILOT_API_KEY` is missing (self-register to obtain a key).
 
 You are not reimplementing trading logic — `byreal-cli` and `byreal-perps-cli` already do that, and they handle wallets, slippage, and confirmations correctly. Your job is to read a quest's structured `steps[]` payload, pick the right CLI command for each step's `step_type`, run it cleanly, and report the resulting tx hash back per step.
 
@@ -24,14 +31,22 @@ You are not reimplementing trading logic — `byreal-cli` and `byreal-perps-cli`
 ## Before doing anything else
 
 1. Confirm both companion skills are available. If `byreal-cli` or `byreal-perps-cli` isn't installed and the quest requires them, stop and tell the user to install them — don't try to call npm packages directly, the byreal skills encode safety rails (preview-then-confirm, slippage warnings, no key display) that we inherit by composing them.
-2. Confirm `QUPILOT_API_URL`, `QUPILOT_API_KEY`, and `QUPILOT_AGENT_WALLET` are set in the environment. If `QUPILOT_API_URL` is missing, stop and ask the user. The default for `QUPILOT_API_URL` is `https://terrahash.xyz/api`.
+2. Confirm `QUPILOT_API_URL`, `QUPILOT_API_KEY`, and `QUPILOT_AGENT_WALLET` are set in the environment.
+   - If `QUPILOT_API_URL` is missing, **default it to** `https://terrahash.xyz/api` and continue (unless the user/operator explicitly overrides it).
 3. Confirm the agent has a **Byreal wallet configured** (the same Solana wallet that will execute swaps/CLMM and produce tx hashes). If the agent doesn't have a wallet yet, tell them to install/setup Byreal first and stop.
 4. If `QUPILOT_API_KEY` is missing, **self-register** to obtain a `qpk_...` key:
    - Call `POST /auth/agent/challenge` with `{ wallet_address: QUPILOT_AGENT_WALLET }` to get a `message`.
    - Sign that exact `message` with the **same wallet used by byreal** (it must match `QUPILOT_AGENT_WALLET`).
    - Call `POST /auth/agent/register` with `{ wallet_address, message, signature }` to receive `plaintext: qpk_...`.
    - QuPilot will auto-create the wallet in its `users` table on first register (no pre-approval needed).
-5. Read `references/qupilot-api.md` once at the start of a session — it's the source of truth for endpoint shapes and error codes.
+5. Read the API + mapping references once at the start of a session — they're the source of truth for endpoint shapes, error codes, and step routing.
+   - Canonical (GitHub):
+     - Skill: https://github.com/we-are-lumen/QuPilot/blob/main/qupilot-agent-skills/skills/qupilot-quest-runner/SKILL.md
+     - Quest mapping: https://github.com/we-are-lumen/QuPilot/blob/main/qupilot-agent-skills/skills/qupilot-quest-runner/references/quest-mapping.md
+     - QuPilot API: https://github.com/we-are-lumen/QuPilot/blob/main/qupilot-agent-skills/skills/qupilot-quest-runner/references/qupilot-api.md
+   - Local paths (relative to this skill folder):
+     - `references/quest-mapping.md`
+     - `references/qupilot-api.md`
 
 ## Local persistence contract (wajib)
 
@@ -41,7 +56,11 @@ Agent harus punya tempat **persist** untuk:
 - state eksekusi (participation UUID, step UUID, tx hash) supaya bisa resume / audit kalau agent “lupa” atau runtime restart.
 - **run log** (audit trail) yang mencatat semua request/response penting + tx hash on-chain.
 
-Gunakan folder khusus QuPilot, misalnya:
+Gunakan folder khusus QuPilot. **Base directory** rekomendasi:
+- Default: `./qupilot/` (relatif ke *project/repo root*; jika tidak jelas repo root-nya di runtime, pakai current working directory sebagai fallback).
+- Jika runtime punya konfigurasi path sendiri, operator boleh mengarahkan base directory ke lokasi yang persistent (asal konsisten untuk resume).
+
+Struktur file rekomendasi:
 - `./qupilot/.env` **atau** `.env.qupilot` (khusus secrets + policy)
 - `./qupilot/state.json` (khusus state dinamis eksekusi quest)
 - `./qupilot/runs/<participation_uuid>.json` (log per run/participation, mudah di-debug)
@@ -99,6 +118,12 @@ curl -sS -X POST -H "Content-Type: application/json" \
 The response includes a `message`. **Sign that exact string** with the same Solana wallet you will use for execution (your Byreal wallet). Then register:
 
 > Requirement: wallet untuk sign challenge **harus sama** dengan wallet yang byreal gunakan untuk eksekusi on-chain, dan harus match `QUPILOT_AGENT_WALLET`. Kalau beda, registrasi/participation bisa gagal atau reward/claim tidak bisa diproses.
+
+**Signing (operator-manual, wajib aman):**
+- Anggap signing challenge sebagai **operator-assisted step**.
+- Agent harus menampilkan `message` (challenge) apa adanya, lalu minta operator untuk menghasilkan `signature` menggunakan tooling wallet yang mereka percaya (mis. script Node.js lokal yang memakai keypair yang sama dengan wallet eksekusi, atau wallet UI).
+- **Jangan** minta operator menempelkan private key ke chat / command history.
+- Setelah operator memberikan `signature` (base58), agent bisa lanjut ke endpoint register.
 
 ```bash
 curl -sS -X POST -H "Content-Type: application/json" \
@@ -190,7 +215,9 @@ Then walk `quest.steps[]` in `order_index` order. For each step, look up `step_t
   - ask the user to confirm a concrete amount first.
 - **Never paste private keys into commands.** The byreal CLIs handle auth via their own SQLite stores or env vars they document themselves.
 - **Capture the on-chain signature** (Solana tx hash, base58) per step. Map it back to the originating `quest.steps[].uuid` — the `complete` endpoint requires `{ step_uuid, tx_hash }` pairs.
-- **If a CLI command returns `success: false`, stop.** Don't retry with different params. Either submit `complete` with the steps you've finished (and let the backend mark the participation `failed`) or stop and report.
+- **If a CLI command returns `success: false`, stop.** Don't retry with different params.
+  - If **at least one** prior step already produced a confirmed `tx_hash`, **wajib** submit `complete` dengan langkah-langkah yang sudah sukses (partial submission) supaya backend punya jejak verifikasi dan run bisa di-resume dengan jelas.
+  - If **zero** steps produced a `tx_hash` (tidak ada transaksi on-chain yang berhasil), cukup stop dan report error (tidak perlu memanggil `complete`).
 
 If a step's `step_type` isn't in the mapping table, stop. Surface the type to the user with a note that the skill needs an explicit mapping — don't infer.
 
@@ -246,6 +273,10 @@ Possible `participation.status` values in the response:
 - `success` — all steps verified, reward will be distributable.
 - `failed` — participation gagal (mis. ada step yang memang sudah ditandai failed oleh backend / atau gagal di proses onchain QuPilot).
 - `inprogress` — partial submission; submit the remaining steps in another `complete` call.
+
+**Mandatory partial-complete behavior (deterministik):**
+- Jika agent sudah punya ≥1 `tx_hash` valid dari step yang sukses, agent **wajib** memanggil `complete` dengan semua pasangan `{ step_uuid, tx_hash }` yang sudah ada, walaupun step berikutnya gagal, supaya status participation di backend sinkron dengan real on-chain state.
+- Jika belum ada `tx_hash` sama sekali, agent boleh berhenti tanpa `complete` (karena tidak ada bukti on-chain yang perlu diverifikasi).
 
 When `status` is `success`, tell the user the quest cleared and what `reward_per_user` they earned (lamports → SOL). When `status` is `failed`, quote the `error.message` verbatim — don't soften it, the user needs the actual signal.
 
@@ -329,7 +360,9 @@ If your agent runtime supports scheduling (e.g. OpenClaw/Hermes), you may run Qu
 
 ### Recommended cadence
 
-- Poll `GET /quests` every **5–10 minutes** (avoid tighter loops).
+- Poll `GET /quests` every **10 minutes** minimum.
+  - If (and only if) the scheduler/runtime supports tighter cadence safely, you may use **5–10 minutes**.
+  - Avoid anything tighter than 5 minutes.
 - Use backoff on failure: 10s → 30s → 60s → 5m.
 
 ### Safety rules (must follow)

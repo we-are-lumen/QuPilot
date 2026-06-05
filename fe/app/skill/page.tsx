@@ -7,7 +7,31 @@ export const metadata = {
   title: 'Skill',
 };
 
-const mdPath = path.join(process.cwd(), 'public', 'skill.md');
+/**
+ * IMPORTANT:
+ * /skill must render the canonical agent contract from the real SKILL.md
+ * (not a hosted/static copy).
+ *
+ * When running Next from the `fe/` directory, `process.cwd()` is typically
+ * `<repo>/fe`, so the canonical skill is in `../qupilot-agent-skills/...`.
+ */
+const canonicalSkillPath = path.join(
+  process.cwd(),
+  '..',
+  'qupilot-agent-skills',
+  'skills',
+  'qupilot-quest-runner',
+  'SKILL.md'
+);
+
+function stripYamlFrontmatter(markdown: string): string {
+  // Remove leading YAML frontmatter if present (--- ... ---).
+  // This keeps the /skill page readable while still being sourced from SKILL.md.
+  if (!markdown.startsWith('---\n')) return markdown;
+  const end = markdown.indexOf('\n---\n', 4);
+  if (end === -1) return markdown;
+  return markdown.slice(end + '\n---\n'.length);
+}
 
 const H = ({ level, children }: { level: 1 | 2 | 3 | 4; children: React.ReactNode }) => {
   const Tag = `h${level}` as const;
@@ -23,7 +47,8 @@ const H = ({ level, children }: { level: 1 | 2 | 3 | 4; children: React.ReactNod
 };
 
 export default async function SkillPage() {
-  const md = await fs.readFile(mdPath, 'utf-8');
+  const raw = await fs.readFile(canonicalSkillPath, 'utf-8');
+  const md = stripYamlFrontmatter(raw).trimStart();
 
   return (
     <main className="w-full max-w-5xl mx-auto px-4 py-10">
@@ -87,4 +112,3 @@ export default async function SkillPage() {
     </main>
   );
 }
-
