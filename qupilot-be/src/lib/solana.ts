@@ -9,6 +9,12 @@ type SolanaRpcPurpose = 'qupilot' | 'byreal';
 
 let qupilotConnection: Connection | null = null;
 let byrealConnection: Connection | null = null;
+let byrealGenesisHash: string | null = null;
+
+// Solana doesn't have an EVM-like "chain id". The practical network identifier is the genesis hash.
+// Mainnet-beta genesis hash:
+// https://docs.solana.com/clusters#cluster-rpc-endpoints
+const MAINNET_BETA_GENESIS_HASH = '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp';
 
 const hasEnv = (k: string): boolean => {
   const v = process.env[k];
@@ -104,6 +110,8 @@ export type VerifySwapFailure =
   | 'UNKNOWN_FROM_TOKEN'
   | 'UNKNOWN_TO_TOKEN'
   | 'TX_NOT_FOUND'
+  | 'RPC_TX_UNAVAILABLE'
+  | 'RPC_NETWORK_MISMATCH'
   | 'TX_FAILED'
   | 'WRONG_SIGNER'
   | 'PROGRAM_NOT_ALLOWED'
@@ -128,6 +136,8 @@ export type VerifySwapBasicFailure =
   | 'UNKNOWN_FROM_TOKEN'
   | 'UNKNOWN_TO_TOKEN'
   | 'TX_NOT_FOUND'
+  | 'RPC_TX_UNAVAILABLE'
+  | 'RPC_NETWORK_MISMATCH'
   | 'TX_FAILED'
   | 'TOKEN_IN_NOT_DECREASED'
   | 'TOKEN_OUT_NOT_INCREASED';
@@ -154,18 +164,48 @@ const isValidSignature = (s: string): boolean => {
 const getParsedTxWithRetry = async (
   conn: Connection,
   signature: string,
-): Promise<ParsedTransactionWithMeta | null> => {
+): Promise<
+  | { ok: true; tx: ParsedTransactionWithMeta }
+  | { ok: false; reason: 'TX_NOT_FOUND' | 'RPC_TX_UNAVAILABLE' | 'RPC_NETWORK_MISMATCH' }
+> => {
   // RPCs can lag even when explorers show "finalized". Retry a bit before declaring TX_NOT_FOUND.
   const delaysMs = [0, 1000, 2000, 4000, 8000];
+
+  // Best-effort network check for Byreal verification (should be mainnet-beta).
+  // If the RPC points to devnet, we'll never find mainnet tx signatures.
+  try {
+    if (conn === byrealConnection) {
+      if (!byrealGenesisHash) {
+        byrealGenesisHash = await conn.getGenesisHash();
+      }
+      if (byrealGenesisHash && byrealGenesisHash !== MAINNET_BETA_GENESIS_HASH) {
+        return { ok: false, reason: 'RPC_NETWORK_MISMATCH' };
+      }
+    }
+  } catch {
+    // Ignore genesis hash errors; proceed with tx fetch attempts.
+  }
+
   for (const d of delaysMs) {
     if (d > 0) await new Promise((r) => setTimeout(r, d));
     const tx = await conn.getParsedTransaction(signature, {
       commitment: 'confirmed',
       maxSupportedTransactionVersion: 0,
     });
-    if (tx) return tx;
+    if (tx) return { ok: true, tx };
   }
-  return null;
+
+  // Distinguish "tx truly not found" vs "RPC can't return tx details".
+  // Some RPCs have limited transaction history; signature exists, but getParsedTransaction returns null.
+  try {
+    const st = await conn.getSignatureStatuses([signature], { searchTransactionHistory: true });
+    const s0 = st?.value?.[0];
+    if (s0) return { ok: false, reason: 'RPC_TX_UNAVAILABLE' };
+  } catch {
+    // ignore
+  }
+
+  return { ok: false, reason: 'TX_NOT_FOUND' };
 };
 
 export const verifySolanaTxBasic = async (signature: string): Promise<boolean> => {
@@ -173,7 +213,9 @@ export const verifySolanaTxBasic = async (signature: string): Promise<boolean> =
 
   // Generic helper: default to Byreal/mainnet because most external tx checks are swaps.
   const conn = getSolanaConnection('byreal');
-  const tx = await getParsedTxWithRetry(conn, signature);
+  const out = await getParsedTxWithRetry(conn, signature);
+  if (!out.ok) return false;
+  const tx = out.tx;
 
   if (!tx || !tx.meta) return false;
   return tx.meta.err === null;
@@ -226,7 +268,9 @@ export const verifySolanaSwapTx = async (input: VerifySwapInput): Promise<Verify
   if (!toTok) return { ok: false, reason: 'UNKNOWN_TO_TOKEN' };
 
   const conn = getSolanaConnection('byreal');
-  const tx: ParsedTransactionWithMeta | null = await getParsedTxWithRetry(conn, input.signature);
+  const fetched = await getParsedTxWithRetry(conn, input.signature);
+  if (!fetched.ok) return { ok: false, reason: fetched.reason };
+  const tx = fetched.tx;
 
   if (!tx || !tx.meta) return { ok: false, reason: 'TX_NOT_FOUND' };
   if (tx.meta.err !== null) return { ok: false, reason: 'TX_FAILED' };
@@ -307,7 +351,9 @@ export const verifySolanaSwapTxBasic = async (input: VerifySwapBasicInput): Prom
   }
 
   const conn = getSolanaConnection('byreal');
-  const tx: ParsedTransactionWithMeta | null = await getParsedTxWithRetry(conn, input.signature);
+  const fetched = await getParsedTxWithRetry(conn, input.signature);
+  if (!fetched.ok) return { ok: false, reason: fetched.reason };
+  const tx = fetched.tx;
 
   if (!tx || !tx.meta) return { ok: false, reason: 'TX_NOT_FOUND' };
   if (tx.meta.err !== null) return { ok: false, reason: 'TX_FAILED' };
@@ -357,6 +403,8 @@ export type VerifyClmmComprehensiveFailure =
   | 'INVALID_SIGNER'
   | 'INVALID_MINT'
   | 'TX_NOT_FOUND'
+  | 'RPC_TX_UNAVAILABLE'
+  | 'RPC_NETWORK_MISMATCH'
   | 'TX_FAILED'
   | 'WRONG_SIGNER'
   | 'POSITION_NFT_NOT_MINTED'
@@ -376,7 +424,9 @@ export const verifySolanaClmmOpenTx = async (input: VerifyClmmOpenInput): Promis
   }
 
   const conn = getSolanaConnection('byreal');
-  const tx = await getParsedTxWithRetry(conn, input.signature);
+  const fetched = await getParsedTxWithRetry(conn, input.signature);
+  if (!fetched.ok) return { ok: false, reason: fetched.reason };
+  const tx = fetched.tx;
   if (!tx || !tx.meta) return { ok: false, reason: 'TX_NOT_FOUND' };
   if (tx.meta.err !== null) return { ok: false, reason: 'TX_FAILED' };
 
@@ -402,7 +452,9 @@ export const verifySolanaClmmCloseTx = async (input: VerifyClmmCloseInput): Prom
   }
 
   const conn = getSolanaConnection('byreal');
-  const tx = await getParsedTxWithRetry(conn, input.signature);
+  const fetched = await getParsedTxWithRetry(conn, input.signature);
+  if (!fetched.ok) return { ok: false, reason: fetched.reason };
+  const tx = fetched.tx;
   if (!tx || !tx.meta) return { ok: false, reason: 'TX_NOT_FOUND' };
   if (tx.meta.err !== null) return { ok: false, reason: 'TX_FAILED' };
 
@@ -439,7 +491,9 @@ export const verifySolanaClmmCopyTxBasic = async (
   }
 
   const conn = getSolanaConnection('byreal');
-  const tx = await getParsedTxWithRetry(conn, input.signature);
+  const fetched = await getParsedTxWithRetry(conn, input.signature);
+  if (!fetched.ok) return { ok: false, reason: fetched.reason };
+  const tx = fetched.tx;
   if (!tx || !tx.meta) return { ok: false, reason: 'TX_NOT_FOUND' };
   if (tx.meta.err !== null) return { ok: false, reason: 'TX_FAILED' };
 
