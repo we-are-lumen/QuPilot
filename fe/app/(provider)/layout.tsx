@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Avatar, Popover } from "@heroui/react";
-import { LuRocket, LuLogOut } from "react-icons/lu";
+import { Avatar } from "@heroui/react";
+import { LuLogOut } from "react-icons/lu";
 import { getUserData, clearAuth } from "@/lib/utils/auth";
 import type { IUser } from "@/lib/types/auth";
 import AuthGate from "@/app/components/AuthGate";
@@ -17,22 +18,35 @@ export default function ProviderLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [user, setUser] = useState<IUser | null>(null);
+  const [user] = useState<IUser | null>(getUserData);
   const { data: solBalance } = useSolBalance(user?.wallet_address);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
+  // Close dropdown when clicking outside
   useEffect(() => {
-    const stored = getUserData();
-    if (stored) {
-      setUser(stored);
-    }
-  }, []);
+    if (!isMenuOpen) return;
+    const handleMouseDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMenuOpen]);
 
   const handleLogout = () => {
     clearAuth();
     router.push("/");
   };
 
-  // Derive initials from display_name or wallet address
   const initials = user?.display_name
     ? user.display_name.slice(0, 2).toUpperCase()
     : user?.wallet_address
@@ -55,10 +69,12 @@ export default function ProviderLayout({
               href="/dashboard"
               className="flex items-center gap-2 group transition-transform duration-200 hover:scale-105"
             >
-              <img
+              <Image
                 src="/logo.png"
                 alt="QuPilot Logo"
-                className="w-6 h-6 object-contain"
+                width={24}
+                height={24}
+                className="object-contain"
               />
               <span className="text-xl text-[#a63420] font-extrabold tracking-tight">
                 QuPilot
@@ -71,52 +87,53 @@ export default function ProviderLayout({
 
           {/* User Menu */}
           <div className="flex items-center gap-4">
-            <Popover>
-              <Popover.Trigger>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#dfbfb94d] hover:shadow-sm transition-all cursor-pointer">
-                  <Avatar size="sm" className="bg-[#a63420] text-white font-bold">
-                    <Avatar.Fallback>{initials}</Avatar.Fallback>
-                  </Avatar>
-                  <div className="hidden lg:flex flex-col text-left">
-                    <span className="text-xs font-bold leading-none text-[#1f1b18]">
-                      {user?.display_name ?? shortWallet}
-                    </span>
-                    <span className="text-[10px] text-[#6b6560] font-mono">
-                      {shortWallet}
-                    </span>
-                  </div>
+            <div ref={menuRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen((prev) => !prev)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#dfbfb94d] hover:shadow-sm transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#a63420]"
+              >
+                <Avatar size="sm" className="bg-[#a63420] text-white font-bold">
+                  <Avatar.Fallback>{initials}</Avatar.Fallback>
+                </Avatar>
+                <div className="hidden lg:flex flex-col text-left">
+                  <span className="text-xs font-bold leading-none text-[#1f1b18]">
+                    {user?.display_name ?? shortWallet}
+                  </span>
+                  <span className="text-[10px] text-[#6b6560] font-mono">
+                    {shortWallet}
+                  </span>
                 </div>
-              </Popover.Trigger>
-              <Popover.Content placement="bottom" offset={8}>
-                <Popover.Dialog className="w-52 p-2">
-                  <div className="flex flex-col w-full gap-1">
-                    {/* Profile info */}
-                    <div className="px-3 py-2 border-b border-[#f5ddd9] mb-1">
-                      <p className="text-xs font-bold text-[#1f1b18] truncate">
-                        {user?.display_name ?? "Provider"}
-                      </p>
-                      <p className="text-[10px] text-[#6b6560] font-mono truncate">
-                        {shortWallet}
-                      </p>
-                      <p className="text-sm text-[#1f1b18] font-mono truncate font-bold mt-2">
-                        <span className="inline-flex items-center gap-1.5">
-                          <SolanaIcon size={16} />
-                          {(solBalance?.sol ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 })} SOL
-                        </span>
-                      </p>
-                    </div>
+              </button>
 
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-[#a63420] hover:bg-[#ffe9e5] rounded-md transition-colors w-full text-left font-medium cursor-pointer"
-                    >
-                      <LuLogOut size={16} />
-                      <span>Logout</span>
-                    </button>
+              {isMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl border border-[#f5ddd9] shadow-lg p-2 z-50">
+                  {/* Profile info */}
+                  <div className="px-3 py-2 border-b border-[#f5ddd9] mb-1">
+                    <p className="text-xs font-bold text-[#1f1b18] truncate">
+                      {user?.display_name ?? "Provider"}
+                    </p>
+                    <p className="text-[10px] text-[#6b6560] font-mono truncate">
+                      {shortWallet}
+                    </p>
+                    <p className="text-sm text-[#1f1b18] font-mono truncate font-bold mt-2">
+                      <span className="inline-flex items-center gap-1.5">
+                        <SolanaIcon size={16} />
+                        {(solBalance?.sol ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 })} SOL
+                      </span>
+                    </p>
                   </div>
-                </Popover.Dialog>
-              </Popover.Content>
-            </Popover>
+
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-[#a63420] hover:bg-[#ffe9e5] rounded-md transition-colors w-full text-left font-medium cursor-pointer"
+                  >
+                    <LuLogOut size={16} />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -134,7 +151,7 @@ export default function ProviderLayout({
             <span className="text-xs">| Provider Console</span>
           </div>
           <p className="text-xs text-center">
-            © 2026 QuPilot Web3 Quests. Powering decentralized autonomous discovery. 🪐
+            &copy; 2026 QuPilot Web3 Quests. Powering decentralized autonomous discovery. &#x1FA90;
           </p>
           <div className="flex gap-4 text-xs font-bold">
             <Link href="#" className="hover:text-[#a63420] transition-colors">Terms</Link>

@@ -1,16 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Button, Avatar, Popover } from "@heroui/react";
 import {
   FaWallet,
-  FaUserPlus,
   FaDiscord,
   FaTwitter,
-  FaCircle,
-  FaRocket,
 } from "react-icons/fa6";
 import { FiLayout, FiUser, FiAward, FiCompass } from "react-icons/fi";
 import { LuLogOut } from "react-icons/lu";
@@ -26,18 +24,14 @@ export default function UserLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<IUser | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const { data: solBalance } = useSolBalance(user?.wallet_address);
-
-  // Load user data on mount
-  useEffect(() => {
+  const [user, setUser] = useState<IUser | null>(() => {
+    if (typeof window === "undefined") return null;
     const stored = getUserData();
     const token = getAuthToken();
-    if (stored && token) {
-      setUser(stored);
-    }
-  }, []);
+    return stored && token ? stored : null;
+  });
+  const [isConnecting, setIsConnecting] = useState(false);
+  const { data: solBalance } = useSolBalance(user?.wallet_address);
 
   // Derive initials from display_name or wallet address
   const initials = user?.display_name
@@ -74,10 +68,12 @@ export default function UserLayout({
             className="flex items-center gap-2 group transition-transform duration-200 hover:scale-105"
           >
             <span className="text-[#a63420] text-2xl font-extrabold flex items-center gap-1.5">
-              <img
+              <Image
                 src="/logo.png"
                 alt="QuPilot Logo"
-                className="w-6 h-6 object-contain"
+                width={24}
+                height={24}
+                className="object-contain"
               />
               <span className="font-extrabold tracking-tight">QuPilot</span>
             </span>
@@ -109,17 +105,19 @@ export default function UserLayout({
               Quests
             </Link>
 
-            <Link
-              href="/profile"
-              className={`px-1 py-1 text-sm font-bold transition-all flex items-center gap-1.5 ${
-                pathname === "/profile"
-                  ? "text-[#a63420] border-b-2 border-[#a63420]"
-                  : "text-[#6b6560] hover:text-[#a63420]"
-              }`}
-            >
-              <FiUser size={16} />
-              My Profile
-            </Link>
+            {user && (
+              <Link
+                href="/profile"
+                className={`px-1 py-1 text-sm font-bold transition-all flex items-center gap-1.5 ${
+                  pathname === "/profile"
+                    ? "text-[#a63420] border-b-2 border-[#a63420]"
+                    : "text-[#6b6560] hover:text-[#a63420]"
+                }`}
+              >
+                <FiUser size={16} />
+                My Profile
+              </Link>
+            )}
 
             <Link
               href="/leaderboard"
