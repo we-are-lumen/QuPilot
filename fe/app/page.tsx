@@ -515,14 +515,14 @@ function HeroMissionScene({
               />
             </div>
             {/* TVL label overlay */}
-            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 text-center">
-              <p className="text-[9px] font-bold uppercase tracking-wide text-[#6B6560]">Total Value Locked</p>
+            {/* <div className="absolute bottom-12 left-1/2 -translate-x-1/2 text-center"> */}
+            {/* <p className="text-[9px] font-bold uppercase tracking-wide text-[#6B6560]">Total Value Locked</p>
               <p className="text-sm font-extrabold text-[#1F1B18]">$2,487,320</p>
               <div className="flex items-center justify-center gap-1 mt-0.5">
                 <SolanaIcon size={10} />
                 <span className="text-[9px] font-bold text-[#6B6560]">USDC</span>
-              </div>
-            </div>
+              </div> */}
+            {/* </div> */}
           </motion.div>
 
           {/* ── Column 5: Reward Stream + Solana Statue ── */}
