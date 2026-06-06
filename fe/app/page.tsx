@@ -549,7 +549,7 @@ function HeroMissionScene({
               </div>
 
               {/* Solana rewards card overlay */}
-              <div 
+              <div
                 className="absolute top-8 -right-8 rounded-xl border border-black/10 bg-white px-3 py-2 shadow-[0_12px_30px_-12px_rgba(31,27,24,0.3)] min-w-[110px]"
                 style={{ zIndex: 10 }}
               >
@@ -926,28 +926,22 @@ function LandingPageContent() {
             <Link href="/quests" className="transition-colors hover:text-[#A63420]">
               Quests
             </Link>
-            <Link href="/explore" className="transition-colors hover:text-[#A63420]">
-              Agents
-            </Link>
-            <Link href="/skill" className="transition-colors hover:text-[#A63420]">
-              Integrations
-            </Link>
-            <Link href="/skill" className="transition-colors hover:text-[#A63420]">
-              Developers
+            <Link href="/leaderboard" className="transition-colors hover:text-[#A63420]">
+              Leaderboard
             </Link>
           </nav>
 
           {/* CTA buttons */}
           <div className="flex items-center gap-3">
             {/* Live on Solana pill */}
-            <div className="hidden items-center gap-2 rounded-full border border-black/10 bg-white px-3.5 py-2 text-xs font-bold text-[#1F1B18] shadow-[0_2px_8px_rgba(31,27,24,0.04)] sm:flex">
+            {/* <div className="hidden items-center gap-2 rounded-full border border-black/10 bg-white px-3.5 py-2 text-xs font-bold text-[#1F1B18] shadow-[0_2px_8px_rgba(31,27,24,0.04)] sm:flex">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#14F195] opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[#14F195]" />
               </span>
               Live on Solana
               <SolanaIcon size={14} />
-            </div>
+            </div> */}
 
             {walletAddress ? (
               <div className="flex items-center gap-2">
