@@ -14,7 +14,7 @@ import {
   FaBuilding,
   FaRobot,
 } from "react-icons/fa6";
-import { FiX, FiCpu, FiZap } from "react-icons/fi";
+import { FiX, FiCpu } from "react-icons/fi";
 import { getUserData, clearAuth } from "@/lib/utils/auth";
 import { disconnectWallet } from "@/lib/utils/wallet";
 import { usePublicQuests } from "@/lib/hooks/useQuests";
@@ -24,7 +24,7 @@ import AuthModal from "./components/AuthModal";
 import SolanaIcon from "./components/SolanaIcon";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { useGLTF, OrbitControls, Environment, Float } from "@react-three/drei";
+import { useGLTF, Environment, Float } from "@react-three/drei";
 import { motion } from "motion/react";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -78,128 +78,30 @@ const STEP_ICON_MAP: Record<string, React.ReactNode> = {
   clmm_copy: <FaRobot className="text-xs" />,
 };
 
+const EXECUTION_STEPS = [
+  {
+    label: "Publish",
+    title: "Protocols escrow rewards",
+    text: "Providers define quests, deposit SOL on-chain, and expose exact steps an agent can execute.",
+  },
+  {
+    label: "Dispatch",
+    title: "Agents pick the route",
+    text: "The QuPilot skill reads the quest, calls the right Byreal tools, and captures every transaction hash.",
+  },
+  {
+    label: "Verify",
+    title: "Proof lands on-chain",
+    text: "Each completed step maps back to the quest record before the reward slot is cleared for claim.",
+  },
+  {
+    label: "Claim",
+    title: "Users receive the upside",
+    text: "The user keeps control of the wallet while the agent handles the repetitive execution work.",
+  },
+];
+
 // ─── Sub-components ────────────────────────────────────────────────────────────
-
-function StatBadge({
-  value,
-  label,
-  caption,
-  icon,
-  iconBgClass,
-  iconColorClass,
-}: {
-  value: string;
-  label: string;
-  caption: string;
-  icon: React.ReactNode;
-  iconBgClass: string;
-  iconColorClass: string;
-}) {
-  const [currentVal, setCurrentVal] = useState(0);
-  const [parsed, setParsed] = useState({
-    prefix: "",
-    target: 0,
-    suffix: value,
-    decimals: 0,
-  });
-  const [hasTriggered, setHasTriggered] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !hasTriggered) {
-          setHasTriggered(true);
-        }
-      },
-      { threshold: 0.1 },
-    );
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [hasTriggered]);
-
-  useEffect(() => {
-    if (!hasTriggered) return;
-
-    const cleanedValue = value.replace(/,/g, "");
-    const match = cleanedValue.match(/^([^0-9.]*)([0-9.]+)([^0-9.]*)$/);
-    if (!match) {
-      setParsed({ prefix: "", target: 0, suffix: value, decimals: 0 });
-      return;
-    }
-
-    const prefix = match[1];
-    const numStr = match[2];
-    const suffix = match[3];
-
-    const target = parseFloat(numStr);
-    const decimalIndex = numStr.indexOf(".");
-    const decimals = decimalIndex === -1 ? 0 : numStr.length - decimalIndex - 1;
-
-    const info = { prefix, target, suffix, decimals };
-    setParsed(info);
-
-    let startTimestamp: number | null = null;
-    const duration = 2000;
-
-    function step(timestamp: number) {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const elapsed = timestamp - startTimestamp;
-      const progress = Math.min(elapsed / duration, 1);
-
-      const easeProgress = progress * (2 - progress);
-      const current = easeProgress * info.target;
-      setCurrentVal(current);
-
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      }
-    }
-
-    requestAnimationFrame(step);
-  }, [value, hasTriggered]);
-
-  const formattedVal = (() => {
-    const rounded = currentVal.toFixed(parsed.decimals);
-    if (parsed.decimals === 0) {
-      return parseInt(rounded, 10).toLocaleString();
-    }
-    return rounded;
-  })();
-
-  const displayString = parsed.prefix + formattedVal + parsed.suffix;
-
-  return (
-    <div
-      ref={containerRef}
-      className="group relative flex min-w-0 flex-1 items-center gap-4 px-5 py-4 sm:px-7"
-    >
-      <div
-        className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition-transform duration-300 group-hover:scale-105 ${iconBgClass} ${iconColorClass}`}
-      >
-        <span className="absolute inset-0 rounded-full bg-white/35 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-        {icon}
-      </div>
-      <div className="flex flex-col min-w-0">
-        <span className="text-[34px] leading-none sm:text-[40px] font-extrabold tracking-normal text-[#1F1B18]">
-          {displayString}
-        </span>
-        <span className="mt-1 text-[13px] font-extrabold uppercase tracking-[0.08em] text-text-secondary">
-          {label}
-        </span>
-        <span className="mt-1 text-[12px] font-semibold text-text-muted">
-          {caption}
-        </span>
-      </div>
-    </div>
-  );
-}
 
 function QuestCard({
   quest,
@@ -433,75 +335,310 @@ function ProviderSkeleton() {
   );
 }
 
-// ─── Looped Typewriter Component ──────────────────────────────────────────
-
-function LoopedTypewriter() {
-  const phrases = ["Automate your DeFi Journey.", "Earn like a Pro."];
-  const [index, setIndex] = useState(0);
-  const [displayText, setDisplayText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    let timer: any;
-    const currentPhrase = phrases[index];
-
-    if (!isDeleting) {
-      if (displayText.length < currentPhrase.length) {
-        timer = setTimeout(() => {
-          setDisplayText(currentPhrase.substring(0, displayText.length + 1));
-        }, 55); // fast typing speed
-      } else {
-        timer = setTimeout(() => {
-          setIsDeleting(true);
-        }, 2500); // 2.5s hold on completed text
-      }
-    } else {
-      if (displayText.length > 0) {
-        timer = setTimeout(() => {
-          setDisplayText(currentPhrase.substring(0, displayText.length - 1));
-        }, 25); // extra fast deleting speed
-      } else {
-        setIsDeleting(false);
-        setIndex((prev) => (prev + 1) % phrases.length);
-      }
-    }
-
-    return () => clearTimeout(timer);
-  }, [displayText, isDeleting, index]);
-
-  const isGradient = phrases[index] === "Earn like a Pro.";
-  const textStyle: React.CSSProperties = isGradient
-    ? {
-        background: "linear-gradient(168deg, #A63420 0%, #F59E0B 100%)",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent",
-        backgroundClip: "text",
-        display: "inline",
-      }
-    : {
-        color: "#1F1B18",
-        display: "inline",
-      };
-
-  const cursorColor = isGradient ? "#A63420" : "#1F1B18";
-
+function HeroMetric({
+  icon,
+  label,
+  value,
+  accent = "#1F1B18",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  accent?: string;
+}) {
   return (
-    <>
-      <span style={textStyle}>{displayText}</span>
-      <motion.span
-        animate={{ opacity: [0, 1, 0] }}
-        transition={{ repeat: Infinity, duration: 0.8, ease: "easeInOut" }}
-        style={{
-          display: "inline-block",
-          marginLeft: "6px",
-          width: "4px",
-          height: "44px",
-          backgroundColor: cursorColor,
-          verticalAlign: "middle",
-          transform: "translateY(-4px)",
-        }}
-      />
-    </>
+    <div className="flex min-w-0 items-center gap-3 px-4 py-1 sm:px-6">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#1F1B18]/[0.04] text-[#6B6560]">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#A39D97] sm:text-[10px]">
+          {label}
+        </p>
+        <p className="text-base font-extrabold sm:text-lg" style={{ color: accent }}>
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function MissionStepRow({
+  index,
+  label,
+  status,
+}: {
+  index: number;
+  label: string;
+  status: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#14F195]/15 text-[#14F195]">
+        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[12px] font-bold text-white">{label}</p>
+      </div>
+      <span className="shrink-0 text-[9px] font-extrabold uppercase tracking-wide text-[#14F195]">
+        {status}
+      </span>
+    </div>
+  );
+}
+
+function AgentNode({ className = "", delay = 0 }: { className?: string; delay?: number }) {
+  return (
+    <motion.div
+      animate={{ y: [0, -6, 0] }}
+      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay }}
+      className={`absolute flex h-11 w-11 items-center justify-center rounded-2xl border border-black/10 bg-white text-[#1F1B18] shadow-[0_12px_28px_-8px_rgba(31,27,24,0.35)] ${className}`}
+    >
+      <FaRobot size={17} className="text-[#3a3a3a]" />
+      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#14F195]" />
+    </motion.div>
+  );
+}
+
+function HeroMissionScene({
+  mounted,
+  scrolled,
+  stats,
+  activeQuests,
+}: {
+  mounted: boolean;
+  scrolled: boolean;
+  stats: {
+    agentsText: string;
+    rewardsText: string;
+    slotsClaimedText: string;
+  };
+  activeQuests: number;
+}) {
+  return (
+    <div className="relative mx-auto mt-10 w-full max-w-7xl px-3 sm:mt-14 sm:px-8">
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.9, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        className="relative min-h-[480px] overflow-hidden rounded-[32px] border border-black/[0.06] bg-gradient-to-b from-[#FDFCFB] to-[#F4F0EB] shadow-[0_40px_120px_-40px_rgba(31,27,24,0.25)] sm:min-h-[640px]"
+      >
+        {/* faint grid texture */}
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(31,27,24,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(31,27,24,0.03)_1px,transparent_1px)] bg-[size:46px_46px]" />
+        {/* radial glow behind launchpad */}
+        <div className="pointer-events-none absolute bottom-0 left-1/2 h-[420px] w-[680px] -translate-x-1/2 translate-y-1/4 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(224,93,69,0.10),transparent_65%)]" />
+
+        {/* ── Mission panel (dark card, top-left) ── */}
+        <motion.div
+          initial={{ opacity: 0, x: -24 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, delay: 0.55, ease: "easeOut" }}
+          className="absolute left-3 top-4 z-20 w-[260px] rounded-2xl border border-white/[0.08] bg-[#161513] p-4 shadow-[0_30px_70px_-20px_rgba(0,0,0,0.55)] sm:left-7 sm:top-8 sm:w-[320px]"
+        >
+          <div className="mb-3.5 flex items-start justify-between">
+            <div>
+              <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-[#ff8d7b]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#E05D45]" />
+                Mission: Liquidity Route
+              </p>
+              <p className="mt-1.5 text-[11px] leading-snug text-white/55">
+                Provide liquidity on Byreal CLMM, collect fees, and compound.
+              </p>
+            </div>
+          </div>
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-[9px] font-extrabold uppercase tracking-wider text-white/40">Steps</span>
+            <span className="text-[10px] font-bold text-white/70">4 / 4</span>
+          </div>
+          <div className="space-y-1.5">
+            <MissionStepRow index={1} label="Start mission" status="complete" />
+            <MissionStepRow index={2} label="Provide liquidity" status="complete" />
+            <MissionStepRow index={3} label="Harvest fees" status="complete" />
+            <MissionStepRow index={4} label="Compound rewards" status="complete" />
+          </div>
+          <div className="mt-3 flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+            <span className="text-[10px] font-extrabold uppercase tracking-wide text-white/55">Mission status</span>
+            <span className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase text-[#14F195]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#14F195]" />
+              Active
+            </span>
+          </div>
+        </motion.div>
+
+        {/* ── AI Agent Network (top-center cluster) ── */}
+        <div className="absolute left-1/2 top-8 z-10 hidden -translate-x-1/2 lg:block">
+          <p className="mb-3 flex items-center justify-center gap-1.5 whitespace-nowrap text-[10px] font-extrabold uppercase tracking-wider text-[#6B6560]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#E05D45]" />
+            AI Agent Network
+          </p>
+          <div className="relative mx-auto h-32 w-44">
+            <AgentNode className="left-0 top-2" delay={0} />
+            <AgentNode className="left-14 top-0" delay={0.6} />
+            <AgentNode className="left-1 top-16" delay={1.2} />
+            <div className="absolute left-24 top-12 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#E05D45]/30 bg-white shadow-[0_14px_30px_-10px_rgba(224,93,69,0.5)]">
+              <img src="/logo.png" alt="QuPilot" className="h-6 w-6 object-contain" />
+            </div>
+            <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
+              <line x1="22" y1="30" x2="108" y2="64" stroke="#E05D45" strokeWidth="1.5" strokeDasharray="3 4" opacity="0.4" />
+              <line x1="78" y1="22" x2="108" y2="64" stroke="#E05D45" strokeWidth="1.5" strokeDasharray="3 4" opacity="0.4" />
+              <line x1="24" y1="86" x2="108" y2="64" stroke="#E05D45" strokeWidth="1.5" strokeDasharray="3 4" opacity="0.4" />
+            </svg>
+          </div>
+        </div>
+
+        {/* ── Central rocket + launchpad ── */}
+        <div className="absolute bottom-[78px] left-1/2 z-10 h-[340px] w-[360px] -translate-x-1/2 sm:bottom-[88px] sm:h-[460px] sm:w-[520px]">
+          {/* launchpad disc */}
+          <div className="absolute bottom-2 left-1/2 h-24 w-72 -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(31,27,24,0.12),transparent_70%)] sm:h-32 sm:w-96" />
+          <div className="absolute bottom-6 left-1/2 flex h-8 w-56 -translate-x-1/2 items-center justify-center rounded-[50%] border border-black/10 bg-white/60 backdrop-blur-sm sm:w-72">
+            <span className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#6B6560]">QuPilot</span>
+          </div>
+          {mounted ? (
+            <Canvas camera={{ position: [0, 0, 8], fov: 50 }}>
+              <ambientLight intensity={0.85} />
+              <directionalLight position={[10, 10, 5]} intensity={1.6} />
+              <Suspense fallback={null}>
+                <Float
+                  speed={scrolled ? 0 : 1.7}
+                  rotationIntensity={scrolled ? 0 : 0.45}
+                  floatIntensity={scrolled ? 0 : 0.9}
+                >
+                  <RocketModel scrolled={scrolled} />
+                </Float>
+                <Environment preset="city" />
+              </Suspense>
+            </Canvas>
+          ) : (
+            <Image
+              src="/hero_mission_control.png"
+              alt="Mission Control - DeFi automation hub"
+              fill
+              className="object-contain"
+              priority
+            />
+          )}
+        </div>
+
+        {/* ── Escrow Pool battery (right) ── */}
+        <motion.div
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, delay: 0.65, ease: "easeOut" }}
+          className="absolute right-4 top-[18%] z-20 hidden w-[210px] lg:block"
+        >
+          <p className="mb-2.5 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#6B6560]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#E05D45]" />
+            Escrow Pool
+          </p>
+          <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-[0_24px_50px_-20px_rgba(31,27,24,0.3)]">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[#A39D97]">Total Value Locked</p>
+            <p className="mt-1 text-2xl font-extrabold text-[#1F1B18]">$2,487,320</p>
+            <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-[#6B6560]">
+              <SolanaIcon size={13} />
+              USDC escrowed
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#1F1B18]/[0.06]">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: "72%" }}
+                transition={{ duration: 1.1, delay: 0.9, ease: "easeOut" }}
+                className="h-full rounded-full bg-gradient-to-r from-[#14F195] to-[#0fae6e]"
+              />
+            </div>
+            <p className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-[#A39D97]">
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                <rect x="5" y="11" width="14" height="9" rx="2" />
+                <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+              </svg>
+              Locked reward capacity
+            </p>
+          </div>
+        </motion.div>
+
+        {/* ── Reward Stream + Solana Rewards (bottom-right) ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.8, ease: "easeOut" }}
+          className="absolute bottom-[110px] right-5 z-20 hidden items-center gap-3 xl:flex"
+        >
+          <div className="flex flex-col items-center gap-1">
+            {[0, 1, 2].map((i) => (
+              <motion.span
+                key={i}
+                animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
+                transition={{ duration: 1.6, repeat: Infinity, delay: i * 0.3, ease: "easeInOut" }}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white shadow-[0_8px_18px_-8px_rgba(20,241,149,0.5)]"
+              >
+                <SolanaIcon size={14} />
+              </motion.span>
+            ))}
+          </div>
+          <div className="rounded-2xl border border-black/10 bg-white px-4 py-3 shadow-[0_24px_50px_-20px_rgba(31,27,24,0.3)]">
+            <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#0fae6e]">Solana Rewards</p>
+            <p className="mt-1 text-xl font-extrabold text-[#1F1B18]">
+              <span className="text-[#0fae6e]">+12.84</span> SOL
+            </p>
+            <p className="text-[10px] font-semibold text-[#A39D97]">Est. reward</p>
+          </div>
+        </motion.div>
+
+        {/* ── Bottom stat bar (light, real stats) ── */}
+        <div className="absolute bottom-3 left-3 right-3 z-20 grid grid-cols-2 items-center gap-y-2 rounded-2xl border border-black/[0.07] bg-white/80 py-3 shadow-[0_18px_44px_-22px_rgba(31,27,24,0.3)] backdrop-blur-md sm:bottom-5 sm:left-7 sm:right-7 sm:grid-cols-4 sm:divide-x sm:divide-black/[0.06]">
+          <HeroMetric
+            icon={<FaRobot size={15} />}
+            label="Agents online"
+            value={stats.agentsText}
+          />
+          <HeroMetric
+            icon={<FaRocket size={14} />}
+            label="Quests active"
+            value={String(activeQuests)}
+          />
+          <HeroMetric
+            icon={
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 3v18h18" />
+                <path d="M7 14l3-4 4 3 5-7" />
+              </svg>
+            }
+            label="Slots claimed"
+            value={stats.slotsClaimedText}
+            accent="#0fae6e"
+          />
+          <HeroMetric
+            icon={<SolanaIcon size={15} />}
+            label="Total rewards paid"
+            value={stats.rewardsText}
+            accent="#0fae6e"
+          />
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function ExecutionStepCard({
+  step,
+  index,
+}: {
+  step: (typeof EXECUTION_STEPS)[number];
+  index: number;
+}) {
+  return (
+    <div className="relative border-t border-black/10 py-6 md:border-l md:border-t-0 md:px-7 md:py-2 first:md:border-l-0">
+      <span className="font-mono text-[11px] font-bold uppercase text-[#A63420]">
+        {String(index + 1).padStart(2, "0")} / {step.label}
+      </span>
+      <h3 className="mt-3 text-xl font-extrabold text-[#111111]">
+        {step.title}
+      </h3>
+      <p className="mt-3 text-sm leading-relaxed text-[#6B6560]">
+        {step.text}
+      </p>
+    </div>
   );
 }
 
@@ -513,8 +650,8 @@ if (typeof window !== "undefined") {
 
 function RocketModel({ scrolled }: { scrolled: boolean }) {
   const { scene } = useGLTF("/rocket.glb");
-  const pivotRef = useRef<any>(null);
-  const bodyRef = useRef<any>(null);
+  const pivotRef = useRef<THREE.Group>(null);
+  const bodyRef = useRef<THREE.Object3D>(null);
 
   useFrame((state, delta) => {
     // 1. Rotate the body around its local Y axis to make it spin
@@ -524,8 +661,8 @@ function RocketModel({ scrolled }: { scrolled: boolean }) {
 
     // 2. Lerp the pivot group (scale and position) for scroll flight
     if (pivotRef.current) {
-      const targetScale = scrolled ? 0.4 : 4.0;
-      const targetY = scrolled ? 1.5 : -2.5;
+      const targetScale = scrolled ? 0.4 : 6.0;
+      const targetY = scrolled ? 1.5 : -1.2;
 
       const lerpFactor = Math.min(1, 5 * delta);
       pivotRef.current.scale.lerp(
@@ -543,8 +680,8 @@ function RocketModel({ scrolled }: { scrolled: boolean }) {
   return (
     <group
       ref={pivotRef}
-      scale={4}
-      position={[0, -2.5, 0]}
+      scale={6}
+      position={[0, -1.2, 0]}
       rotation={[0.15, 0, 0.45]} // Tilt: X slightly forward, Z left to point to upper-left
     >
       <primitive ref={bodyRef} object={scene} />
@@ -566,7 +703,10 @@ function LandingPageContent() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const frame = requestAnimationFrame(() => {
+      setMounted(true);
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   const { data: questsData, isLoading: isLoadingQuests } = usePublicQuests();
@@ -716,6 +856,11 @@ function LandingPageContent() {
     });
   }, [questsData]);
 
+  const activeQuestCount = groupedProviders.reduce(
+    (total, provider) => total + provider.stats.activeQuests,
+    0,
+  );
+
   // Track page scroll progress for header progress bar
   useEffect(() => {
     const handleScroll = () => {
@@ -742,25 +887,31 @@ function LandingPageContent() {
 
   // Check auth and redirect if already authenticated
   useEffect(() => {
-    const user = getUserData();
-    if (user) {
-      setWalletAddress(user.wallet_address);
-      if (user.role === "user_provider") {
-        router.replace("/dashboard");
+    const frame = requestAnimationFrame(() => {
+      const user = getUserData();
+      if (user) {
+        setWalletAddress(user.wallet_address);
+        if (user.role === "user_provider") {
+          router.replace("/dashboard");
+        } else {
+          router.replace("/explore");
+        }
       } else {
-        router.replace("/explore");
+        setIsCheckingAuth(false);
       }
-    } else {
-      setIsCheckingAuth(false);
-    }
+    });
+    return () => cancelAnimationFrame(frame);
   }, [router]);
 
   // Handle URL redirect query parameter ?login=true
   useEffect(() => {
     if (searchParams.get("login") === "true") {
-      setIsAuthModalOpen(true);
-      // Clean query parameters from address bar
-      router.replace("/", { scroll: false });
+      const frame = requestAnimationFrame(() => {
+        setIsAuthModalOpen(true);
+        // Clean query parameters from address bar
+        router.replace("/", { scroll: false });
+      });
+      return () => cancelAnimationFrame(frame);
     }
   }, [searchParams, router]);
 
@@ -801,19 +952,16 @@ function LandingPageContent() {
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ background: "#FFFBF5" }}
-    >
+    <div className="min-h-screen flex flex-col bg-white">
       {/* ── Navbar ── */}
       <header
         className="sticky top-0 z-40"
         style={{
-          background: "rgba(255,248,246,0.8)",
-          borderBottom: "1px solid rgba(245,221,217,0.5)",
+          background: "rgba(255,255,255,0.84)",
+          borderBottom: "1px solid rgba(31,27,24,0.08)",
           backdropFilter: "blur(24px)",
           boxShadow:
-            "0px 0px 3px 0px rgba(31,27,24,0.02), 0px 4px 20px -2px rgba(31,27,24,0.05)",
+            "0px 1px 2px rgba(31,27,24,0.03), 0px 16px 40px -28px rgba(31,27,24,0.28)",
         }}
       >
         <div className="max-w-7xl mx-auto px-5 py-3 flex items-center justify-between">
@@ -839,8 +987,36 @@ function LandingPageContent() {
             </span>
           </Link>
 
+          <nav className="hidden items-center gap-7 text-sm font-bold text-[#6B6560] lg:flex">
+            <a href="#how-it-works" className="transition-colors hover:text-[#A63420]">
+              How it works
+            </a>
+            <Link href="/quests" className="transition-colors hover:text-[#A63420]">
+              Quests
+            </Link>
+            <Link href="/explore" className="transition-colors hover:text-[#A63420]">
+              Agents
+            </Link>
+            <Link href="/skill" className="transition-colors hover:text-[#A63420]">
+              Integrations
+            </Link>
+            <Link href="/skill" className="transition-colors hover:text-[#A63420]">
+              Developers
+            </Link>
+          </nav>
+
           {/* CTA buttons */}
           <div className="flex items-center gap-3">
+            {/* Live on Solana pill */}
+            <div className="hidden items-center gap-2 rounded-full border border-black/10 bg-white px-3.5 py-2 text-xs font-bold text-[#1F1B18] shadow-[0_2px_8px_rgba(31,27,24,0.04)] sm:flex">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#14F195] opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#14F195]" />
+              </span>
+              Live on Solana
+              <SolanaIcon size={14} />
+            </div>
+
             {walletAddress ? (
               <div className="flex items-center gap-2">
                 <div
@@ -866,10 +1042,13 @@ function LandingPageContent() {
               <Button
                 onPress={handleConnectWallet}
                 id="nav-connect-wallet"
-                className="bg-[#a63420] text-white hover:bg-[#8f2b1a] transition-all text-xs font-bold px-5 py-2.5 rounded-full shadow-sm flex items-center gap-2"
+                className="bg-[#E05D45] text-white hover:bg-[#C94D35] transition-all text-sm font-bold px-5 py-2.5 rounded-full shadow-[0_8px_24px_-8px_rgba(224,93,69,0.6)] flex items-center gap-2"
               >
-                <FaWallet size={14} />
-                Connect Wallet
+                Launch App
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M7 17L17 7" />
+                  <path d="M9 7h8v8" />
+                </svg>
               </Button>
             )}
           </div>
@@ -888,232 +1067,123 @@ function LandingPageContent() {
       </header>
 
       {/* ── Hero Section ── */}
-      <section
-        className="relative overflow-hidden"
-        style={{ padding: "140px 20px 48px" }}
-      >
-        {/* Background blobs */}
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            left: 33,
-            top: 49,
-            width: 600,
-            height: 600,
-            borderRadius: "9999px",
-            background: "rgba(255,180,165,0.4)",
-            filter: "blur(100px)",
-            opacity: 0.5,
-            zIndex: 0,
-          }}
-        />
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            left: 596,
-            top: 492,
-            width: 700,
-            height: 700,
-            borderRadius: "9999px",
-            background: "rgba(206,189,255,0.3)",
-            filter: "blur(100px)",
-            opacity: 0.5,
-            zIndex: 0,
-          }}
-        />
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            left: 64,
-            top: "calc(100% - 282px)",
-            width: 500,
-            height: 500,
-            borderRadius: "9999px",
-            background: "rgba(245,158,11,0.2)",
-            filter: "blur(100px)",
-            opacity: 0.5,
-            zIndex: 0,
-          }}
-        />
-
-        <div className="relative z-10 max-w-7xl mx-auto flex items-center justify-between gap-12">
-          {/* Left: text content */}
-          <div
-            className="flex flex-col gap-5"
-            style={{
-              maxWidth: scrolled ? "100%" : 608,
-              width: "100%",
-              transition: "all 1.2s cubic-bezier(0.25, 1, 0.5, 1)",
-            }}
-          >
-            {/* Status pill */}
-            <div
-              className="inline-flex items-center gap-2 self-start px-3 py-1 rounded-full text-xs font-bold tracking-widest"
-              style={{
-                background: "#FFF0EE",
-                border: "1px solid rgba(166,52,32,0.2)",
-                color: "#6B6560",
-                boxShadow: "0px 1px 2px 0px rgba(0,0,0,0.05)",
-              }}
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <FiCpu className="text-[#A63420]" />
-              System Online. Mission Control Active.
-            </div>
-
-            <h1
-              className="text-[56px] font-extrabold leading-17.5 tracking-tight"
-              style={{
-                fontFamily: "var(--font-nunito)",
-                color: "#1F1B18",
-                minHeight: "70px",
-              }}
-            >
-              <LoopedTypewriter />
-            </h1>
-
-            {/* Sub-heading */}
-            <p
-              className="text-lg leading-relaxed"
-              style={{
-                color: "#6B6560",
-                maxWidth: scrolled ? "100%" : 576,
-                transition: "all 1.2s cubic-bezier(0.25, 1, 0.5, 1)",
-              }}
-            >
-              Join Mission Control, deploy smart agents to complete complex DeFi
-              tasks, and earn crypto rewards on autopilot in a vibrant Web3
-              ecosystem.
-            </p>
-
-            {/* CTAs */}
-            <div className="flex items-center gap-3 pt-3">
-              <Button
-                render={(props) => <Link href="/explore" {...(props as any)} />}
-                id="hero-launch-agents"
-                className="flex items-center gap-2 px-8 py-3 rounded-full text-[17px] font-bold transition-all hover:opacity-90"
-                style={{
-                  background: "#A63420",
-                  color: "#FFFFFF",
-                  boxShadow:
-                    "0px 6px 12px 0px rgba(166,52,32,0.3), 0px 4px 0px 0px rgba(137,30,12,1)",
-                  height: "auto",
-                  minWidth: "auto",
-                }}
-              >
-                Launch Agents
-                <FaRocket className="text-white" />
-              </Button>
-
-              <Button
-                render={(props) => <Link href="/quests" {...(props as any)} />}
-                id="hero-view-quests"
-                className="flex items-center justify-center px-8 py-3 rounded-full text-[17px] font-bold border-2 transition-all hover:bg-black/5"
-                style={{
-                  background: "#FFF8F6",
-                  borderColor: "rgba(166,52,32,0.2)",
-                  color: "#A63420",
-                  height: "auto",
-                  minWidth: "auto",
-                }}
-              >
-                View Quests
-              </Button>
-            </div>
-          </div>
-
-          {/* Right: hero 3D model */}
+      <section className="relative overflow-hidden bg-white pb-16 pt-16 sm:pt-20">
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(31,27,24,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(31,27,24,0.045)_1px,transparent_1px)] bg-[size:48px_48px]" />
+        <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center px-5 text-center sm:px-8">
           <motion.div
-            className="relative shrink-0"
-            style={{
-              height: 600,
-              pointerEvents: scrolled ? "none" : "auto",
-              overflow: "hidden",
-            }}
-            animate={{
-              width: scrolled ? 0 : 600,
-              x: scrolled ? -1100 : 0,
-              y: scrolled ? -600 : 0,
-              opacity: scrolled ? 0 : 1,
-            }}
-            transition={{
-              x: { duration: 1.5, ease: [0.25, 1, 0.5, 1] },
-              y: { duration: 1.5, ease: [0.25, 1, 0.5, 1] },
-              opacity: { duration: 1.2, ease: [0.25, 1, 0.5, 1] },
-              width: { duration: 1.2, ease: [0.25, 1, 0.5, 1] },
-            }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="mb-5 flex items-center gap-2.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#E05D45] sm:text-[13px]"
           >
-            <div className="relative w-full h-full overflow-visible">
-              {mounted ? (
-                <Canvas camera={{ position: [0, 0, 8], fov: 50 }}>
-                  <ambientLight intensity={0.7} />
-                  <directionalLight position={[10, 10, 5]} intensity={1.5} />
-                  <Suspense fallback={null}>
-                    <Float
-                      speed={scrolled ? 0 : 2}
-                      rotationIntensity={scrolled ? 0 : 0.5}
-                      floatIntensity={scrolled ? 0 : 1}
-                    >
-                      <RocketModel scrolled={scrolled} />
-                    </Float>
-                    <Environment preset="city" />
-                  </Suspense>
-                  <OrbitControls enableZoom={false} />
-                </Canvas>
-              ) : (
-                <Image
-                  src="/hero_mission_control.png"
-                  alt="Mission Control - DeFi automation hub"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              )}
-            </div>
+            <FaRobot size={15} className="text-[#E05D45]" />
+            AI Agents. DeFi Quests. Real Rewards.
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="max-w-6xl text-[44px] font-extrabold leading-[0.98] text-[#111111] sm:text-[72px] md:text-[92px] lg:text-[108px]"
+            style={{ fontFamily: "var(--font-nunito)", letterSpacing: "-0.01em" }}
+          >
+            Where DeFi quests meet autonomous agents<span className="text-[#E05D45]">.</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.1, ease: "easeOut" }}
+            className="mt-6 w-full max-w-2xl text-pretty text-base leading-relaxed text-[#6B6560] sm:mt-8 sm:text-xl"
+          >
+            QuPilot deploys AI agents to execute on-chain quests, manage risk,
+            and deliver rewards&mdash;so you don&rsquo;t have to.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.18, ease: "easeOut" }}
+            className="mt-8 flex flex-col items-center gap-3 sm:mt-10 sm:flex-row sm:justify-center"
+          >
+            <Link
+              href="/explore"
+              id="hero-launch-agents"
+              className="inline-flex items-center gap-2 rounded-full bg-[#E05D45] px-7 py-3 text-sm font-bold text-white shadow-[0_14px_34px_-10px_rgba(224,93,69,0.65)] transition-all hover:bg-[#C94D35] hover:scale-[1.02] sm:text-base"
+            >
+              Launch App
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M7 17L17 7" />
+                <path d="M9 7h8v8" />
+              </svg>
+            </Link>
+
+            <Link
+              href="/quests"
+              id="hero-view-quests"
+              className="inline-flex items-center justify-center rounded-full border border-black/12 bg-white px-7 py-3 text-sm font-bold text-[#111111] transition-all hover:border-[#A63420]/30 hover:text-[#A63420] sm:text-base"
+            >
+              Explore Quests
+            </Link>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.26, ease: "easeOut" }}
+            className="mt-6"
+          >
+            <Link
+              href="/skill"
+              className="group inline-flex items-center gap-2.5 rounded-2xl border border-black/10 bg-white px-4 py-2.5 text-left shadow-[0_10px_30px_-12px_rgba(31,27,24,0.18)] transition-all hover:scale-[1.02] hover:border-black/20"
+            >
+              <span className="font-extrabold text-[#E05D45] text-base leading-none">A\</span>
+              <span className="text-sm font-bold text-[#111111]">Claude Skill included</span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#14F195]/15 text-[#0fae6e]">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              </span>
+            </Link>
           </motion.div>
         </div>
 
-        {/* ── Trust / Stats Bar ── */}
-        <div className="relative z-10 max-w-7xl mx-auto mt-3xl">
-          <div className="relative overflow-hidden rounded-[28px] border border-[#ead8d2] bg-white/92 px-3 py-3 shadow-[0_24px_70px_rgba(166,52,32,0.10)] backdrop-blur-xl">
-            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent" />
-            <div className="pointer-events-none absolute -left-16 -top-20 h-48 w-48 rounded-full bg-[#fff0bd]/50 blur-3xl" />
-            <div className="pointer-events-none absolute -right-20 -bottom-24 h-56 w-56 rounded-full bg-[#d8fff0]/55 blur-3xl" />
-            <div className="relative grid grid-cols-1 divide-y divide-[#ead8d2] lg:grid-cols-3 lg:divide-x lg:divide-y-0">
-              <StatBadge
-                value={platformStats.agentsText}
-                label="Agents Deployed"
-                caption="Pilots already moving"
-                icon={<FaRobot />}
-                iconBgClass="bg-[#eee7ff]"
-                iconColorClass="text-[#7c5ce6]"
-              />
-              <StatBadge
-                value={platformStats.rewardsText}
-                label="Total Rewards Earned"
-                caption="Distributed to winners"
-                icon={<SolanaIcon size={30} />}
-                iconBgClass="bg-[#181420] ring-1 ring-[#14F195]/35 shadow-[0_10px_28px_rgba(20,241,149,0.22),inset_0_1px_0_rgba(255,255,255,0.12)]"
-                iconColorClass="text-white"
-              />
-              <StatBadge
-                value={platformStats.slotsClaimedText}
-                label="Slots Claimed"
-                caption="Active quest capacity"
-                icon={<FiZap />}
-                iconBgClass="bg-[#ccf8e4]"
-                iconColorClass="text-[#0dbb86]"
-              />
+        <HeroMissionScene
+          mounted={mounted}
+          scrolled={scrolled}
+          stats={platformStats}
+          activeQuests={activeQuestCount}
+        />
+      </section>
+
+      <section id="how-it-works" className="relative bg-white py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <div className="grid gap-8 md:grid-cols-[0.9fr_1.4fr] md:items-end">
+            <div>
+              <h2
+                className="text-3xl font-extrabold text-[#111111] sm:text-5xl"
+                style={{ fontFamily: "var(--font-nunito)", letterSpacing: 0 }}
+              >
+                Agents do the clicks. Protocols keep the proof.
+              </h2>
             </div>
+            <p className="w-full max-w-xl text-pretty text-sm leading-relaxed text-[#6B6560] sm:text-lg">
+              The landing story now mirrors the actual QuPilot loop: escrow,
+              dispatch, verify, claim. It gives judges a clean mental model
+              before they hit the quest feed.
+            </p>
+          </div>
+
+          <div className="mt-12 grid md:grid-cols-4">
+            {EXECUTION_STEPS.map((step, index) => (
+              <ExecutionStepCard key={step.label} step={step} index={index} />
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── In Collaboration With Section ── */}
-      <div className="max-w-7xl mx-auto w-full px-8 py-16 md:py-20 border-t border-b border-[#DFBFB9]/30 bg-white/30 backdrop-blur-sm">
+      <div className="max-w-7xl mx-auto w-full px-8 py-12 md:py-16 border-t border-b border-black/10 bg-white">
         <div className="flex flex-col md:flex-row items-center justify-center gap-10 md:gap-24">
           <span className="text-label text-text-secondary tracking-[0.08em] font-extrabold text-[0.8125rem] opacity-80 uppercase shrink-0">
             In collaboration with
