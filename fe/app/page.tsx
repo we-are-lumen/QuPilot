@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useMemo, useRef } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -10,7 +10,6 @@ import {
   FaDiscord,
   FaXTwitter,
   FaComments,
-  FaWallet,
   FaBuilding,
   FaRobot,
 } from "react-icons/fa6";
@@ -22,9 +21,6 @@ import { usePublicStats } from "@/lib/hooks/usePublicStats";
 import type { IQuestStep } from "@/lib/types/quests";
 import AuthModal from "./components/AuthModal";
 import SolanaIcon from "./components/SolanaIcon";
-import { Canvas, useFrame } from "@react-three/fiber";
-import * as THREE from "three";
-import { useGLTF, Environment, Float } from "@react-three/drei";
 import { motion } from "motion/react";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -403,13 +399,11 @@ function AgentNode({ className = "", delay = 0 }: { className?: string; delay?: 
 }
 
 function HeroMissionScene({
-  mounted,
-  scrolled,
   stats,
   activeQuests,
 }: {
-  mounted: boolean;
-  scrolled: boolean;
+  mounted?: boolean;
+  scrolled?: boolean;
   stats: {
     agentsText: string;
     rewardsText: string;
@@ -417,176 +411,159 @@ function HeroMissionScene({
   };
   activeQuests: number;
 }) {
+  const rewardsNumberOnly = stats.rewardsText.replace(" SOL", "");
   return (
     <div className="relative mx-auto mt-10 w-full max-w-7xl px-3 sm:mt-14 sm:px-8">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="relative min-h-[480px] overflow-hidden rounded-[32px] border border-black/[0.06] bg-gradient-to-b from-[#FDFCFB] to-[#F4F0EB] shadow-[0_40px_120px_-40px_rgba(31,27,24,0.25)] sm:min-h-[640px]"
+        className="relative overflow-hidden rounded-[32px] border border-black/[0.06] bg-gradient-to-b from-[#FDFCFB] to-[#F4F0EB] shadow-[0_40px_120px_-40px_rgba(31,27,24,0.25)]"
       >
         {/* faint grid texture */}
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(31,27,24,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(31,27,24,0.03)_1px,transparent_1px)] bg-[size:46px_46px]" />
-        {/* radial glow behind launchpad */}
-        <div className="pointer-events-none absolute bottom-0 left-1/2 h-[420px] w-[680px] -translate-x-1/2 translate-y-1/4 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(224,93,69,0.10),transparent_65%)]" />
 
-        {/* ── Mission panel (dark card, top-left) ── */}
-        <motion.div
-          initial={{ opacity: 0, x: -24 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, delay: 0.55, ease: "easeOut" }}
-          className="absolute left-3 top-4 z-20 w-[260px] rounded-2xl border border-white/[0.08] bg-[#161513] p-4 shadow-[0_30px_70px_-20px_rgba(0,0,0,0.55)] sm:left-7 sm:top-8 sm:w-[320px]"
-        >
-          <div className="mb-3.5 flex items-start justify-between">
-            <div>
-              <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-[#ff8d7b]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#E05D45]" />
-                Mission: Liquidity Route
-              </p>
-              <p className="mt-1.5 text-[11px] leading-snug text-white/55">
-                Provide liquidity on Byreal CLMM, collect fees, and compound.
-              </p>
-            </div>
-          </div>
-          <div className="mb-3 flex items-center justify-between">
-            <span className="text-[9px] font-extrabold uppercase tracking-wider text-white/40">Steps</span>
-            <span className="text-[10px] font-bold text-white/70">4 / 4</span>
-          </div>
-          <div className="space-y-1.5">
-            <MissionStepRow index={1} label="Start mission" status="complete" />
-            <MissionStepRow index={2} label="Provide liquidity" status="complete" />
-            <MissionStepRow index={3} label="Harvest fees" status="complete" />
-            <MissionStepRow index={4} label="Compound rewards" status="complete" />
-          </div>
-          <div className="mt-3 flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
-            <span className="text-[10px] font-extrabold uppercase tracking-wide text-white/55">Mission status</span>
-            <span className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase text-[#14F195]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#14F195]" />
-              Active
-            </span>
-          </div>
-        </motion.div>
+        {/* ── Hero Scene: 5-column panoramic layout ── */}
+        <div className="relative flex items-end justify-center gap-0 px-4 pt-8 pb-0 sm:px-6 sm:pt-10 min-h-[380px] sm:min-h-[500px]">
 
-        {/* ── AI Agent Network (top-center cluster) ── */}
-        <div className="absolute left-1/2 top-8 z-10 hidden -translate-x-1/2 lg:block">
-          <p className="mb-3 flex items-center justify-center gap-1.5 whitespace-nowrap text-[10px] font-extrabold uppercase tracking-wider text-[#6B6560]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#E05D45]" />
-            AI Agent Network
-          </p>
-          <div className="relative mx-auto h-32 w-44">
-            <AgentNode className="left-0 top-2" delay={0} />
-            <AgentNode className="left-14 top-0" delay={0.6} />
-            <AgentNode className="left-1 top-16" delay={1.2} />
-            <div className="absolute left-24 top-12 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#E05D45]/30 bg-white shadow-[0_14px_30px_-10px_rgba(224,93,69,0.5)]">
-              <img src="/logo.png" alt="QuPilot" className="h-6 w-6 object-contain" />
-            </div>
-            <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
-              <line x1="22" y1="30" x2="108" y2="64" stroke="#E05D45" strokeWidth="1.5" strokeDasharray="3 4" opacity="0.4" />
-              <line x1="78" y1="22" x2="108" y2="64" stroke="#E05D45" strokeWidth="1.5" strokeDasharray="3 4" opacity="0.4" />
-              <line x1="24" y1="86" x2="108" y2="64" stroke="#E05D45" strokeWidth="1.5" strokeDasharray="3 4" opacity="0.4" />
-            </svg>
-          </div>
-        </div>
-
-        {/* ── Central rocket + launchpad ── */}
-        <div className="absolute bottom-[78px] left-1/2 z-10 h-[340px] w-[360px] -translate-x-1/2 sm:bottom-[88px] sm:h-[460px] sm:w-[520px]">
-          {/* launchpad disc */}
-          <div className="absolute bottom-2 left-1/2 h-24 w-72 -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(31,27,24,0.12),transparent_70%)] sm:h-32 sm:w-96" />
-          <div className="absolute bottom-6 left-1/2 flex h-8 w-56 -translate-x-1/2 items-center justify-center rounded-[50%] border border-black/10 bg-white/60 backdrop-blur-sm sm:w-72">
-            <span className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#6B6560]">QuPilot</span>
-          </div>
-          {mounted ? (
-            <Canvas camera={{ position: [0, 0, 8], fov: 50 }}>
-              <ambientLight intensity={0.85} />
-              <directionalLight position={[10, 10, 5]} intensity={1.6} />
-              <Suspense fallback={null}>
-                <Float
-                  speed={scrolled ? 0 : 1.7}
-                  rotationIntensity={scrolled ? 0 : 0.45}
-                  floatIntensity={scrolled ? 0 : 0.9}
-                >
-                  <RocketModel scrolled={scrolled} />
-                </Float>
-                <Environment preset="city" />
-              </Suspense>
-            </Canvas>
-          ) : (
-            <Image
-              src="/hero_mission_control.png"
-              alt="Mission Control - DeFi automation hub"
-              fill
-              className="object-contain"
-              priority
-            />
-          )}
-        </div>
-
-        {/* ── Escrow Pool battery (right) ── */}
-        <motion.div
-          initial={{ opacity: 0, x: 24 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, delay: 0.65, ease: "easeOut" }}
-          className="absolute right-4 top-[18%] z-20 hidden w-[210px] lg:block"
-        >
-          <p className="mb-2.5 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#6B6560]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#E05D45]" />
-            Escrow Pool
-          </p>
-          <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-[0_24px_50px_-20px_rgba(31,27,24,0.3)]">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[#A39D97]">Total Value Locked</p>
-            <p className="mt-1 text-2xl font-extrabold text-[#1F1B18]">$2,487,320</p>
-            <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-[#6B6560]">
-              <SolanaIcon size={13} />
-              USDC escrowed
-            </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#1F1B18]/[0.06]">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: "72%" }}
-                transition={{ duration: 1.1, delay: 0.9, ease: "easeOut" }}
-                className="h-full rounded-full bg-gradient-to-r from-[#14F195] to-[#0fae6e]"
+          {/* ── Column 1: Mission Panel ── */}
+          <motion.div
+            initial={{ opacity: 0, x: -30, y: 20 }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="relative z-20 hidden lg:block shrink-0"
+            style={{ width: 200, marginBottom: 90 }}
+          >
+            <p className="mb-2 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wider text-[#6B6560]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#E05D45]" />
+              Mission Control
+            </p>
+            <div style={{ position: "relative", width: 200, height: 280 }}>
+              <Image
+                src="/hero/mission.png"
+                alt="Mission Control Panel"
+                fill
+                className="object-contain object-bottom drop-shadow-2xl"
               />
             </div>
-            <p className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-[#A39D97]">
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                <rect x="5" y="11" width="14" height="9" rx="2" />
-                <path d="M8 11V7a4 4 0 1 1 8 0v4" />
-              </svg>
-              Locked reward capacity
-            </p>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* ── Reward Stream + Solana Rewards (bottom-right) ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.8, ease: "easeOut" }}
-          className="absolute bottom-[110px] right-5 z-20 hidden items-center gap-3 xl:flex"
-        >
-          <div className="flex flex-col items-center gap-1">
-            {[0, 1, 2].map((i) => (
-              <motion.span
-                key={i}
-                animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
-                transition={{ duration: 1.6, repeat: Infinity, delay: i * 0.3, ease: "easeInOut" }}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white shadow-[0_8px_18px_-8px_rgba(20,241,149,0.5)]"
+          {/* ── Column 2: Agent Network ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="relative z-10 hidden md:block shrink-0"
+            style={{ width: 180, marginBottom: 90 }}
+          >
+            <p className="mb-2 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wider text-[#6B6560]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#E05D45]" />
+              AI Agent Network
+            </p>
+            <div style={{ position: "relative", width: 180, height: 220 }}>
+              <Image
+                src="/hero/agent_network.png"
+                alt="AI Agent Network"
+                fill
+                className="object-contain object-bottom drop-shadow-xl"
+              />
+            </div>
+          </motion.div>
+
+          {/* ── Column 3: Rocket Center (focal point) ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="relative z-30 shrink-0"
+            style={{ width: 260, marginBottom: 80 }}
+          >
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              style={{ position: "relative", width: 260, height: 340 }}
+            >
+              <Image
+                src="/hero/rocket_center.png"
+                alt="QuPilot Rocket Launch Platform"
+                fill
+                className="object-contain object-bottom"
+                priority
+              />
+            </motion.div>
+          </motion.div>
+
+          {/* ── Column 4: TVL / Escrow Pool ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
+            className="relative z-10 hidden md:block shrink-0"
+            style={{ width: 180, marginBottom: 90 }}
+          >
+            <p className="mb-2 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wider text-[#6B6560]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#E05D45]" />
+              Escrow Pool
+            </p>
+            <div style={{ position: "relative", width: 180, height: 220 }}>
+              <Image
+                src="/hero/tvl.png"
+                alt="Escrow Pool - Total Value Locked"
+                fill
+                className="object-contain object-bottom drop-shadow-xl"
+              />
+            </div>
+            {/* TVL label overlay */}
+            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 text-center">
+              <p className="text-[9px] font-bold uppercase tracking-wide text-[#6B6560]">Total Value Locked</p>
+              <p className="text-sm font-extrabold text-[#1F1B18]">$2,487,320</p>
+              <div className="flex items-center justify-center gap-1 mt-0.5">
+                <SolanaIcon size={10} />
+                <span className="text-[9px] font-bold text-[#6B6560]">USDC</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* ── Column 5: Reward Stream + Solana Statue ── */}
+          <motion.div
+            initial={{ opacity: 0, x: 30, y: 20 }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.75, ease: [0.22, 1, 0.36, 1] }}
+            className="relative z-20 hidden lg:block shrink-0"
+            style={{ width: 200, marginBottom: 90 }}
+          >
+            <p className="mb-2 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wider text-[#6B6560]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#E05D45]" />
+              Reward Stream
+            </p>
+            <div style={{ position: "relative", width: 200, height: 220 }}>
+              {/* Solana statue at bottom */}
+              <div style={{ position: "relative", width: 160, height: 160, margin: "20px auto 0", zIndex: 1 }}>
+                <Image
+                  src="/hero/solana_statue.png"
+                  alt="Solana Reward Statue"
+                  fill
+                  className="object-contain object-bottom drop-shadow-xl"
+                />
+              </div>
+
+              {/* Solana rewards card overlay */}
+              <div 
+                className="absolute top-8 -right-8 rounded-xl border border-black/10 bg-white px-3 py-2 shadow-[0_12px_30px_-12px_rgba(31,27,24,0.3)] min-w-[110px]"
+                style={{ zIndex: 10 }}
               >
-                <SolanaIcon size={14} />
-              </motion.span>
-            ))}
-          </div>
-          <div className="rounded-2xl border border-black/10 bg-white px-4 py-3 shadow-[0_24px_50px_-20px_rgba(31,27,24,0.3)]">
-            <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#0fae6e]">Solana Rewards</p>
-            <p className="mt-1 text-xl font-extrabold text-[#1F1B18]">
-              <span className="text-[#0fae6e]">+12.84</span> SOL
-            </p>
-            <p className="text-[10px] font-semibold text-[#A39D97]">Est. reward</p>
-          </div>
-        </motion.div>
+                <p className="text-[8px] font-extrabold uppercase tracking-wider text-[#0fae6e]">Solana Rewards</p>
+                <p className="mt-0.5 text-sm font-extrabold text-[#1F1B18]">
+                  <span className="text-[#0fae6e]">+{rewardsNumberOnly}</span> SOL
+                </p>
+                <p className="text-[9px] font-semibold text-[#A39D97]">Est. reward</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
 
-        {/* ── Bottom stat bar (light, real stats) ── */}
-        <div className="absolute bottom-3 left-3 right-3 z-20 grid grid-cols-2 items-center gap-y-2 rounded-2xl border border-black/[0.07] bg-white/80 py-3 shadow-[0_18px_44px_-22px_rgba(31,27,24,0.3)] backdrop-blur-md sm:bottom-5 sm:left-7 sm:right-7 sm:grid-cols-4 sm:divide-x sm:divide-black/[0.06]">
+        {/* ── Bottom stat bar ── */}
+        <div className="relative z-20 mx-3 mb-3 grid grid-cols-2 items-center gap-y-2 rounded-2xl border border-black/[0.07] bg-white/80 py-3 shadow-[0_18px_44px_-22px_rgba(31,27,24,0.3)] backdrop-blur-md sm:mx-5 sm:mb-5 sm:grid-cols-4 sm:divide-x sm:divide-black/[0.06]">
           <HeroMetric
             icon={<FaRobot size={15} />}
             label="Agents online"
@@ -644,50 +621,7 @@ function ExecutionStepCard({
 
 // ─── Rocket 3D Model ──────────────────────────────────────────────────────────
 
-if (typeof window !== "undefined") {
-  useGLTF.preload("/rocket.glb");
-}
 
-function RocketModel({ scrolled }: { scrolled: boolean }) {
-  const { scene } = useGLTF("/rocket.glb");
-  const pivotRef = useRef<THREE.Group>(null);
-  const bodyRef = useRef<THREE.Object3D>(null);
-
-  useFrame((state, delta) => {
-    // 1. Rotate the body around its local Y axis to make it spin
-    if (bodyRef.current) {
-      bodyRef.current.rotation.y += delta * 1.2; // spin speed
-    }
-
-    // 2. Lerp the pivot group (scale and position) for scroll flight
-    if (pivotRef.current) {
-      const targetScale = scrolled ? 0.4 : 6.0;
-      const targetY = scrolled ? 1.5 : -1.2;
-
-      const lerpFactor = Math.min(1, 5 * delta);
-      pivotRef.current.scale.lerp(
-        new THREE.Vector3(targetScale, targetScale, targetScale),
-        lerpFactor,
-      );
-      pivotRef.current.position.y = THREE.MathUtils.lerp(
-        pivotRef.current.position.y,
-        targetY,
-        lerpFactor,
-      );
-    }
-  });
-
-  return (
-    <group
-      ref={pivotRef}
-      scale={6}
-      position={[0, -1.2, 0]}
-      rotation={[0.15, 0, 0.45]} // Tilt: X slightly forward, Z left to point to upper-left
-    >
-      <primitive ref={bodyRef} object={scene} />
-    </group>
-  );
-}
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
@@ -699,15 +633,6 @@ function LandingPageContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [mounted, setMounted] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      setMounted(true);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, []);
 
   const { data: questsData, isLoading: isLoadingQuests } = usePublicQuests();
   const { data: statsData } = usePublicStats();
@@ -871,12 +796,6 @@ function LandingPageContent() {
         setScrollProgress(progress);
       } else {
         setScrollProgress(0);
-      }
-
-      if (window.scrollY > 80) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
       }
     };
 
@@ -1149,8 +1068,6 @@ function LandingPageContent() {
         </div>
 
         <HeroMissionScene
-          mounted={mounted}
-          scrolled={scrolled}
           stats={platformStats}
           activeQuests={activeQuestCount}
         />
