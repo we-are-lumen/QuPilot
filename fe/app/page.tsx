@@ -407,11 +407,12 @@ function HeroMissionScene({
   stats: {
     agentsText: string;
     rewardsText: string;
+    pooledRewardsText?: string;
     slotsClaimedText: string;
   };
   activeQuests: number;
 }) {
-  const rewardsNumberOnly = stats.rewardsText.replace(" SOL", "");
+  const rewardsNumberOnly = (stats.pooledRewardsText || stats.rewardsText).replace(" SOL", "");
   return (
     <div className="relative mx-auto mt-10 w-full max-w-7xl px-3 sm:mt-14 sm:px-8">
       <motion.div
@@ -642,6 +643,7 @@ function LandingPageContent() {
       return {
         agentsText: statsData.stats.agents_deployed.display_value,
         rewardsText: statsData.stats.total_rewards_earned.display_value,
+        pooledRewardsText: statsData.stats.total_rewards_pooled?.display_value || statsData.stats.total_rewards_earned.display_value,
         slotsClaimedText: statsData.stats.slots_claimed.display_value,
       };
     }
@@ -650,6 +652,7 @@ function LandingPageContent() {
       return {
         agentsText: "0",
         rewardsText: "0 SOL",
+        pooledRewardsText: "0 SOL",
         slotsClaimedText: "0%",
       };
     }
@@ -657,6 +660,7 @@ function LandingPageContent() {
     let totalParticipations = 0;
     let totalRewardsSol = 0;
     let totalSlots = 0;
+    let totalPooledSol = 0;
 
     questsData.quests.forEach((q) => {
       // 1. Participations / Agents deployed
@@ -667,7 +671,11 @@ function LandingPageContent() {
       const dist = parseFloat(q.total_reward_distributed) || 0;
       totalRewardsSol += dist / 1e9;
 
-      // 3. Reward slots capacity from the active public quest list.
+      // 3. Total Pooled Rewards
+      const pool = parseFloat(q.total_reward_pool) || 0;
+      totalPooledSol += pool / 1e9;
+
+      // 4. Reward slots capacity from the active public quest list.
       const rewardPool = parseFloat(q.total_reward_pool) || 0;
       const rewardPerUser = parseFloat(q.reward_per_user) || 0;
       if (rewardPerUser > 0) {
@@ -680,12 +688,17 @@ function LandingPageContent() {
       totalRewardsSol >= 1
         ? `${totalRewardsSol.toFixed(2).replace(/\.?0+$/, "")} SOL`
         : `${totalRewardsSol.toFixed(4).replace(/\.?0+$/, "")} SOL`;
+    const pooledRewardsText =
+      totalPooledSol >= 1
+        ? `${totalPooledSol.toFixed(2).replace(/\.?0+$/, "")} SOL`
+        : `${totalPooledSol.toFixed(4).replace(/\.?0+$/, "")} SOL`;
     const slotsClaimedRatio = totalSlots > 0 ? Math.min(totalParticipations / totalSlots, 1) : 0;
     const slotsClaimedText = `${(slotsClaimedRatio * 100).toFixed(1).replace(/\.0$/, "")}%`;
 
     return {
       agentsText,
       rewardsText,
+      pooledRewardsText,
       slotsClaimedText,
     };
   }, [questsData, statsData]);

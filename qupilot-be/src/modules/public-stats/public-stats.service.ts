@@ -11,6 +11,9 @@ export type PublicStats = {
   total_rewards_earned: PublicStatMetric & {
     currency: 'SOL';
   };
+  total_rewards_pooled: PublicStatMetric & {
+    currency: 'SOL';
+  };
   slots_claimed: PublicStatMetric & {
     ratio: number;
     claimed: number;
@@ -45,7 +48,8 @@ const getParticipationCount = async (status?: 'success' | 'failed' | 'inprogress
 };
 
 type QuestRewardRow = {
-  total_reward_distributed: string | number;
+  total_reward_distributed?: string | number;
+  total_reward_pool?: string | number;
 };
 
 type ActiveQuestSlotsRow = {
@@ -60,6 +64,16 @@ const getTotalRewardDistributedLamports = async (): Promise<bigint> => {
 
   return ((data ?? []) as QuestRewardRow[]).reduce(
     (total, row) => total + BigInt(String(row.total_reward_distributed ?? 0)),
+    0n,
+  );
+};
+
+const getTotalRewardPoolLamports = async (): Promise<bigint> => {
+  const { data, error } = await supabase.from('quests').select('total_reward_pool');
+  if (error) throw error;
+
+  return ((data ?? []) as QuestRewardRow[]).reduce(
+    (total, row) => total + BigInt(String(row.total_reward_pool ?? 0)),
     0n,
   );
 };
@@ -94,9 +108,10 @@ const getActiveSlots = async (): Promise<{ claimed: number; total_slots: number;
 };
 
 export const getPublicStats = async (): Promise<PublicStats> => {
-  const [totalParticipations, totalRewardDistributedLamports, activeSlots] = await Promise.all([
+  const [totalParticipations, totalRewardDistributedLamports, totalRewardPoolLamports, activeSlots] = await Promise.all([
     getParticipationCount(),
     getTotalRewardDistributedLamports(),
+    getTotalRewardPoolLamports(),
     getActiveSlots(),
   ]);
 
@@ -112,6 +127,12 @@ export const getPublicStats = async (): Promise<PublicStats> => {
       label: 'Total Rewards Earned',
       value: lamportsToSolNumber(totalRewardDistributedLamports),
       display_value: formatSol(totalRewardDistributedLamports),
+      currency: 'SOL',
+    },
+    total_rewards_pooled: {
+      label: 'Total Rewards Pooled',
+      value: lamportsToSolNumber(totalRewardPoolLamports),
+      display_value: formatSol(totalRewardPoolLamports),
       currency: 'SOL',
     },
     slots_claimed: {

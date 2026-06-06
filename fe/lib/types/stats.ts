@@ -9,6 +9,9 @@ export interface IPublicStats {
   total_rewards_earned: IPublicStatMetric & {
     currency: 'SOL';
   };
+  total_rewards_pooled: IPublicStatMetric & {
+    currency: 'SOL';
+  };
   slots_claimed: IPublicStatMetric & {
     ratio: number;
     claimed: number;
