@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, Suspense, useMemo } from "react";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button, Card, ProgressBar, toast, Skeleton, ScrollShadow } from "@heroui/react";
 import {
@@ -344,7 +344,7 @@ function HeroMetric({
 }) {
   return (
     <div className="flex min-w-0 items-center gap-3 px-4 py-1 sm:px-6">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#1F1B18]/[0.04] text-[#6B6560]">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#1F1B18]/4 text-[#6B6560]">
         {icon}
       </span>
       <div className="min-w-0">
@@ -359,31 +359,6 @@ function HeroMetric({
   );
 }
 
-function MissionStepRow({
-  index,
-  label,
-  status,
-}: {
-  index: number;
-  label: string;
-  status: string;
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#14F195]/15 text-[#14F195]">
-        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M20 6L9 17l-5-5" />
-        </svg>
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[12px] font-bold text-white">{label}</p>
-      </div>
-      <span className="shrink-0 text-[9px] font-extrabold uppercase tracking-wide text-[#14F195]">
-        {status}
-      </span>
-    </div>
-  );
-}
 
 function AgentNode({ className = "", delay = 0 }: { className?: string; delay?: number }) {
   return (
@@ -394,6 +369,71 @@ function AgentNode({ className = "", delay = 0 }: { className?: string; delay?: 
     >
       <FaRobot size={17} className="text-[#3a3a3a]" />
       <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#14F195]" />
+    </motion.div>
+  );
+}
+
+function FlowArrow({ delay }: { delay: number }) {
+  return (
+    <div className="hidden lg:flex items-center w-12 mx-1 shrink-0">
+      <div className="relative flex items-center w-full">
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
+          style={{ transformOrigin: "left center" }}
+          className="flex-1 border-t-2 border-dashed border-[#1F1B18]/15"
+        />
+        <motion.div
+          animate={{ opacity: [0.3, 1, 0.3] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut", delay: delay + 0.1 }}
+        >
+          <svg viewBox="0 0 10 16" width="8" height="12" fill="none" aria-hidden="true">
+            <path d="M1 1l8 7-8 7" stroke="#E05D45" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+function FlowStepNode({
+  step,
+  label,
+  title,
+  accentColor,
+  accentBg,
+  delay,
+  children,
+}: {
+  step: number;
+  label: string;
+  title: string;
+  accentColor: string;
+  accentBg: string;
+  delay: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
+      className="w-full lg:w-55 xl:w-60 shrink-0 rounded-2xl border border-black/[0.07] bg-white shadow-[0_12px_40px_-16px_rgba(31,27,24,0.18)] flex flex-col gap-3 p-4"
+    >
+      <div className="flex items-center gap-2">
+        <span
+          className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-extrabold shrink-0"
+          style={{ background: accentBg, color: accentColor }}
+        >
+          {step}
+        </span>
+        <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#6B6560]">
+          {label}
+        </span>
+      </div>
+      <p className="text-sm font-extrabold text-[#1F1B18]">{title}</p>
+      {children}
     </motion.div>
   );
 }
@@ -413,158 +453,166 @@ function HeroMissionScene({
   activeQuests: number;
 }) {
   const rewardsNumberOnly = (stats.pooledRewardsText || stats.rewardsText).replace(" SOL", "");
+
+  const EXECUTE_STEPS = ["swap", "clmm_open", "clmm_close"] as const;
+
+  const flowCards: React.ReactNode[] = [
+    <FlowStepNode
+      key="quest"
+      step={1}
+      label="QUEST"
+      title="Quest Published"
+      accentColor="#E05D45"
+      accentBg="rgba(224,93,69,0.08)"
+      delay={0.5}
+    >
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <FaRocket className="text-[#E05D45] text-xs shrink-0" />
+            <span className="text-xs font-bold text-[#1F1B18] truncate">Swap &amp; earn on Byreal</span>
+          </div>
+          <span
+            className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+            style={{ background: "rgba(224,93,69,0.08)", color: "#E05D45" }}
+          >
+            +0.05 SOL
+          </span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <div className="flex justify-between text-[9px] text-[#A39D97] font-medium">
+            <span>Progress</span>
+            <span>60% Full</span>
+          </div>
+          <div className="h-1 w-full rounded-full bg-black/5 overflow-hidden">
+            <div className="h-full w-[60%] rounded-full bg-[#E05D45]" />
+          </div>
+        </div>
+        <span className="text-[9px] text-[#A39D97] font-medium">by Byreal</span>
+      </div>
+    </FlowStepNode>,
+
+    <FlowStepNode
+      key="dispatch"
+      step={2}
+      label="DISPATCH"
+      title="Agent Dispatched"
+      accentColor="#3898FF"
+      accentBg="rgba(56,152,255,0.08)"
+      delay={0.65}
+    >
+      <div className="flex flex-col gap-2">
+        <div className="relative h-18">
+          <AgentNode className="left-1/2 -translate-x-1/2 top-2" delay={0.3} />
+        </div>
+        <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#3898FF]">
+          Scanning quests...
+        </span>
+        <div className="flex items-center gap-1.5">
+          <motion.span
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+            className="h-1.5 w-1.5 rounded-full bg-[#14F195] shrink-0"
+          />
+          <span className="text-[9px] text-[#A39D97] font-mono truncate">Quest ID: 4f3a&hellip;</span>
+        </div>
+      </div>
+    </FlowStepNode>,
+
+    <FlowStepNode
+      key="execute"
+      step={3}
+      label="EXECUTE"
+      title="On-Chain Steps"
+      accentColor="#F7A600"
+      accentBg="rgba(247,166,0,0.08)"
+      delay={0.8}
+    >
+      <div className="flex flex-col gap-1.5">
+        {EXECUTE_STEPS.map((stepType) => (
+          <div
+            key={stepType}
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
+            style={{ background: "rgba(247,166,0,0.05)", border: "1px solid rgba(247,166,0,0.15)" }}
+          >
+            <span className="text-[#F7A600]">{STEP_ICON_MAP[stepType] || <FiCpu className="text-xs" />}</span>
+            <span className="flex-1 text-[10px] font-bold text-[#1F1B18]">{STEP_NAME_MAP[stepType]}</span>
+            <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="#10B981" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          </div>
+        ))}
+      </div>
+    </FlowStepNode>,
+
+    <FlowStepNode
+      key="claim"
+      step={4}
+      label="CLAIM"
+      title="SOL Reward Claimed"
+      accentColor="#0fae6e"
+      accentBg="rgba(15,174,110,0.08)"
+      delay={0.95}
+    >
+      <div className="relative flex flex-col gap-1.5 p-1">
+        <motion.div
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute inset-0 rounded-xl"
+          style={{ background: "rgba(15,174,110,0.04)" }}
+        />
+        <div className="relative flex items-center gap-2">
+          <SolanaIcon size={20} />
+          <p className="text-xl font-extrabold text-[#1F1B18]">
+            <span className="text-[#0fae6e]">{rewardsNumberOnly}</span>
+            <span className="text-[#A39D97] text-base"> SOL</span>
+          </p>
+        </div>
+        <span className="relative text-[9px] font-extrabold uppercase tracking-wider text-[#A39D97]">
+          Pooled rewards
+        </span>
+      </div>
+    </FlowStepNode>,
+  ];
+
   return (
     <div className="relative mx-auto mt-10 w-full max-w-7xl px-3 sm:mt-14 sm:px-8">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="relative overflow-hidden rounded-[32px] border border-black/[0.06] bg-gradient-to-b from-[#FDFCFB] to-[#F4F0EB] shadow-[0_40px_120px_-40px_rgba(31,27,24,0.25)]"
+        className="relative overflow-hidden rounded-[32px] border border-black/6 bg-linear-to-b from-[#FDFCFB] to-[#F4F0EB] shadow-[0_40px_120px_-40px_rgba(31,27,24,0.25)]"
       >
         {/* faint grid texture */}
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(31,27,24,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(31,27,24,0.03)_1px,transparent_1px)] bg-[size:46px_46px]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(31,27,24,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(31,27,24,0.03)_1px,transparent_1px)] bg-size-[46px_46px]" />
 
-        {/* ── Hero Scene: 5-column panoramic layout ── */}
-        <div className="relative flex items-end justify-center gap-0 px-4 pt-8 pb-0 sm:px-6 sm:pt-10 min-h-[380px] sm:min-h-[500px]">
+        {/* ── Hero Scene: Quest Lifecycle Flow ── */}
+        <div className="relative px-4 pt-8 pb-6 sm:px-8 sm:pt-10">
 
-          {/* ── Column 1: Mission Panel ── */}
-          <motion.div
-            initial={{ opacity: 0, x: -30, y: 20 }}
-            animate={{ opacity: 1, x: 0, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-20 hidden lg:block shrink-0"
-            style={{ width: 200, marginBottom: 90 }}
-          >
-            <p className="mb-2 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wider text-[#6B6560]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#E05D45]" />
-              Mission Control
-            </p>
-            <div style={{ position: "relative", width: 200, height: 280 }}>
-              <Image
-                src="/hero/mission.png"
-                alt="Mission Control Panel"
-                fill
-                className="object-contain object-bottom drop-shadow-2xl"
-              />
-            </div>
-          </motion.div>
+          {/* Desktop lg+: single row with connecting arrows */}
+          <div className="hidden lg:flex items-center justify-center gap-0">
+            {flowCards[0]}
+            <FlowArrow delay={0.85} />
+            {flowCards[1]}
+            <FlowArrow delay={1.0} />
+            {flowCards[2]}
+            <FlowArrow delay={1.15} />
+            {flowCards[3]}
+          </div>
 
-          {/* ── Column 2: Agent Network ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10 hidden md:block shrink-0"
-            style={{ width: 180, marginBottom: 90 }}
-          >
-            <p className="mb-2 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wider text-[#6B6560]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#E05D45]" />
-              AI Agent Network
-            </p>
-            <div style={{ position: "relative", width: 180, height: 220 }}>
-              <Image
-                src="/hero/agent_network.png"
-                alt="AI Agent Network"
-                fill
-                className="object-contain object-bottom drop-shadow-xl"
-              />
-            </div>
-          </motion.div>
+          {/* Tablet md: 2×2 grid, no arrows */}
+          <div className="hidden md:grid lg:hidden grid-cols-2 gap-4">
+            {flowCards}
+          </div>
 
-          {/* ── Column 3: Rocket Center (focal point) ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-30 shrink-0"
-            style={{ width: 260, marginBottom: 80 }}
-          >
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              style={{ position: "relative", width: 260, height: 340 }}
-            >
-              <Image
-                src="/hero/rocket_center.png"
-                alt="QuPilot Rocket Launch Platform"
-                fill
-                className="object-contain object-bottom"
-                priority
-              />
-            </motion.div>
-          </motion.div>
-
-          {/* ── Column 4: TVL / Escrow Pool ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10 hidden md:block shrink-0"
-            style={{ width: 180, marginBottom: 90 }}
-          >
-            <p className="mb-2 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wider text-[#6B6560]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#E05D45]" />
-              Escrow Pool
-            </p>
-            <div style={{ position: "relative", width: 180, height: 220 }}>
-              <Image
-                src="/hero/tvl.png"
-                alt="Escrow Pool - Total Value Locked"
-                fill
-                className="object-contain object-bottom drop-shadow-xl"
-              />
-            </div>
-            {/* TVL label overlay */}
-            {/* <div className="absolute bottom-12 left-1/2 -translate-x-1/2 text-center"> */}
-            {/* <p className="text-[9px] font-bold uppercase tracking-wide text-[#6B6560]">Total Value Locked</p>
-              <p className="text-sm font-extrabold text-[#1F1B18]">$2,487,320</p>
-              <div className="flex items-center justify-center gap-1 mt-0.5">
-                <SolanaIcon size={10} />
-                <span className="text-[9px] font-bold text-[#6B6560]">USDC</span>
-              </div> */}
-            {/* </div> */}
-          </motion.div>
-
-          {/* ── Column 5: Reward Stream + Solana Statue ── */}
-          <motion.div
-            initial={{ opacity: 0, x: 30, y: 20 }}
-            animate={{ opacity: 1, x: 0, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.75, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-20 hidden lg:block shrink-0"
-            style={{ width: 200, marginBottom: 90 }}
-          >
-            <p className="mb-2 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wider text-[#6B6560]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#E05D45]" />
-              Reward Stream
-            </p>
-            <div style={{ position: "relative", width: 200, height: 220 }}>
-              {/* Solana statue at bottom */}
-              <div style={{ position: "relative", width: 160, height: 160, margin: "20px auto 0", zIndex: 1 }}>
-                <Image
-                  src="/hero/solana_statue.png"
-                  alt="Solana Reward Statue"
-                  fill
-                  className="object-contain object-bottom drop-shadow-xl"
-                />
-              </div>
-
-              {/* Solana rewards card overlay */}
-              <div
-                className="absolute top-8 -right-8 rounded-xl border border-black/10 bg-white px-3 py-2 shadow-[0_12px_30px_-12px_rgba(31,27,24,0.3)] min-w-[110px]"
-                style={{ zIndex: 10 }}
-              >
-                <p className="text-[8px] font-extrabold uppercase tracking-wider text-[#0fae6e]">Solana Rewards</p>
-                <p className="mt-0.5 text-sm font-extrabold text-[#1F1B18]">
-                  <span className="text-[#0fae6e]">+{rewardsNumberOnly}</span> SOL
-                </p>
-                <p className="text-[9px] font-semibold text-[#A39D97]">Est. reward</p>
-              </div>
-            </div>
-          </motion.div>
+          {/* Mobile: vertical stack */}
+          <div className="flex md:hidden flex-col gap-3">
+            {flowCards}
+          </div>
         </div>
 
         {/* ── Bottom stat bar ── */}
-        <div className="relative z-20 mx-3 mb-3 grid grid-cols-2 items-center gap-y-2 rounded-2xl border border-black/[0.07] bg-white/80 py-3 shadow-[0_18px_44px_-22px_rgba(31,27,24,0.3)] backdrop-blur-md sm:mx-5 sm:mb-5 sm:grid-cols-4 sm:divide-x sm:divide-black/[0.06]">
+        <div className="relative z-20 mx-3 mb-3 grid grid-cols-2 items-center gap-y-2 rounded-2xl border border-black/[0.07] bg-white/80 py-3 shadow-[0_18px_44px_-22px_rgba(31,27,24,0.3)] backdrop-blur-md sm:mx-5 sm:mb-5 sm:grid-cols-4 sm:divide-x sm:divide-black/6">
           <HeroMetric
             icon={<FaRobot size={15} />}
             label="Agents online"
@@ -733,10 +781,13 @@ function LandingPageContent() {
         .join(", ");
 
       const icon = provider.logo_url ? (
-        <img
+        <Image
           src={provider.logo_url}
           alt={provider.display_name}
+          width={64}
+          height={64}
           className="w-full h-full object-cover"
+          unoptimized
         />
       ) : (
         <FaBuilding
@@ -903,9 +954,11 @@ function LandingPageContent() {
             className="flex items-center gap-2 group"
             id="nav-logo"
           >
-            <img
+            <Image
               src="/logo.png"
               alt="QuPilot Logo"
+              width={24}
+              height={24}
               className="w-6 h-6 object-contain transition-transform duration-300 group-hover:scale-110"
             />
             <span
@@ -994,7 +1047,7 @@ function LandingPageContent() {
 
       {/* ── Hero Section ── */}
       <section className="relative overflow-hidden bg-white pb-16 pt-16 sm:pt-20">
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(31,27,24,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(31,27,24,0.045)_1px,transparent_1px)] bg-[size:48px_48px]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(31,27,24,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(31,27,24,0.045)_1px,transparent_1px)] bg-size-[48px_48px]" />
         <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center px-5 text-center sm:px-8">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -1115,17 +1168,21 @@ function LandingPageContent() {
           <div className="flex items-center gap-16 md:gap-28 flex-wrap justify-center">
             {/* Mantle */}
             <div className="h-14 md:h-20 flex items-center justify-center">
-              <img
+              <Image
                 src="/images/mantle-logo-full.png"
                 alt="Mantle logo"
+                width={160}
+                height={80}
                 className="h-full w-auto object-contain filter grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
               />
             </div>
             {/* Byreal */}
             <div className="h-14 md:h-20 flex items-center justify-center">
-              <img
+              <Image
                 src="/images/byreal-logo.jpeg"
                 alt="Byreal logo"
+                width={160}
+                height={80}
                 className="h-full w-auto object-contain filter grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 rounded-2xl shadow-soft"
               />
             </div>
@@ -1135,7 +1192,7 @@ function LandingPageContent() {
 
       {/* ── Providers Section ── */}
       <main
-        className="max-w-7xl mx-auto w-full flex flex-col gap-3xl"
+        className="max-w-7xl mx-auto w-full flex flex-col gap-8"
         style={{ padding: "48px 20px" }}
       >
         {/* Section heading */}
@@ -1169,7 +1226,7 @@ function LandingPageContent() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
-          className="flex flex-col gap-3xl"
+          className="flex flex-col gap-8"
         >
           {isLoadingQuests ? (
             Array.from({ length: 2 }).map((_, idx) => (
@@ -1216,9 +1273,11 @@ function LandingPageContent() {
             {/* Brand */}
             <div className="flex flex-col gap-3" style={{ maxWidth: 384 }}>
               <Link href="/" className="flex items-center gap-2">
-                <img
+                <Image
                   src="/logo.png"
                   alt="QuPilot Logo"
+                  width={24}
+                  height={24}
                   className="w-6 h-6 object-contain"
                 />
                 <span
