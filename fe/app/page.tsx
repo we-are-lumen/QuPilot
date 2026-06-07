@@ -909,6 +909,32 @@ function LandingPageContent() {
     toast.success("Disconnected wallet.");
   };
 
+  const handleCopySkillPrompt = async () => {
+    const SKILL_URL = "https://qu-pilot.vercel.app/skill";
+    const COPY_TEXT = `Please read this skill and follow it carefully: ${SKILL_URL}`;
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(COPY_TEXT);
+      } else {
+        // Fallback for environments where navigator.clipboard is unavailable.
+        const textarea = document.createElement("textarea");
+        textarea.value = COPY_TEXT;
+        textarea.setAttribute("readonly", "true");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+
+      toast.success("Copied — send to your agent.");
+    } catch {
+      toast.danger("Copy failed. Please try again.");
+    }
+  };
+
   const handleAuthSuccess = () => {
     const user = getUserData();
     if (user) {
@@ -1112,9 +1138,12 @@ function LandingPageContent() {
             transition={{ duration: 0.7, delay: 0.26, ease: "easeOut" }}
             className="mt-6"
           >
-            <Link
-              href="/skill"
+            <button
+              type="button"
+              onClick={handleCopySkillPrompt}
               className="group inline-flex items-center gap-2.5 rounded-2xl border border-black/10 bg-white px-4 py-2.5 text-left shadow-[0_10px_30px_-12px_rgba(31,27,24,0.18)] transition-all hover:scale-[1.02] hover:border-black/20"
+              aria-label="Copy skill prompt to clipboard"
+              title="Click to copy"
             >
               <span className="font-extrabold text-[#E05D45] text-base leading-none">A\</span>
               <span className="text-sm font-bold text-[#111111]">Claude Skill included</span>
@@ -1123,7 +1152,7 @@ function LandingPageContent() {
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
               </span>
-            </Link>
+            </button>
           </motion.div>
         </div>
 
