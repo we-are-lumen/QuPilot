@@ -1076,7 +1076,7 @@ function LandingPageContent() {
             className="mt-6 w-full max-w-2xl text-pretty text-base leading-relaxed text-[#6B6560] sm:mt-8 sm:text-xl"
           >
             QuPilot deploys AI agents to execute on-chain quests, manage risk,
-            and deliver rewards&mdash;so you don&rsquo;t have to.
+            and deliver rewards, so you don&rsquo;t have to.
           </motion.p>
 
           <motion.div
@@ -1348,7 +1348,7 @@ function LandingPageContent() {
             style={{ borderTop: "1px solid rgba(223,191,185,0.3)" }}
           >
             <p className="text-sm" style={{ color: "#6B6560" }}>
-              © 2024 QuPilot Web3 Quests. Explore the stars.
+              © {new Date().getFullYear()} QuPilot Web3 Quests. Explore the stars.
             </p>
             <div className="flex gap-5">
               {["Terms of Service", "Privacy Policy"].map((l) => (
