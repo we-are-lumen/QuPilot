@@ -1002,9 +1002,9 @@ function LandingPageContent() {
             <a href="#how-it-works" className="transition-colors hover:text-[#A63420]">
               How it works
             </a>
-            <Link href="/quests" className="transition-colors hover:text-[#A63420]">
+            <a href="#quests" className="transition-colors hover:text-[#A63420]">
               Quests
-            </Link>
+            </a>
             <Link href="/leaderboard" className="transition-colors hover:text-[#A63420]">
               Leaderboard
             </Link>
@@ -1221,6 +1221,7 @@ function LandingPageContent() {
 
       {/* ── Providers Section ── */}
       <main
+        id="quests"
         className="max-w-7xl mx-auto w-full flex flex-col gap-8"
         style={{ padding: "48px 20px" }}
       >
