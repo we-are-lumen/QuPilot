@@ -1049,7 +1049,7 @@ function LandingPageContent() {
                 id="nav-connect-wallet"
                 className="bg-[#E05D45] text-white hover:bg-[#C94D35] transition-all text-sm font-bold px-5 py-2.5 rounded-full shadow-[0_8px_24px_-8px_rgba(224,93,69,0.6)] flex items-center gap-2"
               >
-                Launch App
+                Connect Wallet
                 <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M7 17L17 7" />
                   <path d="M9 7h8v8" />
