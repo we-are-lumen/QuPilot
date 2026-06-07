@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import AuthGate from "@/app/components/AuthGate";
 import { getUserData } from "@/lib/utils/auth";
@@ -17,7 +18,6 @@ import {
 } from "@heroui/react";
 import {
   FaUserAstronaut,
-  FaRegCopy,
   FaRocket,
   FaFire,
   FaAward,
@@ -39,9 +39,8 @@ import { useLeaderboard } from "@/lib/hooks/useLeaderboard";
 import { claimRewardTx } from "@/lib/utils/wallet";
 
 export default function UserProfilePage() {
-  const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("active");
-  const [user, setUser] = useState<IUser | null>(null);
+  const [user] = useState<IUser | null>(() => getUserData());
   const [isClaiming, setIsClaiming] = useState(false);
 
   const formatLamportsToSol = (lamports: bigint): string => {
@@ -53,10 +52,6 @@ export default function UserProfilePage() {
       }).format(sol) + " SOL"
     );
   };
-
-  useEffect(() => {
-    setUser(getUserData());
-  }, []);
 
   const walletAddress = user?.wallet_address || "";
   const displayName = walletAddress
@@ -115,12 +110,6 @@ export default function UserProfilePage() {
     }
   }
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(walletAddress);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const handleClaimRewards = async () => {
     if (unclaimedQuests.length === 0) return;
     setIsClaiming(true);
@@ -143,10 +132,10 @@ export default function UserProfilePage() {
         });
       }
       alert("Successfully claimed rewards!");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Claim rewards failed:", err);
       alert(
-        err?.message ||
+        (err instanceof Error ? err.message : undefined) ||
           "Failed to claim rewards on-chain. Please make sure your wallet is connected and has enough SOL for transaction fees.",
       );
     } finally {
@@ -203,8 +192,8 @@ export default function UserProfilePage() {
                 {/* Bio block wrapped inside a standard full-width block div to prevent flexbox narrow word-wrapping */}
                 <div className="w-full">
                   <p className="text-sm text-[#6b6560] leading-relaxed italic font-sans font-medium">
-                    "Navigating the Web3 cosmos, one liquidity pool and
-                    cross-chain bridge at a time. Searching for data residues."
+                    &ldquo;Navigating the Web3 cosmos, one liquidity pool and
+                    cross-chain bridge at a time. Searching for data residues.&rdquo;
                   </p>
                 </div>
               </div>
@@ -395,41 +384,31 @@ export default function UserProfilePage() {
               </Card.Header>
               <Card.Content>
                 <Tabs
+                  variant="secondary"
                   selectedKey={activeTab}
                   onSelectionChange={(key) => setActiveTab(key as string)}
                   className="w-full flex flex-col gap-6"
                 >
-                  <Tabs.ListContainer className="border-b border-[#dfbfb94d] pb-2">
-                    <div className="flex justify-between items-center w-full">
-                      <Tabs.List
-                        aria-label="Quest filters"
-                        className="flex gap-4"
+                  <Tabs.ListContainer>
+                    <Tabs.List aria-label="Quest filters">
+                      <Tabs.Tab
+                        id="active"
+                        className="text-sm font-bold text-[#6b6560] data-[selected=true]:text-[#a63420] data-[selected=true]:shadow-[inset_0_-2px_0_0_#a63420] cursor-pointer outline-none"
                       >
-                        <Tabs.Tab
-                          id="active"
-                          className="px-4 py-2 text-sm font-bold text-[#6b6560] data-[selected=true]:text-[#a63420] relative cursor-pointer outline-none transition-colors"
-                        >
-                          Active (
-                          {isLoadingParticipations
-                            ? "..."
-                            : activeQuests.length}
-                          )
-                          <Tabs.Indicator className="absolute -bottom-2.25 left-0 right-0 h-0.75 bg-[#a63420] rounded-full" />
-                        </Tabs.Tab>
+                        Active (
+                        {isLoadingParticipations ? "..." : activeQuests.length}
+                        )
+                      </Tabs.Tab>
 
-                        <Tabs.Tab
-                          id="completed"
-                          className="px-4 py-2 text-sm font-bold text-[#6b6560] data-[selected=true]:text-[#a63420] relative cursor-pointer outline-none transition-colors"
-                        >
-                          Completed (
-                          {isLoadingParticipations
-                            ? "..."
-                            : completedQuests.length}
-                          )
-                          <Tabs.Indicator className="absolute -bottom-2.25 left-0 right-0 h-0.75 bg-[#a63420] rounded-full" />
-                        </Tabs.Tab>
-                      </Tabs.List>
-                    </div>
+                      <Tabs.Tab
+                        id="completed"
+                        className="text-sm font-bold text-[#6b6560] data-[selected=true]:text-[#a63420] data-[selected=true]:shadow-[inset_0_-2px_0_0_#a63420] cursor-pointer outline-none"
+                      >
+                        Completed (
+                        {isLoadingParticipations ? "..." : completedQuests.length}
+                        )
+                      </Tabs.Tab>
+                    </Tabs.List>
                   </Tabs.ListContainer>
 
                   {/* Rewards banner (better UX than squeezing a CTA into the tab header) */}
@@ -496,10 +475,13 @@ export default function UserProfilePage() {
                             <div className="flex gap-4 items-start flex-1">
                               <div className="w-12 h-12 rounded-lg bg-white border border-[#dfbfb94d] flex items-center justify-center text-xl shrink-0 shadow-3xs overflow-hidden">
                                 {participation.quest.provider?.logo_url ? (
-                                  <img
+                                  <Image
                                     src={participation.quest.provider.logo_url}
                                     alt={participation.quest.provider.display_name || "Provider"}
+                                    width={48}
+                                    height={48}
                                     className="w-full h-full object-cover"
+                                    unoptimized
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center bg-[#ffdad3] text-[#a63420] font-bold text-lg">
@@ -590,10 +572,13 @@ export default function UserProfilePage() {
                             <div className="flex gap-4 items-start flex-1">
                               <div className="w-12 h-12 rounded-lg bg-white border border-[#dfbfb94d] flex items-center justify-center text-xl shrink-0 shadow-3xs overflow-hidden">
                                 {participation.quest.provider?.logo_url ? (
-                                  <img
+                                  <Image
                                     src={participation.quest.provider.logo_url}
                                     alt={participation.quest.provider.display_name || "Provider"}
+                                    width={48}
+                                    height={48}
                                     className="w-full h-full object-cover"
+                                    unoptimized
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center bg-[#ffdad3] text-[#a63420] font-bold text-lg">

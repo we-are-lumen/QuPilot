@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -24,12 +24,13 @@ export default function UserLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<IUser | null>(() => {
-    if (typeof window === "undefined") return null;
+  const [user, setUser] = useState<IUser | null>(null);
+
+  useEffect(() => {
     const stored = getUserData();
     const token = getAuthToken();
-    return stored && token ? stored : null;
-  });
+    setUser(stored && token ? stored : null);
+  }, []);
   const [isConnecting, setIsConnecting] = useState(false);
   const { data: solBalance } = useSolBalance(user?.wallet_address);
 
