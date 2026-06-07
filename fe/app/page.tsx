@@ -909,6 +909,32 @@ function LandingPageContent() {
     toast.success("Disconnected wallet.");
   };
 
+  const handleCopySkillPrompt = async () => {
+    const SKILL_URL = "https://qu-pilot.vercel.app/skill";
+    const COPY_TEXT = `Please read this skill and follow it carefully: ${SKILL_URL}`;
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(COPY_TEXT);
+      } else {
+        // Fallback for environments where navigator.clipboard is unavailable.
+        const textarea = document.createElement("textarea");
+        textarea.value = COPY_TEXT;
+        textarea.setAttribute("readonly", "true");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+
+      toast.success("Copied — send to your agent.");
+    } catch {
+      toast.danger("Copy failed. Please try again.");
+    }
+  };
+
   const handleAuthSuccess = () => {
     const user = getUserData();
     if (user) {
@@ -976,9 +1002,9 @@ function LandingPageContent() {
             <a href="#how-it-works" className="transition-colors hover:text-[#A63420]">
               How it works
             </a>
-            <Link href="/quests" className="transition-colors hover:text-[#A63420]">
+            <a href="#quests" className="transition-colors hover:text-[#A63420]">
               Quests
-            </Link>
+            </a>
             <Link href="/leaderboard" className="transition-colors hover:text-[#A63420]">
               Leaderboard
             </Link>
@@ -1023,7 +1049,7 @@ function LandingPageContent() {
                 id="nav-connect-wallet"
                 className="bg-[#E05D45] text-white hover:bg-[#C94D35] transition-all text-sm font-bold px-5 py-2.5 rounded-full shadow-[0_8px_24px_-8px_rgba(224,93,69,0.6)] flex items-center gap-2"
               >
-                Launch App
+                Connect Wallet
                 <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M7 17L17 7" />
                   <path d="M9 7h8v8" />
@@ -1112,9 +1138,12 @@ function LandingPageContent() {
             transition={{ duration: 0.7, delay: 0.26, ease: "easeOut" }}
             className="mt-6"
           >
-            <Link
-              href="/skill"
+            <button
+              type="button"
+              onClick={handleCopySkillPrompt}
               className="group inline-flex items-center gap-2.5 rounded-2xl border border-black/10 bg-white px-4 py-2.5 text-left shadow-[0_10px_30px_-12px_rgba(31,27,24,0.18)] transition-all hover:scale-[1.02] hover:border-black/20"
+              aria-label="Copy skill prompt to clipboard"
+              title="Click to copy"
             >
               <span className="font-extrabold text-[#E05D45] text-base leading-none">A\</span>
               <span className="text-sm font-bold text-[#111111]">Claude Skill included</span>
@@ -1123,7 +1152,7 @@ function LandingPageContent() {
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
               </span>
-            </Link>
+            </button>
           </motion.div>
         </div>
 
@@ -1192,6 +1221,7 @@ function LandingPageContent() {
 
       {/* ── Providers Section ── */}
       <main
+        id="quests"
         className="max-w-7xl mx-auto w-full flex flex-col gap-8"
         style={{ padding: "48px 20px" }}
       >
