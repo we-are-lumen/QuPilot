@@ -110,7 +110,11 @@ const clmmCopyParams = z.object({
   // Source CLMM position address to copy (from a top farmer / strategy position).
   source_position: solanaPubkey,
   token0_mint: solanaPubkey,
+  token0_symbol: z.string().trim().min(1).max(16),
+  token0_logo_uri: z.string().trim(),
   token1_mint: solanaPubkey,
+  token1_symbol: z.string().trim().min(1).max(16),
+  token1_logo_uri: z.string().trim(),
   // Notional guidance for the copy. The agent uses this to pick size via byreal-cli.
   // Stored as number for now; backend verification focuses on tx success + signer + token outflow.
   amount_usd: z.coerce.number().positive(),
