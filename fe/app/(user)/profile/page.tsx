@@ -73,11 +73,12 @@ export default function UserProfilePage() {
   const participations = participationsData?.participations || [];
   const activeQuests = participations.filter((p) => p.status === "inprogress");
   const completedQuests = participations.filter((p) => p.status === "success");
+  const claimedQuests = completedQuests.filter((p) => p.reward_claimed);
   const unclaimedQuests = completedQuests.filter((p) => !p.reward_claimed);
 
   const questsDone = completedQuests.length;
 
-  const totalEarnedLamports = completedQuests.reduce(
+  const totalEarnedLamports = claimedQuests.reduce(
     (acc, p) => acc + BigInt(String(p.quest.reward_per_user ?? 0)),
     BigInt(0),
   );
@@ -411,44 +412,6 @@ export default function UserProfilePage() {
                     </Tabs.List>
                   </Tabs.ListContainer>
 
-                  {/* Rewards banner (better UX than squeezing a CTA into the tab header) */}
-                  {unclaimedQuests.length > 0 && (
-                    <div className="bg-[#ecfdf5] border border-[#10b98133] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-[#065f46] font-bold uppercase tracking-wider">
-                          Unclaimed Rewards
-                        </span>
-                        <span className="text-sm font-extrabold text-[#065f46]">
-                          {formattedTotalUnclaimed} • {unclaimedQuests.length}{" "}
-                          quest
-                          {unclaimedQuests.length > 1 ? "s" : ""}
-                        </span>
-                        <span className="text-[11px] text-[#047857] font-medium">
-                          Disclaimer: claim will submit an on-chain transaction
-                          and may require SOL for fees.
-                        </span>
-                      </div>
-
-                      <Button
-                        onPress={handleClaimRewards}
-                        isDisabled={isClaiming}
-                        className="bg-[#10b981] hover:bg-[#0f9d78] text-white font-bold py-2 px-4 rounded-full text-xs shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer font-sans w-full sm:w-auto"
-                      >
-                        {isClaiming ? (
-                          <>
-                            <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
-                            <span>Claiming...</span>
-                          </>
-                        ) : (
-                          <>
-                            <FaGift className="text-[12px]" />
-                            <span>Claim now</span>
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  )}
-
                   {/* Tab Panel: Active Quests */}
                   <Tabs.Panel id="active" className="flex flex-col gap-4 mt-2">
                     {isLoadingParticipations ? (
@@ -549,6 +512,43 @@ export default function UserProfilePage() {
                     id="completed"
                     className="flex flex-col gap-4 mt-2"
                   >
+                    {unclaimedQuests.length > 0 && (
+                      <div className="bg-[#ecfdf5] border border-[#10b98133] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-[#065f46] font-bold uppercase tracking-wider">
+                            Unclaimed Rewards
+                          </span>
+                          <span className="text-sm font-extrabold text-[#065f46]">
+                            {formattedTotalUnclaimed} • {unclaimedQuests.length}{" "}
+                            quest
+                            {unclaimedQuests.length > 1 ? "s" : ""}
+                          </span>
+                          <span className="text-[11px] text-[#047857] font-medium">
+                            Disclaimer: claim will submit an on-chain transaction
+                            and may require SOL for fees.
+                          </span>
+                        </div>
+
+                        <Button
+                          onPress={handleClaimRewards}
+                          isDisabled={isClaiming}
+                          className="bg-[#10b981] hover:bg-[#0f9d78] text-white font-bold py-2 px-4 rounded-full text-xs shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer font-sans w-full sm:w-auto"
+                        >
+                          {isClaiming ? (
+                            <>
+                              <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+                              <span>Claiming...</span>
+                            </>
+                          ) : (
+                            <>
+                              <FaGift className="text-[12px]" />
+                              <span>Claim now</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+
                     {isLoadingParticipations ? (
                       Array(3)
                         .fill(0)

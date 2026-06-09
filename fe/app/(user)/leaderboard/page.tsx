@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { Avatar, Card, Table, Skeleton } from "@heroui/react";
-import { FaCrown, FaTrophy, FaMedal, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useLeaderboard } from "@/lib/hooks/useLeaderboard";
 import { formatReward } from "@/lib/utils/format";
 
@@ -25,35 +26,32 @@ export default function LeaderboardPage() {
   const rankConfigs = {
     1: {
       bgColor: "bg-[#ffdad3]",
-      badgeBg: "bg-[#f59e0b]",
       textColor: "text-[#a63420]",
       pointsColor: "text-[#c84b35]",
       accentColor: "text-[#f59e0b]",
-      avatarBg: "bg-[#fbe3df]",
       cardHeight: "h-40 md:h-[175px]",
-      badgeIcon: <FaCrown className="text-white text-sm animate-bounce" />,
+      cupImage: "/images/gold-cup.png",
+      cupSize: 224,
       tier: "Gold Tier",
     },
     2: {
       bgColor: "bg-[#f5ddd9]",
-      badgeBg: "bg-[#6746c5]",
       textColor: "text-[#1f1b18]",
       pointsColor: "text-[#6b6560]",
       accentColor: "text-[#6746c5]",
-      avatarBg: "bg-[#ecd5d1]",
       cardHeight: "h-30 md:h-[130px]",
-      badgeIcon: <FaTrophy className="text-white text-xs" />,
+      cupImage: "/images/silver-cup.png",
+      cupSize: 192,
       tier: "Silver Tier",
     },
     3: {
       bgColor: "bg-[#fbe3df]",
-      badgeBg: "bg-[#006767]",
       textColor: "text-[#1f1b18]",
       pointsColor: "text-[#6b6560]",
       accentColor: "text-[#006767]",
-      avatarBg: "bg-[#fbe3df]",
       cardHeight: "h-25 md:h-[110px]",
-      badgeIcon: <FaMedal className="text-white text-xs" />,
+      cupImage: "/images/bronze-cup.png",
+      cupSize: 160,
       tier: "Bronze Tier",
     },
   };
@@ -93,7 +91,7 @@ export default function LeaderboardPage() {
   return (
     <div className="flex flex-col gap-10 max-w-6xl mx-auto px-4 md:px-8 py-6">
       {/* Header Section */}
-      <div className="text-center max-w-168 mx-auto flex flex-col gap-3">
+      <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
         <h1 className="text-display text-[#a63420] text-4xl md:text-5xl font-extrabold tracking-tight">
           Global Rankings
         </h1>
@@ -230,31 +228,15 @@ export default function LeaderboardPage() {
                   </span>
                 </div>
 
-                {/* Avatar & Floating Badge */}
-                <div className="relative -mb-6 z-20 flex items-center justify-center">
-                  <Avatar
-                    className={`border-4 border-[#fff8f6] shadow-medium ${pilot.avatarBg} ${
-                      pilot.rank === 1 ? "h-30 w-30" : "h-22 w-22"
-                    }`}
-                  >
-                    <Avatar.Fallback className={`font-bold ${pilot.rank === 1 ? "text-2xl" : "text-lg"} text-[#1f1b18]`}>
-                      {getInitial(pilot.entry.wallet_address)}
-                    </Avatar.Fallback>
-                  </Avatar>
-                  
-                  {/* Position Icon Badge */}
-                  <div
-                    className={`absolute bottom-0 right-0 ${pilot.badgeBg} p-2 rounded-full border-2 border-[#fff8f6] shadow-soft flex items-center justify-center`}
-                  >
-                    {pilot.badgeIcon}
-                  </div>
-
-                  {/* Gold Crown floating decorator for Rank 1 */}
-                  {pilot.rank === 1 && (
-                    <div className="absolute -top-6 -right-2 transform rotate-12 z-30">
-                      <FaCrown className="text-[#f59e0b] text-2xl drop-shadow-md animate-pulse" />
-                    </div>
-                  )}
+                {/* Cup Image */}
+                <div className="relative -mb-6 z-20 flex items-center justify-center drop-shadow-lg">
+                  <Image
+                    src={pilot.cupImage}
+                    alt={pilot.tier}
+                    width={pilot.cupSize}
+                    height={pilot.cupSize}
+                    className="object-contain"
+                  />
                 </div>
 
                 {/* Content card (staggered height) */}
@@ -340,7 +322,7 @@ export default function LeaderboardPage() {
                               >
                                 {Math.round(row.success_rate * 100)}%
                               </span>
-                              
+
                               {/* Custom visual progress bar matching Figma 64px width */}
                               <div className="w-16 h-2 bg-[#f5ddd9] rounded-full overflow-hidden">
                                 <div

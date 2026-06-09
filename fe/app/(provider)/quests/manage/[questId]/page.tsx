@@ -280,7 +280,7 @@ export default function ProviderQuestDetailPage() {
 														</div>
 														{Object.keys(step.action_params).length > 0 && (
 															<div className="bg-surface-raised border border-outline-variant rounded-lg p-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
-																{Object.entries(step.action_params).map(([key, val]) => (
+																{Object.entries(step.action_params).sort(([a], [b]) => a.localeCompare(b)).map(([key, val]) => (
 																	<div key={key} className="flex items-baseline gap-2 min-w-0">
 																		<span className="text-[10px] font-bold text-text-muted uppercase tracking-wider shrink-0">{key}</span>
 																		<span className="font-mono text-[11px] text-text-secondary truncate">{String(val)}</span>
