@@ -198,7 +198,11 @@ Body:
       "step_type": "swap",
       "action_params": {
         "from_token": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-        "to_token": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+        "from_token_symbol": "USDC",
+        "from_logo_uri": "https://...",
+        "to_token": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+        "to_token_symbol": "USDT",
+        "to_logo_uri": "https://..."
       }
     }
   ],
@@ -213,6 +217,7 @@ Body:
 - `quest_uuid`: UUID v4 yang dibuat di client sebelum deposit. Dipakai untuk derive `quest_id` on-chain (sha256 UUID → 32 bytes).
 - `steps`: urutan step yang harus dieksekusi agent. Minimal 1 item. Bentuk `action_params` divalidasi berdasarkan `step_type`.
   - `swap`: (recommended) `from_token`, `to_token` (base58 Solana mint pubkey). Untuk SOL gunakan wSOL mint `So11111111111111111111111111111111111111112`.
+    - Boleh kirim metadata tambahan dari FE: `from_token_symbol`, `to_token_symbol`, `from_logo_uri`, `to_logo_uri`.
     - Backward-compat:
       - masih menerima `from_mint`, `to_mint` (nama lama)
       - masih menerima `from_token_symbol`, `to_token_symbol` (paling tidak deterministic)

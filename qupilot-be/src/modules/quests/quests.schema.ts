@@ -23,16 +23,18 @@ const swapParams = z
   .object({
     // New (recommended): deterministic token identity via mint addresses.
     // For SOL, use the wrapped SOL mint: So11111111111111111111111111111111111111112
-    from_token: solanaPubkey.optional(),
-    to_token: solanaPubkey.optional(),
+    from_token: solanaPubkey,
+    to_token: solanaPubkey,
+    from_logo_uri: z.string().trim(),
+    to_logo_uri: z.string().trim(),
 
     // Backward-compat: earlier mint naming
     from_mint: solanaPubkey.optional(),
     to_mint: solanaPubkey.optional(),
 
     // Backward-compat: symbol-based swaps. Kept so existing quests don't break.
-    from_token_symbol: z.string().trim().min(1).max(16).optional(),
-    to_token_symbol: z.string().trim().min(1).max(16).optional(),
+    from_token_symbol: z.string().trim().min(1).max(16),
+    to_token_symbol: z.string().trim().min(1).max(16),
   })
   .superRefine((v, ctx) => {
     const hasTokens = Boolean(v.from_token) || Boolean(v.to_token);
@@ -83,7 +85,11 @@ const swapParams = z
 const clmmOpenParams = z.object({
   pool: solanaPubkey,
   token0_mint: solanaPubkey,
+  token0_symbol: z.string().trim().min(1).max(16),
+  token0_logo_uri: z.string().trim(),
   token1_mint: solanaPubkey,
+  token1_symbol: z.string().trim().min(1).max(16),
+  token1_logo_uri: z.string().trim(),
   position_mint: solanaPubkey,
   tick_lower: z.number().int(),
   tick_upper: z.number().int(),
@@ -92,7 +98,11 @@ const clmmOpenParams = z.object({
 const clmmCloseParams = z.object({
   pool: solanaPubkey,
   token0_mint: solanaPubkey,
+  token0_symbol: z.string().trim().min(1).max(16),
+  token0_logo_uri: z.string().trim(),
   token1_mint: solanaPubkey,
+  token1_symbol: z.string().trim().min(1).max(16),
+  token1_logo_uri: z.string().trim(),
   position_mint: solanaPubkey,
 });
 
