@@ -1,0 +1,38 @@
+name: qupilot-fe deploy                                                                                               
+                                                                                                                        
+  on:                                                                                                                   
+    push:                                                                                                               
+      branches:                                                                                                         
+        - main                                                                                                          
+      paths:                                                                                                            
+        - fe/**                                                                                                         
+    workflow_dispatch:                                                                                                  
+                                                                                                                        
+  concurrency:                                                                                                          
+    group: qupilot-fe-deploy                                                                                            
+    cancel-in-progress: true                                                                                            
+                                                                                                                        
+  jobs:                                                                                                                 
+    deploy:                                                                                                             
+      runs-on: ubuntu-latest                                                                                            
+      steps:                                                                                                            
+        - uses: appleboy/ssh-action@v1.0.3                                                                              
+          with:                                                                                                         
+            host: ${{ secrets.VPS_HOST }}                                                                               
+            username: ubuntu                                                                                            
+            password: ${{ secrets.VPS_PASSWORD }}                                                                       
+            port: 22                                                                                                    
+            script_stop: true                                                                                           
+            script: |                                                                                                   
+              set -e                                                                                                    
+              cd /home/ubuntu/.openclaw/workspace/qupilot-app                                                           
+              echo "📥 Pulling latest code..."                                                                          
+              git pull origin main                                                                                      
+              cd fe                                                                                                     
+              echo "📦 Installing dependencies..."                                                                      
+              npm install --production=false                                                                            
+              echo "🔨 Building Next.js..."                                                                             
+              npm run build                                                                                             
+              echo "♻️ Restarting PM2 process..."                                                                       
+              pm2 restart qupilot-fe                                                                                    
+              echo "✅ FE deployed successfully!"  
