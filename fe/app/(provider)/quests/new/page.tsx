@@ -53,6 +53,25 @@ const BYREAL_TOKEN_PARAM_KEYS = new Set([
   "token1_mint",
 ]);
 
+interface ITokenMetaCompanions {
+  symbol: string;
+  logo: string;
+}
+
+const TOKEN_META_COMPANIONS: Record<string, ITokenMetaCompanions> = {
+  from_token: { symbol: "from_token_symbol", logo: "from_logo_uri" },
+  to_token:   { symbol: "to_token_symbol",   logo: "to_logo_uri"  },
+  from_mint:  { symbol: "from_token_symbol", logo: "from_logo_uri" },
+  to_mint:    { symbol: "to_token_symbol",   logo: "to_logo_uri"  },
+};
+
+const HIDDEN_AUTO_PARAMS = new Set([
+  "from_token_symbol",
+  "to_token_symbol",
+  "from_logo_uri",
+  "to_logo_uri",
+]);
+
 const isByrealTokenParam = (key: string) => BYREAL_TOKEN_PARAM_KEYS.has(key.trim());
 
 const getTokenLabel = (token: IByrealToken) => `${token.symbol} - ${token.name}`;
@@ -109,20 +128,20 @@ export default function CreateQuestPage() {
   );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  
+
   // Protocol selection
   const [protocol, setProtocol] = useState<Key>("byreal");
-  
+
   // Rewards & Configuration
   const [totalRewardPool, setTotalRewardPool] = useState("");
   const [rewardPerUser, setRewardPerUser] = useState("");
-  const [rewardToken, setRewardToken] = useState("SOL");
+  const rewardToken = "SOL";
   const [expiresAt, setExpiresAt] = useState<DateValue | null>(today(getLocalTimeZone()));
-  
+
   // Transaction hash (deposit signature) state
   const [txHash, setTxHash] = useState("");
   const [txHashError, setTxHashError] = useState("");
-  
+
   // Validation Errors
   const [tokenError, setTokenError] = useState("");
   const [rewardPoolError, setRewardPoolError] = useState("");
@@ -133,8 +152,12 @@ export default function CreateQuestPage() {
   const getDefaultParamsForStepType = (stepType: StepType): StepParam[] => {
     if (stepType === "swap") {
       return [
-        { key: "from_token", value: "" },
-        { key: "to_token", value: "" },
+        { key: "from_token",        value: "" },
+        { key: "from_token_symbol", value: "" },
+        { key: "from_logo_uri",     value: "" },
+        { key: "to_token",          value: "" },
+        { key: "to_token_symbol",   value: "" },
+        { key: "to_logo_uri",       value: "" },
       ];
     } else if (stepType === "clmm_open") {
       return [
@@ -172,12 +195,6 @@ export default function CreateQuestPage() {
     },
   ]);
 
-  const handleTokenChange = (val: string) => {
-    const v = val.trim().toUpperCase();
-    setRewardToken(v);
-    if (v !== "SOL") setTokenError('Reward token harus "SOL"');
-    else setTokenError("");
-  };
 
   // Handle Transaction Hash change with custom regex validation
   const handleTxHashChange = (val: string) => {
@@ -223,6 +240,29 @@ export default function CreateQuestPage() {
     setSteps(newSteps);
   };
 
+  const updateParamWithMeta = (stepIndex: number, paramIndex: number, mintOrAddress: string) => {
+    const newSteps = [...steps];
+    const step = newSteps[stepIndex];
+    const paramKey = step.params[paramIndex].key.trim();
+
+    step.params[paramIndex].value = mintOrAddress;
+
+    const companions = TOKEN_META_COMPANIONS[paramKey];
+    if (companions) {
+      const selectedToken = mintOrAddress
+        ? sortedByrealTokens.find((t) => t.mint === mintOrAddress)
+        : undefined;
+
+      const symbolIdx = step.params.findIndex((p) => p.key === companions.symbol);
+      if (symbolIdx >= 0) step.params[symbolIdx].value = selectedToken?.symbol ?? "";
+
+      const logoIdx = step.params.findIndex((p) => p.key === companions.logo);
+      if (logoIdx >= 0) step.params[logoIdx].value = selectedToken?.logo_uri ?? "";
+    }
+
+    setSteps(newSteps);
+  };
+
   const renderParamValueControl = (stepIndex: number, paramIndex: number, param: StepParam) => {
     if (isByrealTokenParam(param.key) && hasByrealTokenDropdown) {
       return (
@@ -230,7 +270,7 @@ export default function CreateQuestPage() {
           aria-label={`Select ${param.key} token`}
           isDisabled={isLoading || byrealTokensQuery.isLoading}
           value={param.value}
-          onChange={(key) => updateParam(stepIndex, paramIndex, "value", key ? String(key) : "")}
+          onChange={(key) => updateParamWithMeta(stepIndex, paramIndex, key ? String(key) : "")}
           className="w-full flex flex-col"
           selectionMode="single"
         >
@@ -360,12 +400,12 @@ export default function CreateQuestPage() {
             "position_mint",
             "source_position",
           ];
-          
-          const isStringField = 
-            stringOnlyFields.includes(key) || 
-            key.endsWith("_symbol") || 
-            key.endsWith("_mint") || 
-            key.endsWith("_address") || 
+
+          const isStringField =
+            stringOnlyFields.includes(key) ||
+            key.endsWith("_symbol") ||
+            key.endsWith("_mint") ||
+            key.endsWith("_address") ||
             key.endsWith("_hash");
 
           if (isStringField) {
@@ -561,7 +601,7 @@ export default function CreateQuestPage() {
               <FiSliders className="text-[#008282] text-xl" />
               <h2 className="text-[#1f1b18] text-xl font-bold font-nunito">AI Execution Steps</h2>
             </div>
-            
+
             <p className="text-xs text-[#6b6560] -mt-3">
               Define the sequential steps the AI Agent will execute. Add custom parameter keys and values representing constraints or actions.
             </p>
@@ -570,7 +610,7 @@ export default function CreateQuestPage() {
               {steps.map((step, sIdx) => (
                 <div key={step.step} className="relative pl-10 pb-8">
                   {/* Connecting Line */}
-                  <div className="absolute left-3.75 top-8 bottom-0 w-[2px] border-l-2 border-dashed border-[#dfbfb9]" />
+                  <div className="absolute left-3.75 top-8 bottom-0 w-0.5 border-l-2 border-dashed border-[#dfbfb9]" />
 
                   {/* Timeline Dot */}
                   <div className="absolute left-0 top-0 size-8 rounded-full bg-[#008282] text-white flex items-center justify-center font-nunito font-extrabold text-sm shadow-sm border-2 border-white ring-4 ring-white">
@@ -642,7 +682,9 @@ export default function CreateQuestPage() {
                           </span>
                         )}
                       </div>
-                      {step.params.map((p, pIdx) => (
+                      {step.params.map((p, pIdx) => {
+                        if (HIDDEN_AUTO_PARAMS.has(p.key.trim())) return null;
+                        return (
                         <div key={pIdx} className="flex flex-wrap items-center gap-3">
                           <div className="flex-1 min-w-37.5">
                             <Input
@@ -658,7 +700,8 @@ export default function CreateQuestPage() {
                           </div>
 
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                   </div>

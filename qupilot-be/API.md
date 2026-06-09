@@ -178,7 +178,7 @@ Registered login — 200/201 Response:
 
 ## Quests — Provider
 
-Protocol: free text (contoh: `byreal`, `bybit`, `sui`)  
+Protocol: free text (contoh: `byreal`, `bybit`, `sui`)
 Step type enum: `swap | clmm_open | clmm_close | clmm_copy`
 
 ### POST /provider/quests
@@ -334,12 +334,12 @@ Auth: Wallet JWT dengan role=user_provider
 
 ### PATCH /provider/quests/:uuid
 
-Auth: Wallet JWT dengan role=user_provider  
+Auth: Wallet JWT dengan role=user_provider
 Selalu 403 (immutable).
 
 ### PUT /provider/quests/:uuid
 
-Auth: Wallet JWT dengan role=user_provider  
+Auth: Wallet JWT dengan role=user_provider
 Selalu 403 (immutable).
 
 ## Quests — Public
