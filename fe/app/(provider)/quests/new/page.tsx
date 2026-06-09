@@ -59,10 +59,12 @@ interface ITokenMetaCompanions {
 }
 
 const TOKEN_META_COMPANIONS: Record<string, ITokenMetaCompanions> = {
-  from_token: { symbol: "from_token_symbol", logo: "from_logo_uri" },
-  to_token:   { symbol: "to_token_symbol",   logo: "to_logo_uri"  },
-  from_mint:  { symbol: "from_token_symbol", logo: "from_logo_uri" },
-  to_mint:    { symbol: "to_token_symbol",   logo: "to_logo_uri"  },
+  from_token:  { symbol: "from_token_symbol", logo: "from_logo_uri"   },
+  to_token:    { symbol: "to_token_symbol",   logo: "to_logo_uri"     },
+  from_mint:   { symbol: "from_token_symbol", logo: "from_logo_uri"   },
+  to_mint:     { symbol: "to_token_symbol",   logo: "to_logo_uri"     },
+  token0_mint: { symbol: "token0_symbol",     logo: "token0_logo_uri" },
+  token1_mint: { symbol: "token1_symbol",     logo: "token1_logo_uri" },
 };
 
 const HIDDEN_AUTO_PARAMS = new Set([
@@ -70,6 +72,10 @@ const HIDDEN_AUTO_PARAMS = new Set([
   "to_token_symbol",
   "from_logo_uri",
   "to_logo_uri",
+  "token0_symbol",
+  "token1_symbol",
+  "token0_logo_uri",
+  "token1_logo_uri",
 ]);
 
 const isByrealTokenParam = (key: string) => BYREAL_TOKEN_PARAM_KEYS.has(key.trim());
@@ -161,26 +167,38 @@ export default function CreateQuestPage() {
       ];
     } else if (stepType === "clmm_open") {
       return [
-        { key: "pool", value: "" },
-        { key: "token0_mint", value: "" },
-        { key: "token1_mint", value: "" },
-        { key: "position_mint", value: "" },
-        { key: "tick_lower", value: "" },
-        { key: "tick_upper", value: "" },
+        { key: "pool",            value: "" },
+        { key: "token0_mint",     value: "" },
+        { key: "token0_symbol",   value: "" },
+        { key: "token0_logo_uri", value: "" },
+        { key: "token1_mint",     value: "" },
+        { key: "token1_symbol",   value: "" },
+        { key: "token1_logo_uri", value: "" },
+        { key: "position_mint",   value: "" },
+        { key: "tick_lower",      value: "" },
+        { key: "tick_upper",      value: "" },
       ];
     } else if (stepType === "clmm_close") {
       return [
-        { key: "pool", value: "" },
-        { key: "token0_mint", value: "" },
-        { key: "token1_mint", value: "" },
-        { key: "position_mint", value: "" },
+        { key: "pool",            value: "" },
+        { key: "token0_mint",     value: "" },
+        { key: "token0_symbol",   value: "" },
+        { key: "token0_logo_uri", value: "" },
+        { key: "token1_mint",     value: "" },
+        { key: "token1_symbol",   value: "" },
+        { key: "token1_logo_uri", value: "" },
+        { key: "position_mint",   value: "" },
       ];
     } else if (stepType === "clmm_copy") {
       return [
         { key: "source_position", value: "" },
-        { key: "token0_mint", value: "" },
-        { key: "token1_mint", value: "" },
-        { key: "amount_usd", value: "" },
+        { key: "token0_mint",     value: "" },
+        { key: "token0_symbol",   value: "" },
+        { key: "token0_logo_uri", value: "" },
+        { key: "token1_mint",     value: "" },
+        { key: "token1_symbol",   value: "" },
+        { key: "token1_logo_uri", value: "" },
+        { key: "amount_usd",      value: "" },
       ];
     }
     return [];

@@ -147,7 +147,7 @@ export default function LeaderboardPage() {
                 <Table.Content aria-label="Leaderboard Table Loading">
                   <Table.Header className="bg-[#f8f4ef] border-b border-[#f5ddd9]">
                     <Table.Column className="py-4 px-6 text-[12px] text-[#6b6560] font-bold text-center w-25">Rank</Table.Column>
-                    <Table.Column className="py-4 px-6 text-[12px] text-[#6b6560] font-bold text-left">Explorer</Table.Column>
+                    <Table.Column isRowHeader className="py-4 px-6 text-[12px] text-[#6b6560] font-bold text-left">Explorer</Table.Column>
                     <Table.Column className="py-4 px-6 text-[12px] text-[#6b6560] font-bold text-left">Wallet</Table.Column>
                     <Table.Column className="py-4 px-6 text-[12px] text-[#6b6560] font-bold text-right">Points</Table.Column>
                     <Table.Column className="py-4 px-6 text-[12px] text-[#6b6560] font-bold text-right">Success Rate</Table.Column>
@@ -235,7 +235,9 @@ export default function LeaderboardPage() {
                     alt={pilot.tier}
                     width={pilot.cupSize}
                     height={pilot.cupSize}
+                    style={{ height: 'auto' }}
                     className="object-contain"
+                    priority={pilot.rank === 1}
                   />
                 </div>
 
@@ -266,7 +268,7 @@ export default function LeaderboardPage() {
                       <Table.Column className="py-4 px-6 text-[12px] text-[#6b6560] font-bold text-center w-25">
                         Rank
                       </Table.Column>
-                      <Table.Column className="py-4 px-6 text-[12px] text-[#6b6560] font-bold text-left">
+                      <Table.Column isRowHeader className="py-4 px-6 text-[12px] text-[#6b6560] font-bold text-left">
                         Explorer
                       </Table.Column>
                       <Table.Column className="py-4 px-6 text-[12px] text-[#6b6560] font-bold text-left">
