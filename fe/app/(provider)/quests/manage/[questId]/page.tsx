@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Card, Chip, ProgressBar, Skeleton } from "@heroui/react";
@@ -26,6 +26,36 @@ import {
 	FiUsers,
 } from "react-icons/fi";
 import { SOLANA_RPC_URL } from "@/config";
+
+function TokenPill({ symbol, logoUri, mint }: { symbol?: string; logoUri?: string; mint?: string }) {
+	const [imgError, setImgError] = useState(false);
+	const truncatedMint = mint && mint.length > 12 ? `${mint.slice(0, 4)}...${mint.slice(-4)}` : mint;
+	const label = symbol ?? truncatedMint ?? "?";
+	const showMintSubtitle = !!symbol && !!truncatedMint;
+	return (
+		<div className="flex items-center gap-2.5 bg-surface border border-outline-variant rounded-xl px-3 py-2.5 min-w-0 flex-1">
+			{logoUri && !imgError ? (
+				// eslint-disable-next-line @next/next/no-img-element
+				<img
+					src={logoUri}
+					alt={label}
+					className="w-8 h-8 rounded-full object-cover shrink-0 bg-surface-raised"
+					onError={() => setImgError(true)}
+				/>
+			) : (
+				<div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary font-extrabold text-sm select-none">
+					{label.charAt(0).toUpperCase()}
+				</div>
+			)}
+			<div className="flex flex-col min-w-0">
+				<span className="text-[13px] font-bold text-text-primary leading-tight">{label}</span>
+				{showMintSubtitle && (
+					<span className="font-mono text-[10px] text-text-muted truncate">{truncatedMint}</span>
+				)}
+			</div>
+		</div>
+	);
+}
 
 export default function ProviderQuestDetailPage() {
 	const { questId } = useParams();
@@ -278,16 +308,78 @@ export default function ProviderQuestDetailPage() {
 															{meta.icon}
 															<span className="uppercase tracking-wide">{meta.label}</span>
 														</div>
-														{Object.keys(step.action_params).length > 0 && (
-															<div className="bg-surface-raised border border-outline-variant rounded-lg p-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
-																{Object.entries(step.action_params).sort(([a], [b]) => a.localeCompare(b)).map(([key, val]) => (
-																	<div key={key} className="flex items-baseline gap-2 min-w-0">
-																		<span className="text-[10px] font-bold text-text-muted uppercase tracking-wider shrink-0">{key}</span>
-																		<span className="font-mono text-[11px] text-text-secondary truncate">{String(val)}</span>
+														{Object.keys(step.action_params).length > 0 && (() => {
+															const p = step.action_params;
+															const CLMM_TOKEN_KEYS = new Set(["token0_mint","token0_symbol","token0_logo_uri","token1_mint","token1_symbol","token1_logo_uri"]);
+
+															if (step.step_type === "swap" && (p.from_token_symbol || p.to_token_symbol)) {
+																return (
+																	<div className="bg-surface-raised border border-outline-variant rounded-lg p-3 flex items-center gap-2">
+																		<TokenPill symbol={p.from_token_symbol} logoUri={p.from_logo_uri} mint={p.from_token} />
+																		<FiRepeat className="text-primary text-lg shrink-0" />
+																		<TokenPill symbol={p.to_token_symbol} logoUri={p.to_logo_uri} mint={p.to_token} />
 																	</div>
-																))}
+																);
+															}
+
+															if ((step.step_type === "clmm_open" || step.step_type === "clmm_close" || step.step_type === "clmm_copy") && (p.token0_mint || p.token1_mint)) {
+																const remainingEntries = Object.entries(p)
+																	.filter(([key, val]) => !CLMM_TOKEN_KEYS.has(key) && val !== "")
+																	.sort(([a], [b]) => a.localeCompare(b));
+																return (
+																	<div className="flex flex-col gap-2">
+																		<div className="bg-surface-raised border border-outline-variant rounded-lg p-3 flex items-center gap-2">
+																			<TokenPill symbol={p.token0_symbol} logoUri={p.token0_logo_uri} mint={p.token0_mint} />
+																			{step.step_type === "clmm_open"
+																				? <FiPlusCircle className="text-emerald-600 text-lg shrink-0" />
+																				: step.step_type === "clmm_close"
+																				? <FiMinusCircle className="text-rose-600 text-lg shrink-0" />
+																				: <FiCopy className="text-sky-600 text-lg shrink-0" />}
+																			<TokenPill symbol={p.token1_symbol} logoUri={p.token1_logo_uri} mint={p.token1_mint} />
+																		</div>
+																		{remainingEntries.length > 0 && (
+																			<div className="bg-surface-raised border border-outline-variant rounded-lg p-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+																				{remainingEntries.map(([key, val]) => (
+																					<div key={key} className="flex items-baseline gap-2 min-w-0">
+																						<span className="text-[10px] font-bold text-text-muted uppercase tracking-wider shrink-0">{key}</span>
+																						<span className="font-mono text-[11px] text-text-secondary truncate">{String(val)}</span>
+																					</div>
+																				))}
+																			</div>
+																		)}
+																	</div>
+																);
+															}
+
+															const filteredEntries = Object.entries(p)
+																.filter(([key]) => !/_logo_uri$/.test(key))
+																.sort(([a], [b]) => a.localeCompare(b));
+															return (
+																<div className="bg-surface-raised border border-outline-variant rounded-lg p-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+																	{filteredEntries.map(([key, val]) => {
+																		const logoKey = key.replace(/_symbol$/, "_logo_uri");
+																		const logoUri = /_symbol$/.test(key) ? p[logoKey] : undefined;
+																		return (
+																			<div key={key} className="flex items-center gap-2 min-w-0">
+																				<span className="text-[10px] font-bold text-text-muted uppercase tracking-wider shrink-0">{key}</span>
+																				<div className="flex items-center gap-1.5 min-w-0">
+																					{logoUri && (
+																						// eslint-disable-next-line @next/next/no-img-element
+																						<img
+																							src={logoUri}
+																							alt={String(val)}
+																							className="w-4 h-4 rounded-full object-cover shrink-0 bg-surface-raised"
+																							onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+																						/>
+																					)}
+																				<span className="font-mono text-[11px] text-text-secondary truncate">{String(val)}</span>
+																			</div>
+																		</div>
+																	);
+																})}
 															</div>
-														)}
+														);
+													})()}
 													</div>
 												</div>
 											);
