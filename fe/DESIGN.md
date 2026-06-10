@@ -1,19 +1,19 @@
 ---
-version: alpha
-name: QuPilot — Fun AF
-description: Warm, bubbly, bouncy. Space explorer vibes with a friendly companion.
-  Playful like a game UI but built for real degens who want to feel powerful.
+version: beta
+name: QuPilot - Sculpted Coral Console
+description: A true-white product canvas with tactile coral clay surfaces,
+  sculpted controls, crisp data hierarchy, and consistent depth across every route.
 colors:
-  bg-base: '#FFFBF5'
-  bg-warm: '#FFF7ED'
+  bg-base: '#FFFFFF'
+  bg-warm: '#FFFFFF'
   surface: '#FFFFFF'
-  surface-muted: '#FFFBF5'
-  surface-raised: '#F8F4EF'
+  surface-muted: '#FBF8F7'
+  surface-raised: '#F7F2F0'
   primary: '#E05D45'
   primary-hover: '#C94D35'
   primary-light: '#FDE8E5'
-  secondary: '#7C5CDB'
-  secondary-light: '#F0EDFF'
+  secondary: '#E05D45'
+  secondary-light: '#FBE4DF'
   accent: '#F59E0B'
   accent-light: '#FEF3C7'
   success: '#10B981'
@@ -22,15 +22,15 @@ colors:
   warning-light: '#FEF3C7'
   danger: '#EF4444'
   danger-light: '#FEE2E2'
-  text-primary: '#1F1B18'
-  text-secondary: '#6B6560'
-  text-muted: '#A39D97'
-  border: '#E8E2D9'
-  border-strong: '#C9C1B6'
-  shadow-warm: rgba(224, 93, 69, 0.08)
-  shadow-soft: 0 2px 8px rgba(31, 27, 24, 0.06)
-  shadow-medium: 0 4px 16px rgba(31, 27, 24, 0.10)
-  shadow-lifted: 0 12px 32px rgba(31, 27, 24, 0.14)
+  text-primary: '#211C1A'
+  text-secondary: '#746C68'
+  text-muted: '#A59D99'
+  border: '#EEE6E3'
+  border-strong: '#D8CBC6'
+  shadow-warm: 6px 8px 18px rgba(109, 62, 51, 0.08)
+  shadow-soft: 6px 8px 18px rgba(109, 62, 51, 0.08)
+  shadow-medium: 10px 12px 24px rgba(109, 62, 51, 0.10)
+  shadow-lifted: 14px 18px 38px rgba(109, 62, 51, 0.16)
   glow-primary: 0 0 0 3px rgba(224, 93, 69, 0.15)
   glow-secondary: 0 0 0 3px rgba(124, 92, 219, 0.15)
   glow-success: 0 0 0 3px rgba(16, 185, 129, 0.15)
@@ -157,4 +157,3 @@ animation:
   duration-slow: 350ms
   duration-slower: 500ms
 ---
-

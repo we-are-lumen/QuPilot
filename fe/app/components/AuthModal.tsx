@@ -236,7 +236,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
       <Modal.Backdrop>
         <Modal.Container size="md">
           <Modal.Dialog
-            className="border bg-white/95 border-[#dfbfb9]/40 text-[#1f1b18] backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden transition-all duration-300"
+            className="clay-surface border bg-white/95 text-[#211c1a] backdrop-blur-md rounded-[28px] overflow-hidden transition-all duration-300"
             style={{ width: "calc(100vw - 32px)", maxWidth: "448px" }}
           >
             <Modal.CloseTrigger />
@@ -244,7 +244,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
             {authStep === "role_selection" && (
               <>
                 <Modal.Header className="flex flex-col items-center text-center pb-2">
-                  <div className="w-12 h-12 rounded-full bg-[#FFE9E5] text-[#A63420] flex items-center justify-center mb-2 animate-bounce">
+                  <div className="w-12 h-12 rounded-full bg-[#FFE9E5] text-[#E05D45] flex items-center justify-center mb-2 animate-bounce">
                     <FaRocket size={20} />
                   </div>
                   <Modal.Heading className="text-xl font-bold tracking-tight text-[#1f1b18]">
@@ -264,11 +264,11 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                       className={cn(
                         "flex items-start gap-4 p-4 rounded-xl border text-left transition-all cursor-pointer",
                         role === "user"
-                          ? "bg-[#FFE9E5]/30 border-[#A63420] shadow-sm"
+                          ? "bg-[#FFE9E5]/30 border-[#E05D45] shadow-sm"
                           : "bg-white/50 border-[#dfbfb9]/40 hover:bg-[#f8f4ef]/50"
                       )}
                     >
-                      <div className={`p-2.5 rounded-lg border ${role === "user" ? "bg-[#A63420] text-white border-[#A63420]" : "bg-[#f8f4ef] text-[#6b6560] border-[#dfbfb9]/30"}`}>
+                      <div className={`p-2.5 rounded-lg border ${role === "user" ? "bg-[#E05D45] text-white border-[#E05D45]" : "bg-[#f8f4ef] text-[#6b6560] border-[#dfbfb9]/30"}`}>
                         <FaUser size={16} />
                       </div>
                       <div className="flex-1">
@@ -285,11 +285,11 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                       className={cn(
                         "flex items-start gap-4 p-4 rounded-xl border text-left transition-all cursor-pointer",
                         role === "user_provider"
-                          ? "bg-[#FFE9E5]/30 border-[#A63420] shadow-sm"
+                          ? "bg-[#FFE9E5]/30 border-[#E05D45] shadow-sm"
                           : "bg-white/50 border-[#dfbfb9]/40 hover:bg-[#f8f4ef]/50"
                       )}
                     >
-                      <div className={`p-2.5 rounded-lg border ${role === "user_provider" ? "bg-[#A63420] text-white border-[#A63420]" : "bg-[#f8f4ef] text-[#6b6560] border-[#dfbfb9]/30"}`}>
+                      <div className={`p-2.5 rounded-lg border ${role === "user_provider" ? "bg-[#E05D45] text-white border-[#E05D45]" : "bg-[#f8f4ef] text-[#6b6560] border-[#dfbfb9]/30"}`}>
                         <FaUserTie size={16} />
                       </div>
                       <div className="flex-1">
@@ -305,7 +305,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                 <Modal.Footer className="pt-2 pb-6 px-6">
                   <Button
                     onPress={() => setAuthStep("wallet_selection")}
-                    className="w-full bg-[#A63420] text-white font-bold text-xs tracking-widest py-3.5 rounded-full flex items-center justify-center gap-2 hover:bg-[#8f2b1a] transition-all shadow-md active:scale-[0.98]"
+                    className="clay-button w-full font-bold text-xs tracking-widest py-3.5 rounded-xl flex items-center justify-center gap-2"
                   >
                     <FaWallet size={14} />
                     Connect & Login
@@ -324,7 +324,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                   >
                     <FiArrowLeft size={18} />
                   </button>
-                  <div className="w-12 h-12 rounded-full bg-[#FFE9E5] text-[#A63420] flex items-center justify-center mb-2 mt-2">
+                  <div className="w-12 h-12 rounded-full bg-[#FFE9E5] text-[#E05D45] flex items-center justify-center mb-2 mt-2">
                     <FaWallet size={20} />
                   </div>
                   <Modal.Heading className="text-xl font-bold tracking-tight text-[#1f1b18] px-8">
@@ -340,7 +340,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                   <button
                     type="button"
                     onClick={() => handleWalletLogin("phantom")}
-                    className="flex items-center justify-between p-4 rounded-xl border border-[#dfbfb9]/40 bg-white/50 hover:bg-[#FFE9E5]/10 hover:border-[#A63420]/30 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group w-full"
+                    className="flex items-center justify-between p-4 rounded-xl border border-[#dfbfb9]/40 bg-white/50 hover:bg-[#FFE9E5]/10 hover:border-[#E05D45]/30 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group w-full"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-white border border-[#dfbfb9]/30 flex items-center justify-center shrink-0 shadow-sm">
@@ -368,7 +368,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                   <button
                     type="button"
                     onClick={() => handleWalletLogin("solflare")}
-                    className="flex items-center justify-between p-4 rounded-xl border border-[#dfbfb9]/40 bg-white/50 hover:bg-[#FFE9E5]/10 hover:border-[#A63420]/30 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group w-full"
+                    className="flex items-center justify-between p-4 rounded-xl border border-[#dfbfb9]/40 bg-white/50 hover:bg-[#FFE9E5]/10 hover:border-[#E05D45]/30 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group w-full"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-white border border-[#dfbfb9]/30 flex items-center justify-center shrink-0 shadow-sm">
@@ -396,7 +396,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                   <button
                     type="button"
                     onClick={() => handleWalletLogin("backpack")}
-                    className="flex items-center justify-between p-4 rounded-xl border border-[#dfbfb9]/40 bg-white/50 hover:bg-[#FFE9E5]/10 hover:border-[#A63420]/30 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group w-full"
+                    className="flex items-center justify-between p-4 rounded-xl border border-[#dfbfb9]/40 bg-white/50 hover:bg-[#FFE9E5]/10 hover:border-[#E05D45]/30 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group w-full"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-white border border-[#dfbfb9]/30 flex items-center justify-center shrink-0 shadow-sm">
@@ -424,7 +424,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                   <button
                     type="button"
                     onClick={() => handleWalletLogin("okx")}
-                    className="flex items-center justify-between p-4 rounded-xl border border-[#dfbfb9]/40 bg-white/50 hover:bg-[#FFE9E5]/10 hover:border-[#A63420]/30 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group w-full"
+                    className="flex items-center justify-between p-4 rounded-xl border border-[#dfbfb9]/40 bg-white/50 hover:bg-[#FFE9E5]/10 hover:border-[#E05D45]/30 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group w-full"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-white border border-[#dfbfb9]/30 flex items-center justify-center shrink-0 shadow-sm">
@@ -457,8 +457,8 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
               <Modal.Body className="py-12 px-6 flex flex-col items-center justify-center gap-6">
                 <div className="relative flex items-center justify-center w-16 h-16">
                   <div className="absolute inset-0 rounded-full border-4 border-[#FFE9E5] opacity-50" />
-                  <div className="absolute inset-0 rounded-full border-4 border-t-[#A63420] animate-spin" />
-                  <FaWallet size={24} className="text-[#A63420]" />
+                  <div className="absolute inset-0 rounded-full border-4 border-t-[#E05D45] animate-spin" />
+                  <FaWallet size={24} className="text-[#E05D45]" />
                 </div>
                 <div className="text-center">
                   <h3 className="text-base font-bold text-[#1f1b18]">Connecting Wallet</h3>
@@ -472,7 +472,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
             {authStep === "provider_form" && (
               <form onSubmit={handleProviderRegisterSubmit}>
                 <Modal.Header className="flex flex-col items-center text-center pb-2">
-                  <div className="w-12 h-12 rounded-full bg-[#FFE9E5] text-[#A63420] flex items-center justify-center mb-2">
+                  <div className="w-12 h-12 rounded-full bg-[#FFE9E5] text-[#E05D45] flex items-center justify-center mb-2">
                     <FaUserTie size={20} />
                   </div>
                   <Modal.Heading className="text-xl font-bold tracking-tight text-[#1f1b18]">
@@ -487,7 +487,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                   {walletAddress && (
                     <div className="flex items-center gap-2 px-3 py-2 bg-[#f8f4ef] border border-[#dfbfb9]/30 rounded-lg text-xs">
                       <FiCheckCircle className="text-[#008282]" />
-                      <span className="font-mono text-[#A63420] font-bold">
+                      <span className="font-mono text-[#E05D45] font-bold">
                         {walletAddress.slice(0, 6)}...{walletAddress.slice(-6)}
                       </span>
                     </div>
@@ -501,7 +501,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                           placeholder="Enter your organization's name"
                           value={displayName}
                           onChange={(e) => setDisplayName(e.target.value)}
-                          className="rounded-md border border-[#e8e2d9] px-3 py-2 text-sm shadow-sm focus-visible:border-[#a63420] w-full"
+                          className="clay-field w-full text-sm"
                         />
                       </TextField>
                       {fieldErrors.displayName && (
@@ -518,7 +518,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                           placeholder="https://example.com/logo.png"
                           value={logoUrl}
                           onChange={(e) => setLogoUrl(e.target.value)}
-                          className="rounded-md border border-[#e8e2d9] px-3 py-2 text-sm shadow-sm focus-visible:border-[#a63420] w-full"
+                          className="clay-field w-full text-sm"
                         />
                       </TextField>
                       {fieldErrors.logoUrl && (
@@ -534,7 +534,7 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                   <Button
                     type="submit"
                     isDisabled={isSubmitting}
-                    className="w-full bg-[#A63420] text-white font-bold text-xs tracking-widest py-3.5 rounded-full flex items-center justify-center gap-2 hover:bg-[#8f2b1a] transition-all shadow-md"
+                    className="clay-button w-full font-bold text-xs tracking-widest py-3.5 rounded-xl flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>

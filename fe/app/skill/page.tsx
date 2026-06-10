@@ -64,7 +64,7 @@ export default async function SkillPage() {
             a: ({ href, children }) => (
               <a
                 href={href}
-                className="text-[#a63420] font-semibold hover:underline break-words"
+                className="text-[#e05d45] font-semibold hover:underline break-words"
                 target="_blank"
                 rel="noreferrer"
               >

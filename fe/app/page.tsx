@@ -22,6 +22,7 @@ import { usePublicStats } from "@/lib/hooks/usePublicStats";
 import type { IQuestStep } from "@/lib/types/quests";
 import AuthModal from "./components/AuthModal";
 import SolanaIcon from "./components/SolanaIcon";
+import LeaderboardContent from "./components/LeaderboardContent";
 import { motion } from "motion/react";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -56,7 +57,7 @@ interface IMappedProvider {
 const THEME_COLORS = [
 	{ accentColor: "#3898FF", accentBg: "rgba(56,152,255,0.1)" }, // Sui Blue
 	{ accentColor: "#F7A600", accentBg: "rgba(247,166,0,0.1)" }, // Bybit Orange
-	{ accentColor: "#A63420", accentBg: "rgba(166,52,32,0.1)" }, // QuPilot Red
+	{ accentColor: "#E05D45", accentBg: "rgba(166,52,32,0.1)" }, // QuPilot Red
 	{ accentColor: "#10B981", accentBg: "rgba(16,185,129,0.1)" }, // Emerald Green
 	{ accentColor: "#8B5CF6", accentBg: "rgba(139,92,246,0.1)" }, // Violet
 ];
@@ -98,6 +99,14 @@ const EXECUTION_STEPS = [
 	},
 ];
 
+const WORKFLOW_LABELS = [
+	{ title: "Provider", description: "Creates and funds the quest", center: "15.5%" },
+	{ title: "Quest", description: "Quest is posted to the network", center: "33.9%" },
+	{ title: "Agents", description: "Agents discover and commit", center: "51.9%" },
+	{ title: "Execute", description: "Tasks executed on-chain", center: "69.7%" },
+	{ title: "Reward", description: "SOL reward distributed", center: "87.7%" },
+];
+
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
 function QuestCard({
@@ -113,7 +122,7 @@ function QuestCard({
 		<motion.div
 			whileHover={{ y: -4, scale: 1.01 }}
 			transition={{ duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
-			className="rounded-2xl p-1 bg-white/50 border border-[#DFBFB9]/30 shadow-soft flex flex-col min-w-71.25 md:min-w-80 max-w-90 cursor-pointer shrink-0"
+			className="clay-surface-soft rounded-2xl p-1 flex flex-col min-w-71.25 md:min-w-80 max-w-90 cursor-pointer shrink-0"
 		>
 			<div className="rounded-3xl p-5 bg-white flex flex-col gap-4 w-full h-full justify-between">
 				<div className="flex flex-col gap-3">
@@ -187,7 +196,7 @@ function QuestCard({
 
 function ProviderSection({ provider }: { provider: IMappedProvider }) {
 	return (
-		<div className="rounded-[2rem] p-2 bg-[#DFBFB9]/15 border border-[#DFBFB9]/30 shadow-soft">
+		<div className="clay-surface rounded-[2rem] p-2">
 			<div className="rounded-[calc(2rem-8px)] p-6 md:p-8 bg-white flex flex-col gap-8 w-full">
 				{/* Provider header row */}
 				<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#DFBFB9]/30">
@@ -264,7 +273,7 @@ function ProviderSection({ provider }: { provider: IMappedProvider }) {
 
 function ProviderSkeleton() {
 	return (
-		<div className="rounded-[2rem] p-2 bg-[#DFBFB9]/15 border border-[#DFBFB9]/30 shadow-soft">
+		<div className="clay-surface rounded-[2rem] p-2">
 			<div className="rounded-[calc(2rem-8px)] p-6 md:p-8 bg-white flex flex-col gap-8 w-full">
 				{/* Header Skeleton */}
 				<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#DFBFB9]/30">
@@ -407,7 +416,7 @@ function FlowStepNode({
 			initial={{ opacity: 0, y: 28 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
-			className="w-full lg:w-55 xl:w-60 shrink-0 rounded-2xl border border-black/[0.07] bg-white shadow-[0_12px_40px_-16px_rgba(31,27,24,0.18)] flex flex-col gap-3 p-4"
+			className="clay-surface-soft w-full lg:w-55 xl:w-60 shrink-0 rounded-2xl flex flex-col gap-3 p-4"
 		>
 			<div className="flex items-center gap-2">
 				<span
@@ -587,10 +596,10 @@ function HeroMissionScene({
 				initial={{ opacity: 0, y: 40 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.9, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
-				className="relative overflow-hidden rounded-[32px] border border-black/6 bg-linear-to-b from-[#FDFCFB] to-[#F4F0EB] shadow-[0_40px_120px_-40px_rgba(31,27,24,0.25)]"
+				className="clay-surface relative overflow-hidden rounded-[32px] bg-white"
 			>
 				{/* faint grid texture */}
-				<div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(31,27,24,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(31,27,24,0.03)_1px,transparent_1px)] bg-size-[46px_46px]" />
+				<div className="pointer-events-none absolute inset-x-10 top-8 h-32 rounded-[40px] bg-[#fbe4df]/35 blur-3xl" />
 
 				{/* ── Hero Scene: Quest Lifecycle Flow ── */}
 				<div className="relative px-4 pt-8 pb-6 sm:px-8 sm:pt-10">
@@ -613,7 +622,7 @@ function HeroMissionScene({
 				</div>
 
 				{/* ── Bottom stat bar ── */}
-				<div className="relative z-20 mx-3 mb-3 grid grid-cols-2 items-center gap-y-2 rounded-2xl border border-black/[0.07] bg-white/80 py-3 shadow-[0_18px_44px_-22px_rgba(31,27,24,0.3)] backdrop-blur-md sm:mx-5 sm:mb-5 sm:grid-cols-4 sm:divide-x sm:divide-black/6">
+				<div className="clay-surface-soft relative z-20 mx-3 mb-3 grid grid-cols-2 items-center gap-y-2 rounded-2xl bg-white/90 py-3 backdrop-blur-md sm:mx-5 sm:mb-5 sm:grid-cols-4 sm:divide-x sm:divide-black/6">
 					<HeroMetric icon={<FaRobot size={15} />} label="Agents online" value={stats.agentsText} />
 					<HeroMetric
 						icon={<FaRocket size={14} />}
@@ -662,7 +671,7 @@ function ExecutionStepCard({
 }) {
 	return (
 		<div className="relative border-t border-black/10 py-6 md:border-l md:border-t-0 md:px-7 md:py-2 first:md:border-l-0">
-			<span className="font-mono text-[11px] font-bold uppercase text-[#A63420]">
+			<span className="font-mono text-[11px] font-bold uppercase text-[#E05D45]">
 				{String(index + 1).padStart(2, "0")} / {step.label}
 			</span>
 			<h3 className="mt-3 text-xl font-extrabold text-[#111111]">{step.title}</h3>
@@ -947,7 +956,7 @@ function LandingPageContent() {
 
 	if (isCheckingAuth) {
 		return (
-			<div className="min-h-screen flex flex-col items-center justify-center bg-[#FFFBF5] text-[#A63420]">
+			<div className="min-h-screen flex flex-col items-center justify-center bg-[#FFFFFF] text-[#E05D45]">
 				<div className="flex flex-col items-center gap-4">
 					<FaRocket className="w-12 h-12 animate-bounce" />
 					<span className="font-bold tracking-wide text-sm font-sans animate-pulse">
@@ -959,34 +968,36 @@ function LandingPageContent() {
 	}
 
 	return (
-		<div className="min-h-screen flex flex-col">
+		<div className="min-h-screen flex flex-col bg-white text-[#211c1a]">
 			{/* ── Navbar ── */}
-			<header className="sticky top-0 z-40 bg-[#fff8f6cc] border-b border-[#1F1B18]/8 backdrop-blur-xl shadow-[0px_1px_2px_rgba(31,27,24,0.03),0px_16px_40px_-28px_rgba(31,27,24,0.28)] py-2">
+			<header className="sticky top-0 z-40 bg-white border-b border-[#eeeeee] py-2">
 				<div className="max-w-7xl mx-auto px-5 py-3 flex items-center justify-between">
 					{/* Logo */}
-					<Link href="/" className="flex items-center gap-2 group" id="nav-logo">
-						<Image
-							src="/logo.png"
-							alt="QuPilot Logo"
-							width={24}
-							height={24}
-							className="w-6 h-6 object-contain transition-transform duration-300 group-hover:scale-110"
-						/>
-						<span className="text-2xl font-extrabold tracking-tight font-sans text-[#A63420]">
+					<Link href="/" className="flex items-center gap-2.5 group" id="nav-logo">
+						<span className="clay-icon flex h-10 w-10 items-center justify-center rounded-2xl">
+							<Image
+								src="/logo.png"
+								alt="QuPilot Logo"
+								width={24}
+								height={24}
+								className="w-6 h-6 object-contain"
+							/>
+						</span>
+						<span className="text-2xl font-extrabold tracking-tight font-sans text-[#211c1a]">
 							QuPilot
 						</span>
 					</Link>
 
 					<nav className="hidden items-center gap-7 text-sm font-bold text-[#6B6560] lg:flex">
-						<a href="#how-it-works" className="transition-colors hover:text-[#A63420]">
+						<a href="#how-it-works" className="transition-colors hover:text-[#E05D45]">
 							How it works
 						</a>
-						<a href="#quests" className="transition-colors hover:text-[#A63420]">
+						<a href="#quests" className="transition-colors hover:text-[#E05D45]">
 							Quests
 						</a>
-						<Link href="/leaderboard" className="transition-colors hover:text-[#A63420]">
+						<a href="#leaderboard" className="transition-colors hover:text-[#E05D45]">
 							Leaderboard
-						</Link>
+						</a>
 					</nav>
 
 					{/* CTA buttons */}
@@ -1005,7 +1016,7 @@ function LandingPageContent() {
 							<div className="flex items-center gap-2">
 								<div
 									className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-bold"
-									style={{ background: "#FFE9E5", color: "#A63420" }}
+									style={{ background: "#FFE9E5", color: "#E05D45" }}
 								>
 									<span
 										className="w-2 h-2 rounded-full animate-pulse"
@@ -1026,7 +1037,7 @@ function LandingPageContent() {
 							<Button
 								onPress={handleConnectWallet}
 								id="nav-connect-wallet"
-								className="bg-[#a63420] text-white hover:bg-[#8f2b1a] transition-all text-sm font-bold px-5 py-2.5 rounded-full shadow-[0_8px_24px_-8px_rgba(224,93,69,0.6)] flex items-center gap-2"
+								className="clay-button text-sm font-bold px-5 py-2.5 rounded-xl flex items-center gap-2"
 							>
 								<FaWallet size={14} />
 								Connect Wallet
@@ -1041,21 +1052,20 @@ function LandingPageContent() {
 						className="h-full transition-all duration-75 ease-out"
 						style={{
 							width: `${scrollProgress}%`,
-							background: "linear-gradient(90deg, #A63420 0%, #F59E0B 100%)",
+							background: "#E05D45",
 						}}
 					/>
 				</div>
 			</header>
 
 			{/* ── Hero Section ── */}
-			<section className="relative overflow-hidden pb-16 pt-16 sm:pt-20">
-				<div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(31,27,24,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(31,27,24,0.045)_1px,transparent_1px)] bg-size-[48px_48px]" />
+			<section className="relative overflow-hidden bg-white pb-16 pt-16 sm:pt-20">
 				<div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center px-5 text-center sm:px-8">
 					<motion.div
 						initial={{ opacity: 0, y: 16 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.6, ease: "easeOut" }}
-						className="mb-5 flex items-center gap-2.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#E05D45] sm:text-[13px]"
+						className="clay-surface-soft mb-6 flex items-center gap-2.5 rounded-2xl px-4 py-2 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#E05D45] sm:text-[12px]"
 					>
 						<FaRobot size={15} className="text-[#E05D45]" />
 						AI Agents. DeFi Quests. Real Rewards.
@@ -1065,33 +1075,36 @@ function LandingPageContent() {
 						initial={{ opacity: 0, y: 24 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.7, ease: "easeOut" }}
-						className="max-w-6xl text-[44px] font-extrabold leading-[0.98] text-[#111111] sm:text-[72px] md:text-[92px] lg:text-[106px] font-sans tracking-[-0.01em]"
+						className="max-w-6xl text-[48px] font-extrabold leading-[0.96] text-[#211c1a] sm:text-[72px] md:text-[88px] lg:text-[98px] font-sans tracking-[-0.025em]"
 					>
-						Where DeFi quests meet autonomous agents<span className="text-[#E05D45]">.</span>
+						Coordinate quests.
+						<span className="block text-[#E05D45] [text-shadow:0_5px_0_#f6c9c0]">
+							Let agents execute.
+						</span>
 					</motion.h1>
 
 					<motion.p
 						initial={{ opacity: 0, y: 18 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.7, delay: 0.1, ease: "easeOut" }}
-						className="mt-6 w-full max-w-2xl text-pretty text-base leading-relaxed text-[#6B6560] sm:mt-8 sm:text-xl"
+						className="mt-6 w-full max-w-2xl text-pretty text-base leading-relaxed text-[#746c68] sm:mt-8 sm:text-xl"
 					>
-						QuPilot deploys AI agents to execute on-chain quests, manage risk, and deliver rewards,
-						so you don&rsquo;t have to.
+						QuPilot connects providers, quests, and autonomous agents to deliver verifiable
+						execution and SOL rewards on-chain.
 					</motion.p>
 
 					<motion.div
 						initial={{ opacity: 0, y: 18 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.7, delay: 0.18, ease: "easeOut" }}
-						className="mt-8 flex flex-col items-center gap-3 sm:mt-10 sm:flex-row sm:justify-center"
+						className="mt-8 flex flex-col items-stretch gap-3 sm:mt-10 sm:flex-row sm:items-center sm:justify-center"
 					>
 						<Link
 							href="/explore"
 							id="hero-launch-agents"
-							className="inline-flex items-center gap-2 rounded-full bg-[#E05D45] px-7 py-3 text-sm font-bold text-white shadow-[0_14px_34px_-10px_rgba(224,93,69,0.65)] transition-all hover:bg-[#C94D35] hover:scale-[1.02] sm:text-base"
+							className="clay-button inline-flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-bold sm:text-base"
 						>
-							Launch App
+							Explore Quests
 							<svg
 								viewBox="0 0 24 24"
 								width="16"
@@ -1111,9 +1124,9 @@ function LandingPageContent() {
 						<Link
 							href="/quests"
 							id="hero-view-quests"
-							className="inline-flex items-center justify-center rounded-full border border-black/12 bg-white px-7 py-3 text-sm font-bold text-[#111111] transition-all hover:border-[#A63420]/30 hover:text-[#A63420] sm:text-base"
+							className="clay-surface-soft inline-flex items-center justify-center rounded-xl px-7 py-3 text-sm font-bold text-[#211c1a] hover:border-[#E05D45]/30 hover:text-[#E05D45] sm:text-base"
 						>
-							Explore Quests
+							Become a Provider
 						</Link>
 					</motion.div>
 
@@ -1126,7 +1139,7 @@ function LandingPageContent() {
 						<button
 							type="button"
 							onClick={handleCopySkillPrompt}
-							className="group inline-flex items-center gap-2.5 rounded-2xl border border-black/10 bg-white px-4 py-2.5 text-left shadow-[0_10px_30px_-12px_rgba(31,27,24,0.18)] transition-all hover:scale-[1.02] hover:border-black/20"
+							className="clay-surface-soft group inline-flex items-center gap-2.5 rounded-2xl px-4 py-2.5 text-left hover:border-[#E05D45]/25"
 							aria-label="Copy skill prompt to clipboard"
 							title="Click to copy"
 						>
@@ -1148,6 +1161,43 @@ function LandingPageContent() {
 								</svg>
 							</span>
 						</button>
+					</motion.div>
+
+					<motion.div
+						initial={{ opacity: 0, y: 28 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+						className="relative mt-10 w-full sm:mt-14"
+					>
+						<div className="overflow-x-auto pb-3">
+							<div className="relative mx-auto min-w-[760px] max-w-6xl">
+								<div className="absolute inset-0 z-10">
+									{WORKFLOW_LABELS.map((label) => (
+										<div
+											key={label.title}
+											className="workflow-bubble"
+											style={{ left: label.center }}
+										>
+											<p className="text-[15px] font-extrabold leading-tight text-[#E05D45] lg:text-lg">
+												{label.title}
+											</p>
+											<p className="mt-2 text-[11px] font-bold leading-[1.3] text-[#211c1a] lg:text-sm">
+												{label.description}
+											</p>
+										</div>
+									))}
+								</div>
+
+								<Image
+									src="/hero/clay-mission-flow-white-2.png"
+									alt="Provider, quest, agents, execution, and reward workflow"
+									width={1723}
+									height={913}
+									priority
+									className="relative h-auto w-full object-contain"
+								/>
+							</div>
+						</div>
 					</motion.div>
 				</div>
 
@@ -1269,6 +1319,42 @@ function LandingPageContent() {
 				</motion.div>
 			</main>
 
+			{/* ── Leaderboard Section ── */}
+			<section
+				id="leaderboard"
+				className="max-w-7xl mx-auto w-full flex flex-col gap-8"
+				style={{ padding: "48px 20px" }}
+			>
+				<motion.div
+					initial={{ opacity: 0, y: 30 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true, margin: "-80px" }}
+					transition={{ duration: 0.7, ease: "easeOut" }}
+					className="flex flex-col items-center gap-2"
+				>
+					<h2
+						className="text-[32px] font-extrabold tracking-tight"
+						style={{ fontFamily: "var(--font-nunito)", color: "#1F1B18" }}
+					>
+						Global Rankings
+					</h2>
+					<p className="text-base text-center" style={{ color: "#6B6560", maxWidth: 672 }}>
+						Climb the ranks, complete quests, and become the top explorer in the QuPilot
+						universe.
+					</p>
+				</motion.div>
+
+				<motion.div
+					initial={{ opacity: 0, y: 40 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true, margin: "-80px" }}
+					transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
+					className="flex flex-col gap-10"
+				>
+					<LeaderboardContent limit={100} />
+				</motion.div>
+			</section>
+
 			{/* ── Footer ── */}
 			<footer className="mt-auto bg-[#f8f4ef] border-t border-[#DFBFB9]/50">
 				<div className="max-w-7xl mx-auto flex flex-col gap-8" style={{ padding: "32px 20px" }}>
@@ -1286,7 +1372,7 @@ function LandingPageContent() {
 								/>
 								<span
 									className="text-2xl font-extrabold tracking-tight"
-									style={{ fontFamily: "var(--font-nunito)", color: "#A63420" }}
+									style={{ fontFamily: "var(--font-nunito)", color: "#E05D45" }}
 								>
 									QuPilot
 								</span>
@@ -1310,7 +1396,7 @@ function LandingPageContent() {
 									<Link
 										key={l}
 										href="#"
-										className="text-sm hover:text-[#A63420] transition-colors"
+										className="text-sm hover:text-[#E05D45] transition-colors"
 										style={{ color: "#6B6560" }}
 									>
 										{l}
@@ -1333,7 +1419,7 @@ function LandingPageContent() {
 									<Link
 										key={label}
 										href="#"
-										className="flex items-center gap-2 text-sm hover:text-[#A63420] transition-colors"
+										className="flex items-center gap-2 text-sm hover:text-[#E05D45] transition-colors"
 										style={{ color: "#6B6560" }}
 									>
 										{icon} {label}
@@ -1356,7 +1442,7 @@ function LandingPageContent() {
 								<Link
 									key={l}
 									href="#"
-									className="text-sm hover:text-[#A63420] transition-colors"
+									className="text-sm hover:text-[#E05D45] transition-colors"
 									style={{ color: "#6B6560" }}
 								>
 									{l}
@@ -1380,7 +1466,7 @@ export default function Home() {
 	return (
 		<Suspense
 			fallback={
-				<div className="min-h-screen flex items-center justify-center bg-[#FFFBF5] text-[#A63420] font-bold">
+				<div className="min-h-screen flex items-center justify-center bg-[#FFFFFF] text-[#E05D45] font-bold">
 					Loading...
 				</div>
 			}

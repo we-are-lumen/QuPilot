@@ -59,27 +59,29 @@ export default function ProviderLayout({
 
   return (
     <AuthGate allowedRoles={["user_provider"]}>
-      <div className="min-h-screen flex flex-col bg-[#fffbf5] text-[#1f1b18] font-sans">
+      <div className="min-h-screen flex flex-col bg-white text-[#211c1a] font-sans">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-40 bg-[#fff8f6cc] backdrop-blur-md border-b border-[#dfbfb94d] shadow-sm">
+      <header className="sticky top-0 z-40 bg-white/92 backdrop-blur-xl border-b border-[#eee6e3] shadow-[0_8px_28px_rgba(109,62,51,0.06)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             {/* Logo */}
             <Link
               href="/dashboard"
-              className="flex items-center gap-2 group transition-transform duration-200 hover:scale-105"
+              className="flex items-center gap-2 group"
             >
-              <Image
-                src="/logo.png"
-                alt="QuPilot Logo"
-                width={24}
-                height={24}
-                className="object-contain"
-              />
-              <span className="text-xl text-[#a63420] font-extrabold tracking-tight">
+              <span className="clay-icon flex h-10 w-10 items-center justify-center rounded-2xl">
+                <Image
+                  src="/logo.png"
+                  alt="QuPilot Logo"
+                  width={24}
+                  height={24}
+                  className="object-contain"
+                />
+              </span>
+              <span className="text-xl text-[#211c1a] font-extrabold tracking-tight">
                 QuPilot
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-[#ffe9e5] text-[#a63420] text-[10px] font-bold border border-[#a63420]/20 tracking-wider">
+              <span className="px-2.5 py-1 rounded-xl bg-[#fbe4df] text-[#e05d45] text-[10px] font-bold border border-[#e05d45]/15 tracking-wider shadow-[inset_0_1px_0_white]">
                 PROVIDER
               </span>
             </Link>
@@ -91,9 +93,9 @@ export default function ProviderLayout({
               <button
                 type="button"
                 onClick={() => setIsMenuOpen((prev) => !prev)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#dfbfb94d] hover:shadow-sm transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#a63420]"
+                className="clay-surface-soft flex items-center gap-2 px-3 py-1.5 rounded-2xl cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#e05d45]"
               >
-                <Avatar size="sm" className="bg-[#a63420] text-white font-bold">
+                <Avatar size="sm" className="bg-[#e05d45] text-white font-bold">
                   <Avatar.Fallback>{initials}</Avatar.Fallback>
                 </Avatar>
                 <div className="hidden lg:flex flex-col text-left">
@@ -126,7 +128,7 @@ export default function ProviderLayout({
 
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-[#a63420] hover:bg-[#ffe9e5] rounded-md transition-colors w-full text-left font-medium cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-[#e05d45] hover:bg-[#ffe9e5] rounded-md transition-colors w-full text-left font-medium cursor-pointer"
                   >
                     <LuLogOut size={16} />
                     <span>Logout</span>
@@ -139,25 +141,25 @@ export default function ProviderLayout({
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {children}
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#dfbfb94d] bg-[#f8f4ef] py-8 text-[#6b6560] mt-auto">
+      <footer className="border-t border-[#eee6e3] bg-white py-8 text-[#746c68] mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-[#a63420] text-sm">QuPilot</span>
+            <span className="font-bold text-[#e05d45] text-sm">QuPilot</span>
             <span className="text-xs">| Provider Console</span>
           </div>
           <p className="text-xs text-center">
             &copy; 2026 QuPilot Web3 Quests. Powering decentralized autonomous discovery. &#x1FA90;
           </p>
           <div className="flex gap-4 text-xs font-bold">
-            <Link href="#" className="hover:text-[#a63420] transition-colors">Terms</Link>
-            <Link href="#" className="hover:text-[#a63420] transition-colors">Privacy</Link>
-            <Link href="#" className="hover:text-[#a63420] transition-colors">Twitter</Link>
-            <Link href="#" className="hover:text-[#a63420] transition-colors">Discord</Link>
+            <Link href="#" className="hover:text-[#e05d45] transition-colors">Terms</Link>
+            <Link href="#" className="hover:text-[#e05d45] transition-colors">Privacy</Link>
+            <Link href="#" className="hover:text-[#e05d45] transition-colors">Twitter</Link>
+            <Link href="#" className="hover:text-[#e05d45] transition-colors">Discord</Link>
           </div>
         </div>
       </footer>

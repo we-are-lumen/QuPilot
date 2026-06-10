@@ -2,17 +2,17 @@
 @import "@heroui/styles";
 
 /* ============================================
-   QuPilot Design System - "Fun AF"
-   Warm, bubbly, bouncy space explorer vibes
+   QuPilot Design System - Sculpted Coral Console
+   White canvas, tactile coral clay, crisp product data
    ============================================ */
 
 :root {
   /* Base Colors */
-  --bg-base: #FFFBF5;
-  --bg-warm: #FFF7ED;
+  --bg-base: #ffffff;
+  --bg-warm: #ffffff;
   --surface: #FFFFFF;
-  --surface-muted: #FFFBF5;
-  --surface-raised: #F8F4EF;
+  --surface-muted: #f8f8f9;
+  --surface-raised: #f1f2f4;
   
   /* Primary Color System (Coral) */
   --primary: #E05D45;
@@ -26,16 +26,16 @@
   --on-primary-fixed: #3f0400;
   --on-primary-fixed-variant: #891e0c;
   
-  /* Secondary Color System (Purple) */
-  --secondary: #7C5CDB;
-  --secondary-light: #F0EDFF;
-  --secondary-container: #9d7eff;
+  /* Secondary Color System (Coral tonal range) */
+  --secondary: #E05D45;
+  --secondary-light: #FBE4DF;
+  --secondary-container: #F08A75;
   --on-secondary: #ffffff;
   --on-secondary-container: #33008a;
-  --secondary-fixed: #e8ddff;
-  --secondary-fixed-dim: #cebdff;
-  --on-secondary-fixed: #20005e;
-  --on-secondary-fixed-variant: #4f2aab;
+  --secondary-fixed: #fbe4df;
+  --secondary-fixed-dim: #f3b8ac;
+  --on-secondary-fixed: #46130b;
+  --on-secondary-fixed-variant: #8d2d1c;
   
   /* Tertiary Color System (Teal) */
   --tertiary: #006767;
@@ -64,26 +64,26 @@
   --on-error-container: #93000a;
   
   /* Text Colors */
-  --text-primary: #1F1B18;
-  --text-secondary: #6B6560;
-  --text-muted: #A39D97;
+  --text-primary: #211c1a;
+  --text-secondary: #746c68;
+  --text-muted: #a59d99;
   
   /* Border Colors */
-  --border: #E8E2D9;
-  --border-strong: #C9C1B6;
+  --border: #e8ecec;
+  --border-strong: #d8dede;
   
   /* Surface Variants (Material Design 3) */
-  --surface-dim: #ecd5d1;
-  --surface-bright: #fff8f6;
+  --surface-dim: #edf0f0;
+  --surface-bright: #ffffff;
   --surface-container-lowest: #ffffff;
-  --surface-container-low: #fff0ee;
-  --surface-container: #ffe9e5;
-  --surface-container-high: #fbe3df;
-  --surface-container-highest: #f5ddd9;
-  --surface-variant: #f5ddd9;
-  --on-surface: #251916;
-  --on-surface-variant: #58413d;
-  --surface-tint: #aa3622;
+  --surface-container-low: #fafbfb;
+  --surface-container: #f5f7f7;
+  --surface-container-high: #f0f3f3;
+  --surface-container-highest: #e9eeee;
+  --surface-variant: #f0f3f3;
+  --on-surface: #211c1a;
+  --on-surface-variant: #625652;
+  --surface-tint: #e05d45;
   
   /* Inverse Colors */
   --inverse-surface: #3b2d2a;
@@ -95,8 +95,31 @@
   --outline-variant: #dfbfb9;
   
   /* Background */
-  --background: #fff8f6;
-  --on-background: #251916;
+  --background: #ffffff;
+  --on-background: #211c1a;
+
+  /* Clay material — soft, pillowy, neutral gray diffuse shadows */
+  --clay-shadow:
+    18px 26px 50px rgba(40, 40, 44, 0.14),
+    8px 12px 24px rgba(40, 40, 44, 0.07),
+    -12px -12px 32px rgba(255, 255, 255, 1),
+    inset 3px 4px 6px rgba(255, 255, 255, 1),
+    inset -3px -5px 10px rgba(190, 190, 196, 0.24);
+  --clay-shadow-soft:
+    12px 16px 36px rgba(40, 40, 44, 0.1),
+    5px 8px 18px rgba(40, 40, 44, 0.05),
+    -8px -8px 22px rgba(255, 255, 255, 1),
+    inset 2px 3px 5px rgba(255, 255, 255, 1),
+    inset -2px -3px 7px rgba(190, 190, 196, 0.2);
+  --clay-shadow-primary:
+    0 14px 26px rgba(201, 77, 53, 0.34),
+    0 6px 12px rgba(201, 77, 53, 0.2),
+    inset 0 3px 3px rgba(255, 255, 255, 0.42),
+    inset 0 -5px 9px rgba(143, 45, 28, 0.3);
+  --clay-shadow-pressed:
+    inset 6px 8px 16px rgba(120, 120, 128, 0.2),
+    inset -6px -6px 14px rgba(255, 255, 255, 1),
+    0 4px 10px rgba(40, 40, 44, 0.05);
 }
 
 @theme inline {
@@ -259,10 +282,10 @@
      Shadows & Effects
      ============================================ */
   
-  --shadow-warm: 0 2px 8px rgba(224, 93, 69, 0.08);
-  --shadow-soft: 0 2px 8px rgba(31, 27, 24, 0.06);
-  --shadow-medium: 0 4px 16px rgba(31, 27, 24, 0.10);
-  --shadow-lifted: 0 12px 32px rgba(31, 27, 24, 0.14);
+  --shadow-warm: var(--clay-shadow-soft);
+  --shadow-soft: var(--clay-shadow-soft);
+  --shadow-medium: var(--clay-shadow);
+  --shadow-lifted: 14px 18px 38px rgba(109, 62, 51, 0.16);
   
   --glow-primary: 0 0 0 3px rgba(224, 93, 69, 0.15);
   --glow-secondary: 0 0 0 3px rgba(124, 92, 219, 0.15);
@@ -281,6 +304,228 @@ body {
   line-height: var(--line-height-body-md);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--primary-light);
+  color: var(--text-primary);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+  transition:
+    transform var(--duration-base) var(--ease-spring-soft),
+    box-shadow var(--duration-base) var(--ease-out),
+    border-color var(--duration-base) var(--ease-out),
+    background-color var(--duration-base) var(--ease-out),
+    color var(--duration-base) var(--ease-out);
+}
+
+.clay-surface {
+  border: 1px solid rgba(230, 230, 234, 0.9);
+  background: #ffffff;
+  box-shadow: var(--clay-shadow);
+}
+
+.clay-surface-soft {
+  border: 1px solid rgba(234, 234, 238, 0.9);
+  background: #ffffff;
+  box-shadow: var(--clay-shadow-soft);
+}
+
+.clay-inset {
+  border: 1px solid rgba(230, 230, 234, 0.8);
+  background: var(--surface-raised);
+  box-shadow: var(--clay-shadow-pressed);
+}
+
+.clay-button {
+  border: 1px solid rgba(189, 73, 54, 0.42);
+  border-radius: 22px;
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: var(--clay-shadow-primary);
+}
+
+.clay-button:hover {
+  background: var(--primary-hover);
+  box-shadow:
+    0 18px 30px rgba(201, 77, 53, 0.38),
+    0 8px 14px rgba(201, 77, 53, 0.22),
+    inset 0 3px 3px rgba(255, 255, 255, 0.4),
+    inset 0 -5px 9px rgba(143, 45, 28, 0.32);
+  transform: translateY(-2px);
+}
+
+.clay-button:active {
+  box-shadow:
+    0 5px 11px rgba(201, 77, 53, 0.24),
+    inset 0 4px 8px rgba(143, 45, 28, 0.32);
+  transform: translateY(1px) scale(0.99);
+}
+
+.clay-icon {
+  border: 1px solid rgba(224, 93, 69, 0.13);
+  background: var(--primary-light);
+  color: var(--primary);
+  box-shadow:
+    8px 11px 22px rgba(40, 40, 44, 0.12),
+    -5px -5px 12px rgba(255, 255, 255, 1),
+    inset 2px 3px 3px rgba(255, 255, 255, 0.96);
+}
+
+.clay-field {
+  width: 100%;
+  min-height: 58px;
+  padding: 16px 22px;
+  border: 1px solid rgba(230, 230, 234, 0.9);
+  border-radius: 26px;
+  background: #f0f1f3;
+  color: var(--text-primary);
+  font-weight: 500;
+  box-shadow:
+    inset 5px 6px 13px rgba(120, 120, 128, 0.16),
+    inset -5px -6px 14px rgba(255, 255, 255, 0.95);
+  outline: none;
+}
+
+.clay-field::placeholder {
+  color: #a8a8af;
+  font-weight: 500;
+}
+
+.clay-field:hover {
+  border-color: rgba(224, 93, 69, 0.2);
+  background: #ebecef;
+}
+
+.clay-field:focus,
+.clay-field:focus-visible,
+.clay-field[data-focus-visible="true"] {
+  border-color: rgba(224, 93, 69, 0.45);
+  background: #f2f3f5;
+  box-shadow:
+    inset 4px 5px 11px rgba(120, 120, 128, 0.14),
+    inset -4px -5px 12px rgba(255, 255, 255, 0.96),
+    0 0 0 4px rgba(224, 93, 69, 0.1);
+}
+
+.clay-field:disabled,
+.clay-field[aria-disabled="true"],
+.clay-field[data-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.62;
+  box-shadow:
+    inset 3px 4px 9px rgba(120, 120, 128, 0.1),
+    inset -3px -3px 8px rgba(255, 255, 255, 0.9);
+}
+
+textarea.clay-field {
+  min-height: 132px;
+  padding-top: 18px;
+}
+
+.workflow-bubble {
+  position: absolute;
+  top: 2.5%;
+  width: 16.5%;
+  transform: translateX(-50%);
+  min-height: 96px;
+  padding: 14px 10px 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: var(--clay-shadow-soft);
+  text-align: center;
+}
+
+.workflow-bubble::before,
+.workflow-bubble::after {
+  position: absolute;
+  left: 50%;
+  width: 0;
+  height: 0;
+  content: "";
+  transform: translateX(-50%);
+}
+
+.workflow-bubble::before {
+  bottom: -18px;
+  border-top: 18px solid #e8e8e8;
+  border-right: 15px solid transparent;
+  border-left: 15px solid transparent;
+}
+
+.workflow-bubble::after {
+  bottom: -16px;
+  border-top: 17px solid #ffffff;
+  border-right: 14px solid transparent;
+  border-left: 14px solid transparent;
+}
+
+@media (min-width: 1024px) {
+  .workflow-bubble {
+    min-height: 128px;
+    padding: 22px 18px 18px;
+    border-radius: 26px;
+  }
+}
+
+/* Apply the chosen material consistently to existing HeroUI and Tailwind surfaces. */
+body [class*="bg-white"][class*="rounded-xl"],
+body [class*="bg-white"][class*="rounded-2xl"],
+body [class*="bg-white"][class*="rounded-3xl"],
+body [class*="bg-white"][class*="rounded-[2rem]"],
+body [class*="bg-white"][class*="rounded-[32px]"] {
+  border-color: rgba(230, 230, 234, 0.9);
+  box-shadow: var(--clay-shadow-soft);
+}
+
+body [class*="bg-white"][class*="rounded-xl"],
+body [class*="bg-white"][class*="rounded-2xl"],
+body [class*="bg-white"][class*="rounded-3xl"] {
+  border-radius: clamp(20px, 2vw, 32px);
+}
+
+body [class*="bg-[#E05D45]"],
+body [class*="bg-[#e05d45]"],
+body [class*="bg-primary"] {
+  border-color: rgba(189, 73, 54, 0.42);
+  box-shadow: var(--clay-shadow-primary);
+}
+
+body header.sticky {
+  border-color: rgba(230, 230, 234, 0.92);
+  box-shadow: 0 10px 28px rgba(40, 40, 44, 0.06);
+}
+
+body [role="dialog"],
+body [data-slot="dialog"] {
+  border-color: rgba(230, 230, 234, 0.9);
+  box-shadow:
+    0 30px 60px rgba(40, 40, 44, 0.22),
+    0 12px 24px rgba(40, 40, 44, 0.12),
+    inset 2px 3px 5px rgba(255, 255, 255, 0.9),
+    inset -2px -3px 7px rgba(190, 190, 196, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ============================================

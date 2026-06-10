@@ -11,7 +11,7 @@ import { getPublicHighlights } from "@/lib/api/quests";
 const THEME_COLORS = [
   { accentColor: "#3898FF", accentBg: "rgba(56,152,255,0.1)" }, // Sui Blue
   { accentColor: "#F7A600", accentBg: "rgba(247,166,0,0.1)" }, // Bybit Orange
-  { accentColor: "#A63420", accentBg: "rgba(166,52,32,0.1)" }, // QuPilot Red
+  { accentColor: "#E05D45", accentBg: "rgba(166,52,32,0.1)" }, // QuPilot Red
   { accentColor: "#10B981", accentBg: "rgba(16,185,129,0.1)" }, // Emerald Green
   { accentColor: "#8B5CF6", accentBg: "rgba(139,92,246,0.1)" }, // Violet
 ];
@@ -132,7 +132,7 @@ export default function ExploreFeedPage() {
       <div className="flex flex-col gap-12 max-w-7xl mx-auto px-2 py-10">
         <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#fcfbfa] border border-[#dfbfb94d] rounded-3xl">
           <FiCompassIcon className="text-4xl text-[#dfbfb9]" />
-          <p className="text-lg font-bold text-[#a63420]">No recommendations found</p>
+          <p className="text-lg font-bold text-[#e05d45]">No recommendations found</p>
           <p className="text-sm text-[#6b6560]">
             There are currently no featured quests or providers. Check back later for new updates!
           </p>
@@ -145,7 +145,7 @@ export default function ExploreFeedPage() {
     <div className="flex flex-col gap-12 max-w-7xl mx-auto px-2">
       {/* 1. Header Section */}
       <div className="flex flex-col gap-3 py-5 border-b border-[#f5ddd9]/60">
-        <h1 className="text-3xl md:text-4xl font-extrabold text-[#a63420] tracking-tight font-sans">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-[#e05d45] tracking-tight font-sans">
           Discover Missions
         </h1>
         <p className="text-base md:text-lg text-[#6b6560] max-w-192 leading-relaxed">
@@ -166,8 +166,8 @@ export default function ExploreFeedPage() {
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--tw-gradient-stops))] from-orange-100/30 via-transparent to-transparent pointer-events-none" />
             
             <Card.Header className="flex flex-row items-center justify-between z-10 p-0 mb-6">
-              <Chip color="danger" variant="soft" className="bg-[#fff8f6] border border-[#f5ddd9] text-[#a63420] rounded-full px-3 py-1 flex items-center gap-1.5">
-                <FaFire size={12} className="text-[#a63420] animate-bounce" />
+              <Chip color="danger" variant="soft" className="bg-[#ffffff] border border-[#f5ddd9] text-[#e05d45] rounded-full px-3 py-1 flex items-center gap-1.5">
+                <FaFire size={12} className="text-[#e05d45] animate-bounce" />
                 <Chip.Label className="text-xs font-bold uppercase tracking-wider">Hot Quest</Chip.Label>
               </Chip>
               
@@ -177,7 +177,7 @@ export default function ExploreFeedPage() {
             </Card.Header>
 
             <Card.Content className="flex flex-col gap-4 z-10 p-0 mb-6">
-              <h2 className="text-2xl font-bold text-[#a63420] tracking-tight">
+              <h2 className="text-2xl font-bold text-[#e05d45] tracking-tight">
                 {hotQuest.title}
               </h2>
               <p className="text-[#6b6560] text-sm md:text-base leading-relaxed max-w-128 line-clamp-2">
@@ -187,12 +187,12 @@ export default function ExploreFeedPage() {
 
             <Card.Footer className="flex flex-row items-center justify-between z-10 p-0 border-t border-[#f8f4ef] pt-5">
               <Link href={`/quests/${hotQuest.uuid}`}>
-                <Button className="bg-[#a63420] text-white hover:bg-[#8f2b1a] transition-all text-xs font-bold px-6 py-2.5 rounded-full shadow-sm">
+                <Button className="bg-[#e05d45] text-white hover:bg-[#c94d35] transition-all text-xs font-bold px-6 py-2.5 rounded-full shadow-sm">
                   Start Mission
                 </Button>
               </Link>
               
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[#6746c5] bg-[#f3efff] px-3 py-1.5 rounded-full border border-[#e5dcff]">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#e05d45] bg-[#f3efff] px-3 py-1.5 rounded-full border border-[#e5dcff]">
                 <FaAward size={14} />
                 <span>{formatReward(hotQuest.reward_per_user)} SOL</span>
               </div>
@@ -223,17 +223,17 @@ export default function ExploreFeedPage() {
                 {featuredProvider.logo_url ? (
                   <img src={featuredProvider.logo_url} alt={featuredProvider.display_name} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-[#fbe3df] flex items-center justify-center text-[#a63420] text-xl font-bold">
+                  <div className="w-full h-full bg-[#fbe3df] flex items-center justify-center text-[#e05d45] text-xl font-bold">
                     {featuredProvider.display_name.charAt(0).toUpperCase()}
                   </div>
                 )}
               </div>
               
-              <h4 className="text-lg font-bold text-[#a63420] tracking-tight">
+              <h4 className="text-lg font-bold text-[#e05d45] tracking-tight">
                 {featuredProvider.display_name}
               </h4>
               
-              <div className="bg-[#fff8f6] border border-[#f5ddd9] rounded-full px-3 py-1 text-xs font-bold text-[#6b6560] tracking-wide">
+              <div className="bg-[#ffffff] border border-[#f5ddd9] rounded-full px-3 py-1 text-xs font-bold text-[#6b6560] tracking-wide">
                 {formatReward(featuredProvider.total_deposit_reward_pool)} SOL Pool
               </div>
             </Card.Content>
@@ -242,7 +242,7 @@ export default function ExploreFeedPage() {
               <Link href={`/quests?provider=${encodeURIComponent(featuredProvider.display_name)}`} className="w-full">
                 <Button 
                   variant="outline" 
-                  className="w-full bg-white text-[#a63420] hover:bg-[#fff8f6] border border-[#c9c1b6] hover:border-[#a63420] transition-all text-xs font-bold py-2.5 rounded-full shadow-sm"
+                  className="w-full bg-white text-[#e05d45] hover:bg-[#ffffff] border border-[#c9c1b6] hover:border-[#e05d45] transition-all text-xs font-bold py-2.5 rounded-full shadow-sm"
                 >
                   Explore Quests
                 </Button>
@@ -259,12 +259,12 @@ export default function ExploreFeedPage() {
       {/* 3. Top Providers Section */}
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between border-b border-[#f5ddd9]/60 pb-3">
-          <h2 className="text-xl md:text-2xl font-bold text-[#a63420]">
+          <h2 className="text-xl md:text-2xl font-bold text-[#e05d45]">
             Top Providers
           </h2>
           <Link 
             href="/quests" 
-            className="text-xs font-bold text-[#6b6560] hover:text-[#a63420] flex items-center gap-1 transition-colors uppercase tracking-wider"
+            className="text-xs font-bold text-[#6b6560] hover:text-[#e05d45] flex items-center gap-1 transition-colors uppercase tracking-wider"
           >
             View All Quests
             <FaChevronRight size={10} />
@@ -302,13 +302,13 @@ export default function ExploreFeedPage() {
                     </div>
                   </div>
                   
-                  <Chip className="bg-[#fff8f6] border border-[#f5ddd9] text-[#a63420] rounded-full text-[10px] font-bold px-2 py-0.5">
+                  <Chip className="bg-[#ffffff] border border-[#f5ddd9] text-[#e05d45] rounded-full text-[10px] font-bold px-2 py-0.5">
                     <Chip.Label>Featured</Chip.Label>
                   </Chip>
                 </Card.Header>
 
                 <Card.Content className="flex flex-col gap-2 p-0 mb-6">
-                  <h3 className="text-base font-bold text-[#1f1b18] hover:text-[#a63420] transition-colors leading-snug">
+                  <h3 className="text-base font-bold text-[#1f1b18] hover:text-[#e05d45] transition-colors leading-snug">
                     {provider.display_name}
                   </h3>
                   <p className="text-[#6b6560] text-xs leading-relaxed line-clamp-2">
@@ -324,7 +324,7 @@ export default function ExploreFeedPage() {
                   
                   <Link 
                     href={`/quests?provider=${encodeURIComponent(provider.display_name)}`} 
-                    className="text-xs font-bold text-[#a63420] hover:text-[#8f2b1a] flex items-center gap-1 transition-colors group"
+                    className="text-xs font-bold text-[#e05d45] hover:text-[#c94d35] flex items-center gap-1 transition-colors group"
                   >
                     Explore
                     <FaChevronRight size={8} className="transition-transform group-hover:translate-x-0.5" />

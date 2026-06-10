@@ -49,7 +49,7 @@ function QuestExplorerPageContent() {
     <div className="flex flex-col gap-10">
       {/* Header Section */}
       <section className="flex flex-col gap-3">
-        <h1 className="text-4xl font-extrabold text-[#a63420] tracking-tight">Quest Explorer</h1>
+        <h1 className="text-4xl font-extrabold text-[#e05d45] tracking-tight">Quest Explorer</h1>
         <p className="text-[17px] text-[#6b6560] max-w-200 leading-relaxed">
           Explore new frontiers, connect with top providers, and embark on personalized quests
           designed for your journey across the Web3 galaxy.
@@ -58,7 +58,7 @@ function QuestExplorerPageContent() {
 
       {/* Filters Section */}
       <section className="flex flex-wrap items-center justify-between gap-6">
-        <h2 className="text-2xl font-bold text-[#a63420]">Active Missions</h2>
+        <h2 className="text-2xl font-bold text-[#e05d45]">Active Missions</h2>
         {!isLoading && !error && FILTERS.length > 1 && (
           <div className="flex flex-wrap items-center gap-2 p-1 bg-white border border-[#dfbfb94d] rounded-full">
             {FILTERS.map((filter) => (
@@ -124,7 +124,7 @@ function QuestExplorerPageContent() {
       {!isLoading && !error && filteredQuests.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#fcfbfa] border border-[#dfbfb94d] rounded-2xl">
           <FiCompass className="text-4xl text-[#dfbfb9]" />
-          <p className="text-lg font-bold text-[#a63420]">No missions found</p>
+          <p className="text-lg font-bold text-[#e05d45]">No missions found</p>
           <p className="text-sm text-[#6b6560]">
             There are currently no active quests for this category. Check back later for new updates!
           </p>
@@ -145,7 +145,7 @@ function QuestExplorerPageContent() {
                       className="w-10 h-10 rounded-full object-cover bg-[#f8f4ef]"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#ffdad3] text-[#a63420] font-bold">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#ffdad3] text-[#e05d45] font-bold">
                       {(quest.provider?.display_name || "P").charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -164,7 +164,7 @@ function QuestExplorerPageContent() {
                 </span>
               </Card.Header>
               <Card.Content className="p-0 flex flex-col gap-1.5 grow">
-                <h3 className="text-lg font-bold text-[#a63420]">{quest.title}</h3>
+                <h3 className="text-lg font-bold text-[#e05d45]">{quest.title}</h3>
                 <p className="text-[13px] text-[#6b6560] leading-relaxed line-clamp-3">
                   {quest.description}
                 </p>
@@ -175,7 +175,7 @@ function QuestExplorerPageContent() {
                 </span>
                 <Link
                   href={`/quests/${quest.uuid}`}
-                  className="flex items-center gap-1 text-xs font-bold text-[#a63420] hover:text-[#891e0c] transition-colors group"
+                  className="flex items-center gap-1 text-xs font-bold text-[#e05d45] hover:text-[#891e0c] transition-colors group"
                 >
                   Join <FiArrowRight className="transition-transform group-hover:translate-x-1" />
                 </Link>
@@ -188,7 +188,7 @@ function QuestExplorerPageContent() {
       {/* Load More Button (static placeholder for future pagination) */}
       {/* {!isLoading && !error && filteredQuests.length > 0 && (
         <div className="flex justify-center mt-4">
-          <Button className="bg-white border border-[#dfbfb9] text-[#a63420] font-bold px-8 py-3 rounded-full hover:bg-[#fffbf5] transition-colors shadow-sm">
+          <Button className="bg-white border border-[#dfbfb9] text-[#e05d45] font-bold px-8 py-3 rounded-full hover:bg-[#ffffff] transition-colors shadow-sm">
             Load More Missions
           </Button>
         </div>
@@ -202,7 +202,7 @@ export default function QuestExplorerPage() {
     <Suspense fallback={
       <div className="flex flex-col gap-10">
         <section className="flex flex-col gap-3">
-          <h1 className="text-4xl font-extrabold text-[#a63420] tracking-tight animate-pulse">Loading Quests...</h1>
+          <h1 className="text-4xl font-extrabold text-[#e05d45] tracking-tight animate-pulse">Loading Quests...</h1>
         </section>
       </div>
     }>

@@ -158,7 +158,7 @@ export default function ProviderQuestDetailPage() {
 						</Link>
 						<button
 							onClick={() => refetch()}
-							className="bg-[#a63420] hover:bg-[#a63420]/90 text-white font-bold text-xs rounded-full px-6 py-3 shadow-sm transition-all"
+							className="bg-[#e05d45] hover:bg-[#e05d45]/90 text-white font-bold text-xs rounded-full px-6 py-3 shadow-sm transition-all"
 						>
 							Retry Fetch
 						</button>
@@ -239,7 +239,7 @@ export default function ProviderQuestDetailPage() {
 							<span className="text-label text-text-muted font-bold tracking-wider">
 								TOTAL REWARD POOL
 							</span>
-							<div className="flex items-center gap-2 text-[#a63420] font-heading font-bold text-[17px]">
+							<div className="flex items-center gap-2 text-[#e05d45] font-heading font-bold text-[17px]">
 								<FiTrendingUp className="text-lg" />
 								<span>{formatReward(quest.total_reward_pool)}</span>
 							</div>
@@ -487,7 +487,7 @@ export default function ProviderQuestDetailPage() {
 											href={`https://solscan.io/tx/${quest.tx_hash}${SOLANA_RPC_URL.includes("devnet") ? "?cluster=devnet" : ""}`}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="flex items-center gap-2 text-[#a63420] hover:underline"
+											className="flex items-center gap-2 text-[#e05d45] hover:underline"
 										>
 											<FiActivity className="text-secondary shrink-0" />
 											<span>
@@ -509,7 +509,7 @@ export default function ProviderQuestDetailPage() {
 											href={`https://solscan.io/account/${quest.quest_pool_pda}${SOLANA_RPC_URL.includes("devnet") ? "?cluster=devnet" : ""}`}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="flex items-center gap-2 text-[#a63420] hover:underline"
+											className="flex items-center gap-2 text-[#e05d45] hover:underline"
 										>
 											<FiCheckCircle className="text-success shrink-0" />
 											<span>
@@ -531,7 +531,7 @@ export default function ProviderQuestDetailPage() {
 											href={`https://solscan.io/account/${quest.quest_id_onchain}${SOLANA_RPC_URL.includes("devnet") ? "?cluster=devnet" : ""}`}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="flex items-center gap-2 text-[#a63420] hover:underline"
+											className="flex items-center gap-2 text-[#e05d45] hover:underline"
 										>
 											<FiCheckCircle className="text-success shrink-0" />
 											<span>
@@ -611,7 +611,7 @@ export default function ProviderQuestDetailPage() {
 															href={`https://solscan.io/tx/${p.join_tx_hash}${clusterSuffix}`}
 															target="_blank"
 															rel="noopener noreferrer"
-															className="flex items-center gap-1.5 text-[#a63420] hover:underline font-mono text-[12px]"
+															className="flex items-center gap-1.5 text-[#e05d45] hover:underline font-mono text-[12px]"
 														>
 															<span>{p.join_tx_hash.slice(0, 6)}...{p.join_tx_hash.slice(-4)}</span>
 															<FiExternalLink className="text-[10px] shrink-0" />

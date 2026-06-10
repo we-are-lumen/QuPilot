@@ -292,7 +292,7 @@ export default function CreateQuestPage() {
           className="w-full flex flex-col"
           selectionMode="single"
         >
-          <Autocomplete.Trigger className="rounded-md border border-[#e8e2d9] bg-white pl-2 pr-8 py-1 text-sm shadow-sm focus-visible:border-[#a63420] flex items-center justify-between min-h-8 cursor-pointer">
+          <Autocomplete.Trigger className="clay-field text-sm flex items-center justify-between cursor-pointer">
             <Autocomplete.Value />
             <Autocomplete.ClearButton />
             <Autocomplete.Indicator />
@@ -322,7 +322,7 @@ export default function CreateQuestPage() {
                           style={{ backgroundImage: `url(${token.logo_uri})` }}
                         />
                       ) : (
-                        <span className="size-6 rounded-full bg-[#f5ddd9] text-[#a63420] text-[10px] font-extrabold flex items-center justify-center">
+                        <span className="size-6 rounded-full bg-[#f5ddd9] text-[#e05d45] text-[10px] font-extrabold flex items-center justify-center">
                           {token.symbol.slice(0, 2)}
                         </span>
                       )}
@@ -347,7 +347,7 @@ export default function CreateQuestPage() {
         value={param.value}
         onChange={(e) => updateParam(stepIndex, paramIndex, "value", e.target.value)}
         disabled={isLoading}
-        className="rounded-md border border-[#e8e2d9] px-2 py-1 text-sm bg-white"
+        className="clay-field text-sm w-full"
       />
     );
   };
@@ -539,12 +539,12 @@ export default function CreateQuestPage() {
         {/* Form Container */}
         <Form
           onSubmit={handleSubmit}
-          className="bg-white rounded-3xl border border-[#f5ddd9] p-8 md:p-12 shadow-sm flex flex-col gap-10"
+          className="clay-surface bg-white rounded-[40px] p-8 md:p-12 flex flex-col gap-10"
         >
           {/* Section 1: Identity */}
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-2 pb-3 border-b border-[#f5ddd9]">
-              <FiTarget className="text-[#a63420] text-xl" />
+              <FiTarget className="text-[#e05d45] text-xl" />
               <h2 className="text-[#1f1b18] text-xl font-bold font-nunito">Quest Identity</h2>
             </div>
 
@@ -555,7 +555,7 @@ export default function CreateQuestPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g., The Great Liquidity Migration"
-                  className="rounded-md border border-[#e8e2d9] px-3 py-2.5 text-base shadow-sm focus-visible:border-[#a63420]"
+                  className="clay-field text-base"
                 />
               </TextField>
 
@@ -566,7 +566,7 @@ export default function CreateQuestPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Describe the mission objectives, reward criteria, and developer guidelines..."
                   rows={4}
-                  className="rounded-md border border-[#e8e2d9] px-3 py-2.5 text-base shadow-sm focus-visible:border-[#a63420] resize-none"
+                  className="clay-field text-base resize-none"
                   style={{ resize: "none" }}
                 />
               </TextField>
@@ -576,7 +576,7 @@ export default function CreateQuestPage() {
           {/* Section 2: Protocol Details */}
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-2 pb-3 border-b border-[#f5ddd9]">
-              <FiSliders className="text-[#a63420] text-xl" />
+              <FiSliders className="text-[#e05d45] text-xl" />
               <h2 className="text-[#1f1b18] text-xl font-bold font-nunito">Target & Action Configuration</h2>
             </div>
 
@@ -589,7 +589,7 @@ export default function CreateQuestPage() {
                 className="w-full flex flex-col md:col-span-2"
               >
                 <Label className="text-[#1f1b18] text-sm font-bold tracking-wide mb-1.5">Target Protocol</Label>
-                <Select.Trigger className="rounded-md border border-[#dfbfb9] bg-white px-3 py-2.5 text-base shadow-sm focus-visible:border-[#a63420] flex items-center justify-between min-h-10.5 cursor-pointer">
+                <Select.Trigger className="clay-field text-base flex items-center justify-between cursor-pointer">
                   <Select.Value />
                   <Select.Indicator className="ml-2" />
                 </Select.Trigger>
@@ -636,7 +636,7 @@ export default function CreateQuestPage() {
                   </div>
 
                   {/* Step Container Box */}
-                  <div className="bg-[#f8f4ef]/50 border border-[#dfbfb9]/40 rounded-2xl p-6 flex flex-col gap-5 shadow-sm">
+                  <div className="clay-surface-soft rounded-[28px] p-6 flex flex-col gap-5">
                     <div className="flex items-center justify-between border-b border-[#dfbfb9]/30 pb-2">
                       <span className="font-nunito font-extrabold text-sm text-[#008282] tracking-wider uppercase">
                         Configure Step {step.step}
@@ -646,7 +646,7 @@ export default function CreateQuestPage() {
                           type="button"
                           variant="tertiary"
                           onPress={() => removeStep(sIdx)}
-                          className="text-[#a63420] bg-transparent border-0 p-1 hover:text-[#8c2a1a] flex items-center gap-1 cursor-pointer text-xs"
+                          className="text-[#e05d45] bg-transparent border-0 p-1 hover:text-[#8c2a1a] flex items-center gap-1 cursor-pointer text-xs"
                         >
                           <FiTrash2 /> Remove Step
                         </Button>
@@ -663,7 +663,7 @@ export default function CreateQuestPage() {
                         className="w-full flex flex-col"
                       >
                         <Label className="text-[#1f1b18] text-xs font-bold tracking-wide mb-1.5">Step Type</Label>
-                        <Select.Trigger className="rounded-md border border-[#dfbfb9] bg-white px-3 py-2 text-sm shadow-sm focus-visible:border-[#a63420] flex items-center justify-between min-h-10 cursor-pointer">
+                        <Select.Trigger className="clay-field text-sm flex items-center justify-between cursor-pointer">
                           <Select.Value />
                           <Select.Indicator className="ml-2" />
                         </Select.Trigger>
@@ -695,7 +695,7 @@ export default function CreateQuestPage() {
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-[#1f1b18] text-xs font-bold tracking-wide">Action Parameters</span>
                         {byrealTokensQuery.isError && (
-                          <span className="text-[11px] text-[#a63420] font-semibold">
+                          <span className="text-[11px] text-[#e05d45] font-semibold">
                             Byreal token list unavailable. Manual mint input is active.
                           </span>
                         )}
@@ -710,7 +710,7 @@ export default function CreateQuestPage() {
                               value={p.key}
                               onChange={(e) => updateParam(sIdx, pIdx, "key", e.target.value)}
                               disabled={isLoading}
-                              className="rounded-md border border-[#e8e2d9] px-2 py-1 text-sm bg-white"
+                              className="clay-field text-sm w-full"
                             />
                           </div>
                           <div className="flex-2 min-w-50">
@@ -733,7 +733,7 @@ export default function CreateQuestPage() {
                 <Button
                   type="button"
                   onPress={addStep}
-                  className="bg-white border-2 border-[#a63420] text-[#a63420] hover:bg-[#a63420]/5 font-bold py-2 px-5 rounded-full flex items-center gap-2 transition-all cursor-pointer text-sm shadow-sm"
+                  className="bg-white border-2 border-[#e05d45] text-[#e05d45] hover:bg-[#e05d45]/5 font-bold py-2 px-5 rounded-full flex items-center gap-2 transition-all cursor-pointer text-sm shadow-sm"
                   isDisabled={isLoading}
                 >
                   <FiPlus className="text-lg" /> Add Next Step
@@ -757,7 +757,7 @@ export default function CreateQuestPage() {
                     value={totalRewardPool}
                     onChange={(e) => setTotalRewardPool(e.target.value)}
                     placeholder="e.g., 1 (SOL)"
-                    className="rounded-md border border-[#e8e2d9] px-3 py-2.5 text-base shadow-sm focus-visible:border-[#a63420] w-full"
+                    className="clay-field text-base w-full"
                   />
                 </TextField>
                 {rewardPoolError && (
@@ -771,7 +771,7 @@ export default function CreateQuestPage() {
                   value={rewardPerUser}
                   onChange={(e) => setRewardPerUser(e.target.value)}
                   placeholder="e.g., 0.1 (SOL)"
-                  className="rounded-md border border-[#e8e2d9] px-3 py-2.5 text-base shadow-sm focus-visible:border-[#a63420]"
+                  className="clay-field text-base"
                 />
               </TextField>
 
@@ -782,7 +782,7 @@ export default function CreateQuestPage() {
                     value={rewardToken}
                     readOnly
                     placeholder="SOL"
-                    className="rounded-md border border-[#e8e2d9] px-3 py-2.5 text-base shadow-sm font-mono bg-[#f8f4ef]/50 cursor-not-allowed text-[#6b6560]"
+                    className="clay-field text-base font-mono cursor-not-allowed text-[#6b6560]"
                   />
                 </TextField>
                 {tokenError && (
@@ -809,7 +809,7 @@ export default function CreateQuestPage() {
                     value={txHash}
                     onChange={(e) => handleTxHashChange(e.target.value)}
                     placeholder="e.g., 4QG8... (base58 signature)"
-                    className="rounded-md border border-[#e8e2d9] px-3 py-2.5 text-base shadow-sm focus-visible:border-[#a63420] font-mono"
+                    className="clay-field text-base font-mono"
                   />
                 </TextField>
                 {txHashError ? (
@@ -840,7 +840,7 @@ export default function CreateQuestPage() {
                 className="w-full flex flex-col gap-2"
               >
                 <Label className="text-[#1f1b18] text-sm font-bold tracking-wide">Expiration Date</Label>
-                <DateField.Group fullWidth className="rounded-md border border-[#dfbfb9] bg-white px-3 py-2.5 text-base shadow-sm flex items-center justify-between min-h-10.5">
+                <DateField.Group fullWidth className="clay-field text-base flex items-center justify-between">
                   <DateField.Input>
                     {(segment) => <DateField.Segment segment={segment} />}
                   </DateField.Input>
@@ -876,7 +876,7 @@ export default function CreateQuestPage() {
                                 isDisabled
                                   ? "text-[#dfbfb9]/40 cursor-not-allowed pointer-events-none opacity-40"
                                   : isSelected
-                                  ? "bg-[#a63420] text-white font-bold"
+                                  ? "bg-[#e05d45] text-white font-bold"
                                   : "hover:bg-[#f5ddd9]/60 cursor-pointer text-[#1f1b18]"
                               ) || ""
                             }
@@ -905,7 +905,7 @@ export default function CreateQuestPage() {
             <Button
               type="submit"
               isDisabled={isLoading}
-              className="bg-[#a63420] text-white font-bold py-3 px-8 rounded-full flex items-center gap-2 hover:bg-[#8c2a1a] transition-colors cursor-pointer"
+              className="bg-[#e05d45] text-white font-bold py-3 px-8 rounded-full flex items-center gap-2 hover:bg-[#8c2a1a] transition-colors cursor-pointer"
             >
               {isLoading ? (
                 <div className="flex items-center gap-2">

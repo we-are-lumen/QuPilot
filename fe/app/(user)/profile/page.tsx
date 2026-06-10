@@ -157,7 +157,7 @@ export default function UserProfilePage() {
               {/* Avatar block with active status dot anchor */}
               <div className="relative shrink-0">
                 <Badge.Anchor>
-                  <Avatar className="w-32 h-32 rounded-full border-4 border-white shadow-lg bg-[#fff8f6]">
+                  <Avatar className="w-32 h-32 rounded-full border-4 border-white shadow-lg bg-[#ffffff]">
                     <Avatar.Image
                       src={
                         user?.logo_url ||
@@ -221,7 +221,7 @@ export default function UserProfilePage() {
             {/* Mission Stats card */}
             <Card className="rounded-xl border border-[#dfbfb94d] bg-white p-6 shadow-sm">
               <Card.Header className="flex items-center gap-2.5 pb-4">
-                <FaAward className="text-[#a63420] text-xl" />
+                <FaAward className="text-[#e05d45] text-xl" />
                 <Card.Title className="text-lg font-extrabold text-[#1f1b18]">
                   Mission Stats
                 </Card.Title>
@@ -236,7 +236,7 @@ export default function UserProfilePage() {
                     {isLoadingParticipations ? (
                       <Skeleton className="w-12 h-8 rounded-lg mt-1" />
                     ) : (
-                      <span className="text-2xl font-extrabold text-[#a63420]">
+                      <span className="text-2xl font-extrabold text-[#e05d45]">
                         {questsDone}
                       </span>
                     )}
@@ -249,7 +249,7 @@ export default function UserProfilePage() {
                     {isLoadingParticipations ? (
                       <Skeleton className="w-16 h-8 rounded-lg mt-1" />
                     ) : (
-                      <span className="text-2xl font-extrabold text-[#6746c5]">
+                      <span className="text-2xl font-extrabold text-[#e05d45]">
                         {formattedTotalEarned}
                       </span>
                     )}
@@ -291,7 +291,7 @@ export default function UserProfilePage() {
                   {/* Achievement 1 */}
                   <div className="bg-[#f8f4ef] border border-[#dfbfb94d] rounded-xl p-3.5 flex flex-col gap-2 transition-all duration-200 hover:scale-[1.02] hover:shadow-2xs">
                     <div className="w-9 h-9 rounded-lg bg-white border border-[#dfbfb94d] flex items-center justify-center text-sm shadow-2xs">
-                      <FaRocket className="text-[#a63420]" />
+                      <FaRocket className="text-[#e05d45]" />
                     </div>
                     <div>
                       <h4 className="text-xs font-extrabold text-[#1f1b18]">
@@ -305,7 +305,7 @@ export default function UserProfilePage() {
                   {/* Achievement 2 */}
                   <div className="bg-[#f8f4ef] border border-[#dfbfb94d] rounded-xl p-3.5 flex flex-col gap-2 transition-all duration-200 hover:scale-[1.02] hover:shadow-2xs">
                     <div className="w-9 h-9 rounded-lg bg-white border border-[#dfbfb94d] flex items-center justify-center text-sm shadow-2xs">
-                      <FaWater className="text-[#6746c5]" />
+                      <FaWater className="text-[#e05d45]" />
                     </div>
                     <div>
                       <h4 className="text-xs font-extrabold text-[#1f1b18]">
@@ -347,18 +347,18 @@ export default function UserProfilePage() {
                   {/* Locked Achievement Slot 5 */}
                   <div className="bg-[#ffe9e5] border border-[#ffdad3] rounded-xl p-3.5 flex flex-col gap-2 items-center justify-center transition-all duration-200 hover:scale-[1.02] opacity-80 select-none">
                     <div className="w-9 h-9 rounded-full bg-white border border-[#ffdad3] flex items-center justify-center text-xs shadow-2xs">
-                      <FaLock className="text-[#a63420] text-[10px]" />
+                      <FaLock className="text-[#e05d45] text-[10px]" />
                     </div>
-                    <span className="text-[9px] font-extrabold text-[#a63420] uppercase tracking-wider font-sans">
+                    <span className="text-[9px] font-extrabold text-[#e05d45] uppercase tracking-wider font-sans">
                       Locked
                     </span>
                   </div>
                   {/* Locked Achievement Slot 6 */}
                   <div className="bg-[#ffe9e5] border border-[#ffdad3] rounded-xl p-3.5 flex flex-col gap-2 items-center justify-center transition-all duration-200 hover:scale-[1.02] opacity-80 select-none">
                     <div className="w-9 h-9 rounded-full bg-white border border-[#ffdad3] flex items-center justify-center text-xs shadow-2xs">
-                      <FaLock className="text-[#a63420] text-[10px]" />
+                      <FaLock className="text-[#e05d45] text-[10px]" />
                     </div>
-                    <span className="text-[9px] font-extrabold text-[#a63420] uppercase tracking-wider font-sans">
+                    <span className="text-[9px] font-extrabold text-[#e05d45] uppercase tracking-wider font-sans">
                       Locked
                     </span>
                   </div>
@@ -366,7 +366,7 @@ export default function UserProfilePage() {
 
                 {/* View Leaderboard action */}
                 <Link href="/leaderboard" className="w-full mt-2 block">
-                  <Button className="w-full bg-[#f8f4ef] hover:bg-[#ffdad3]/60 border border-[#ffdad3] text-[#a63420] font-extrabold py-3 rounded-full text-xs shadow-2xs transition-colors flex items-center justify-center gap-1.5">
+                  <Button className="w-full bg-[#f8f4ef] hover:bg-[#ffdad3]/60 border border-[#ffdad3] text-[#e05d45] font-extrabold py-3 rounded-full text-xs shadow-2xs transition-colors flex items-center justify-center gap-1.5">
                     View Leaderboard <FaChevronRight className="text-[9px]" />
                   </Button>
                 </Link>
@@ -378,7 +378,7 @@ export default function UserProfilePage() {
           <div className="flex flex-col gap-6 lg:col-span-2">
             <Card className="rounded-xl border border-[#dfbfb94d] bg-white p-6 shadow-sm min-h-125">
               <Card.Header className="flex items-center gap-2.5 pb-6">
-                <FaCompass className="text-[#6746c5] text-xl" />
+                <FaCompass className="text-[#e05d45] text-xl" />
                 <Card.Title className="text-lg font-extrabold text-[#1f1b18]">
                   My Quests
                 </Card.Title>
@@ -394,7 +394,7 @@ export default function UserProfilePage() {
                     <Tabs.List aria-label="Quest filters">
                       <Tabs.Tab
                         id="active"
-                        className="text-sm font-bold text-[#6b6560] data-[selected=true]:text-[#a63420] data-[selected=true]:shadow-[inset_0_-2px_0_0_#a63420] cursor-pointer outline-none"
+                        className="text-sm font-bold text-[#6b6560] data-[selected=true]:text-[#e05d45] data-[selected=true]:shadow-[inset_0_-2px_0_0_#e05d45] cursor-pointer outline-none"
                       >
                         Active (
                         {isLoadingParticipations ? "..." : activeQuests.length}
@@ -403,7 +403,7 @@ export default function UserProfilePage() {
 
                       <Tabs.Tab
                         id="completed"
-                        className="text-sm font-bold text-[#6b6560] data-[selected=true]:text-[#a63420] data-[selected=true]:shadow-[inset_0_-2px_0_0_#a63420] cursor-pointer outline-none"
+                        className="text-sm font-bold text-[#6b6560] data-[selected=true]:text-[#e05d45] data-[selected=true]:shadow-[inset_0_-2px_0_0_#e05d45] cursor-pointer outline-none"
                       >
                         Completed (
                         {isLoadingParticipations ? "..." : completedQuests.length}
@@ -447,14 +447,14 @@ export default function UserProfilePage() {
                                     unoptimized
                                   />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center bg-[#ffdad3] text-[#a63420] font-bold text-lg">
+                                  <div className="w-full h-full flex items-center justify-center bg-[#ffdad3] text-[#e05d45] font-bold text-lg">
                                     {(participation.quest.provider?.display_name || "P").charAt(0).toUpperCase()}
                                   </div>
                                 )}
                               </div>
                               <div className="flex-1 flex flex-col gap-2">
                                 <div className="flex items-center gap-2.5">
-                                  <span className="text-[9px] font-extrabold tracking-wider bg-[#ffe9e5] text-[#a63420] px-2 py-0.5 rounded-[4px] uppercase font-sans border border-[#ffdad3]">
+                                  <span className="text-[9px] font-extrabold tracking-wider bg-[#ffe9e5] text-[#e05d45] px-2 py-0.5 rounded-[4px] uppercase font-sans border border-[#ffdad3]">
                                     {participation.quest.protocol}
                                   </span>
                                   <h3 className="text-base font-extrabold text-[#1f1b18]">
@@ -486,7 +486,7 @@ export default function UserProfilePage() {
                                   >
                                     <ProgressBar.Track className="h-2 w-full bg-[#f5ddd9] rounded-full overflow-hidden">
                                       <ProgressBar.Fill
-                                        className="h-full bg-[#a63420] rounded-full transition-all duration-300"
+                                        className="h-full bg-[#e05d45] rounded-full transition-all duration-300"
                                         style={{ width: "50%" }}
                                       />
                                     </ProgressBar.Track>
@@ -581,7 +581,7 @@ export default function UserProfilePage() {
                                     unoptimized
                                   />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center bg-[#ffdad3] text-[#a63420] font-bold text-lg">
+                                  <div className="w-full h-full flex items-center justify-center bg-[#ffdad3] text-[#e05d45] font-bold text-lg">
                                     {(participation.quest.provider?.display_name || "P").charAt(0).toUpperCase()}
                                   </div>
                                 )}

@@ -26,7 +26,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "QuPilot",
-  description: "Fun AF space explorer vibes for real degens",
+  description: "Coordinate on-chain quests and let autonomous agents execute.",
 };
 
 export default function RootLayout({
