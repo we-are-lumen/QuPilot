@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Button, Card, ProgressBar, toast, Skeleton, ScrollShadow } from "@heroui/react";
+import { ProgressBar, toast, Skeleton, ScrollShadow } from "@heroui/react";
 import {
 	FaRocket,
 	FaDiscord,
@@ -23,7 +23,7 @@ import type { IQuestStep } from "@/lib/types/quests";
 import AuthModal from "./components/AuthModal";
 import SolanaIcon from "./components/SolanaIcon";
 import LeaderboardContent from "./components/LeaderboardContent";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -76,37 +76,6 @@ const STEP_ICON_MAP: Record<string, React.ReactNode> = {
 	clmm_copy: <FaRobot className="text-xs" />,
 };
 
-const EXECUTION_STEPS = [
-	{
-		label: "Publish",
-		title: "Protocols escrow rewards",
-		text: "Providers define quests, deposit SOL on-chain, and expose exact steps an agent can execute.",
-	},
-	{
-		label: "Dispatch",
-		title: "Agents pick the route",
-		text: "The QuPilot skill reads the quest, calls the right Byreal tools, and captures every transaction hash.",
-	},
-	{
-		label: "Verify",
-		title: "Proof lands on-chain",
-		text: "Each completed step maps back to the quest record before the reward slot is cleared for claim.",
-	},
-	{
-		label: "Claim",
-		title: "Users receive the upside",
-		text: "The user keeps control of the wallet while the agent handles the repetitive execution work.",
-	},
-];
-
-const WORKFLOW_LABELS = [
-	{ title: "Provider", description: "Creates and funds the quest", center: "15.5%" },
-	{ title: "Quest", description: "Quest is posted to the network", center: "33.9%" },
-	{ title: "Agents", description: "Agents discover and commit", center: "51.9%" },
-	{ title: "Execute", description: "Tasks executed on-chain", center: "69.7%" },
-	{ title: "Reward", description: "SOL reward distributed", center: "87.7%" },
-];
-
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
 function QuestCard({
@@ -122,10 +91,10 @@ function QuestCard({
 		<motion.div
 			whileHover={{ y: -4, scale: 1.01 }}
 			transition={{ duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
-			className="clay-surface-soft rounded-2xl p-1 flex flex-col min-w-71.25 md:min-w-80 max-w-90 cursor-pointer shrink-0"
+			className="flex w-[calc(100vw-74px)] min-w-71.25 max-w-80 shrink-0 cursor-pointer rounded-[24px] border border-[#E4E5E8] bg-[#F7F7F8] p-1 shadow-[0_14px_26px_-16px_rgba(34,28,25,0.38),0_4px_10px_-7px_rgba(34,28,25,0.16)] md:w-80 md:min-w-80"
 		>
-			<div className="rounded-3xl p-5 bg-white flex flex-col gap-4 w-full h-full justify-between">
-				<div className="flex flex-col gap-3">
+			<div className="flex h-full w-full flex-col gap-3 rounded-[20px] bg-white p-4">
+				<div className="flex flex-col gap-2.5">
 					{/* Top row: agents + reward */}
 					<div className="flex items-center justify-between">
 						<span className="text-[11px] px-2 py-0.5 rounded bg-surface-raised border border-border text-text-secondary font-medium">
@@ -147,7 +116,7 @@ function QuestCard({
 
 					{/* Agent steps flow */}
 					{quest.steps && quest.steps.length > 0 && (
-						<div className="flex flex-col gap-2 mt-2">
+						<div className="mt-1 flex flex-col gap-1.5">
 							<span className="text-[10px] text-text-muted font-bold tracking-wider uppercase">
 								Execution Steps
 							</span>
@@ -175,7 +144,7 @@ function QuestCard({
 				</div>
 
 				{/* Progress */}
-				<div className="flex flex-col gap-1.5 mt-4 pt-3 border-t border-surface-raised">
+				<div className="mt-auto flex flex-col gap-1.5 border-t border-surface-raised pt-3">
 					<div className="flex justify-between text-body-sm text-text-secondary font-medium">
 						<span>Progress</span>
 						<span className="text-mono font-bold text-text-primary">{quest.progress}% Full</span>
@@ -196,13 +165,13 @@ function QuestCard({
 
 function ProviderSection({ provider }: { provider: IMappedProvider }) {
 	return (
-		<div className="clay-surface rounded-[2rem] p-2">
-			<div className="rounded-[calc(2rem-8px)] p-6 md:p-8 bg-white flex flex-col gap-8 w-full">
+		<div className="clay-surface rounded-[2rem] p-1.5">
+			<div className="flex w-full flex-col gap-5 rounded-[calc(2rem-6px)] bg-white p-4 sm:p-5">
 				{/* Provider header row */}
-				<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#DFBFB9]/30">
-					<div className="flex items-start gap-4">
+				<div className="flex flex-col justify-between gap-4 border-b border-[#DFBFB9]/30 pb-4 md:flex-row md:items-center">
+					<div className="flex items-start gap-3.5">
 						{/* Logo placeholder */}
-						<div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border border-[#DFBFB9]/30 shadow-soft p-1 bg-white">
+						<div className="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-[#DFBFB9]/30 bg-white p-1 shadow-soft">
 							<div className="w-full h-full rounded-3xl overflow-hidden flex items-center justify-center">
 								{provider.icon}
 							</div>
@@ -231,29 +200,37 @@ function ProviderSection({ provider }: { provider: IMappedProvider }) {
 						</div>
 					</div>
 
-					{/* Stats pill - redesigned as premium mechanical/instrument structure */}
-					<div className="flex items-center gap-4 px-4 py-2.5 rounded-xl border bg-surface-raised border-border shadow-soft self-start md:self-auto">
-						<div className="text-right">
-							<p className="text-[10px] text-text-muted font-bold tracking-wider uppercase">
+					{/* Compact provider instrument panel */}
+					<div
+						className="flex items-stretch self-start overflow-hidden rounded-2xl border bg-white md:self-auto"
+						style={{
+							borderColor: "#D8D9DE",
+							boxShadow: "0 9px 22px -14px rgba(34, 28, 25, 0.34)",
+						}}
+					>
+						<div className="min-w-25 px-3.5 py-2 text-right">
+							<p className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#7C7470]">
 								Active Quests
 							</p>
-							<p className="text-body-lg font-bold text-text-primary">
+							<p className="mt-0.5 text-lg font-extrabold leading-none text-text-primary">
 								{provider.stats.activeQuests}
 							</p>
 						</div>
-						<div className="w-px h-8 bg-border-strong/40" />
-						<div className="text-right">
-							<p className="text-[10px] text-text-muted font-bold tracking-wider uppercase">
+						<div className="my-2 w-px bg-[#D8D8DE]" />
+						<div className="min-w-25 bg-[#FFF9F1] px-3.5 py-2 text-right">
+							<p className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#7C7470]">
 								Total Pool
 							</p>
-							<p className="text-body-lg font-bold text-accent">{provider.stats.totalPool}</p>
+							<p className="mt-0.5 text-lg font-extrabold leading-none text-[#E58A08]">
+								{provider.stats.totalPool}
+							</p>
 						</div>
 					</div>
 				</div>
 
 				{/* Quest cards with ScrollShadow */}
 				<ScrollShadow orientation="horizontal" className="w-full" hideScrollBar>
-					<div className="flex gap-6 py-2 min-w-full">
+					<div className="flex min-w-full items-stretch gap-4 px-1 pb-5 pt-3">
 						{provider.quests.map((quest) => (
 							<QuestCard
 								key={quest.id}
@@ -273,12 +250,12 @@ function ProviderSection({ provider }: { provider: IMappedProvider }) {
 
 function ProviderSkeleton() {
 	return (
-		<div className="clay-surface rounded-[2rem] p-2">
-			<div className="rounded-[calc(2rem-8px)] p-6 md:p-8 bg-white flex flex-col gap-8 w-full">
+		<div className="clay-surface rounded-[2rem] p-1.5">
+			<div className="flex w-full flex-col gap-5 rounded-[calc(2rem-6px)] bg-white p-4 sm:p-5">
 				{/* Header Skeleton */}
-				<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#DFBFB9]/30">
-					<div className="flex items-start gap-4">
-						<Skeleton className="w-16 h-16 rounded-2xl" />
+				<div className="flex flex-col justify-between gap-4 border-b border-[#DFBFB9]/30 pb-4 md:flex-row md:items-center">
+					<div className="flex items-start gap-3.5">
+						<Skeleton className="h-13 w-13 rounded-2xl" />
 						<div className="flex flex-col gap-2">
 							<Skeleton className="h-6 w-48 rounded-lg" />
 							<Skeleton className="h-4 w-64 rounded-lg" />
@@ -288,18 +265,18 @@ function ProviderSkeleton() {
 							</div>
 						</div>
 					</div>
-					<Skeleton className="w-44 h-12 rounded-xl" />
+					<Skeleton className="h-13 w-50 rounded-2xl" />
 				</div>
 
 				{/* Cards Skeleton */}
-				<div className="flex gap-6 py-2">
+				<div className="flex items-stretch gap-4 px-1 pb-5 pt-3">
 					{Array.from({ length: 3 }).map((_, i) => (
 						<div
 							key={i}
-							className="rounded-2xl p-1 bg-white/50 border border-[#DFBFB9]/30 shadow-soft flex flex-col min-w-71.25 md:min-w-80 max-w-90 shrink-0"
+							className="flex min-w-71.25 max-w-90 shrink-0 flex-col rounded-[24px] border border-[#E4E5E8] bg-[#F7F7F8] p-1 shadow-[0_14px_26px_-16px_rgba(34,28,25,0.28)] md:min-w-80"
 						>
-							<div className="rounded-3xl p-5 bg-white flex flex-col gap-4 w-full h-65 justify-between">
-								<div className="flex flex-col gap-3">
+							<div className="flex h-58 w-full flex-col gap-3 rounded-[20px] bg-white p-4">
+								<div className="flex flex-col gap-2.5">
 									<div className="flex items-center justify-between">
 										<Skeleton className="h-5 w-20 rounded-md" />
 										<Skeleton className="h-5 w-16 rounded-full" />
@@ -307,7 +284,7 @@ function ProviderSkeleton() {
 									<Skeleton className="h-6 w-3/4 rounded-lg mt-2" />
 									<Skeleton className="h-4 w-full rounded-lg" />
 								</div>
-								<div className="flex flex-col gap-2 mt-auto">
+								<div className="mt-auto flex flex-col gap-2 border-t border-surface-raised pt-3">
 									<div className="flex justify-between">
 										<Skeleton className="h-3 w-12 rounded-lg" />
 										<Skeleton className="h-3 w-16 rounded-lg" />
@@ -351,15 +328,58 @@ function HeroMetric({
 	);
 }
 
-function AgentNode({ className = "", delay = 0 }: { className?: string; delay?: number }) {
+type TClayStepIcon = "quest" | "dispatch" | "execute" | "claim";
+
+const CLAY_STEP_ASSETS: Record<TClayStepIcon, string> = {
+	quest: "/images/lifecycle/quest-clay.png",
+	dispatch: "/images/lifecycle/dispatch-clay.png",
+	execute: "/images/lifecycle/execute-clay.png",
+	claim: "/images/lifecycle/claim-clay.png",
+};
+
+function ClayStepMedallion({
+	icon,
+	accentColor,
+	accentBg,
+	delay,
+}: {
+	icon: TClayStepIcon;
+	accentColor: string;
+	accentBg: string;
+	delay: number;
+}) {
+	const shouldReduceMotion = useReducedMotion();
+
 	return (
 		<motion.div
-			animate={{ y: [0, -6, 0] }}
-			transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay }}
-			className={`absolute flex h-11 w-11 items-center justify-center rounded-2xl border border-black/10 bg-white text-[#1F1B18] shadow-[0_12px_28px_-8px_rgba(31,27,24,0.35)] ${className}`}
+			animate={shouldReduceMotion ? undefined : { y: [0, -4, 0] }}
+			transition={{
+				duration: 3.8,
+				repeat: shouldReduceMotion ? 0 : Infinity,
+				ease: "easeInOut",
+				delay,
+			}}
+			className="relative my-5 flex h-24 w-24 shrink-0 items-center justify-center rounded-[30px] border"
+			style={{
+				color: accentColor,
+				background: accentBg,
+				borderColor: `${accentColor}24`,
+				boxShadow: `13px 16px 26px rgba(61,48,43,.14), -9px -9px 20px #fff, inset 5px 6px 9px rgba(255,255,255,.82), inset -5px -6px 10px ${accentColor}1f`,
+			}}
 		>
-			<FaRobot size={17} className="text-[#3a3a3a]" />
-			<span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#14F195]" />
+			<span
+				className="pointer-events-none absolute inset-2.5 rounded-[24px] border border-dashed"
+				style={{ borderColor: `${accentColor}42`, transform: "rotate(-9deg)" }}
+				aria-hidden="true"
+			/>
+			<Image
+				src={CLAY_STEP_ASSETS[icon]}
+				alt=""
+				width={512}
+				height={512}
+				className="relative z-10 h-[82px] w-[82px] object-contain drop-shadow-[0_8px_8px_rgba(61,48,43,0.16)]"
+				aria-hidden="true"
+			/>
 		</motion.div>
 	);
 }
@@ -398,6 +418,7 @@ function FlowStepNode({
 	step,
 	label,
 	title,
+	icon,
 	accentColor,
 	accentBg,
 	delay,
@@ -406,6 +427,7 @@ function FlowStepNode({
 	step: number;
 	label: string;
 	title: string;
+	icon: TClayStepIcon;
 	accentColor: string;
 	accentBg: string;
 	delay: number;
@@ -416,9 +438,9 @@ function FlowStepNode({
 			initial={{ opacity: 0, y: 28 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
-			className="clay-surface-soft w-full lg:w-55 xl:w-60 shrink-0 rounded-2xl flex flex-col gap-3 p-4"
+			className="clay-surface-soft flex min-h-[310px] w-full shrink-0 flex-col items-center rounded-[28px] p-4 text-center lg:w-55 xl:w-60"
 		>
-			<div className="flex items-center gap-2">
+			<div className="flex w-full items-center gap-2 text-left">
 				<span
 					className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-extrabold shrink-0"
 					style={{ background: accentBg, color: accentColor }}
@@ -429,26 +451,26 @@ function FlowStepNode({
 					{label}
 				</span>
 			</div>
-			<p className="text-sm font-extrabold text-[#1F1B18]">{title}</p>
-			{children}
+			<p className="mt-3 text-sm font-extrabold text-[#1F1B18]">{title}</p>
+			<ClayStepMedallion
+				icon={icon}
+				accentColor={accentColor}
+				accentBg={accentBg}
+				delay={delay}
+			/>
+			<div className="mt-auto w-full text-left">{children}</div>
 		</motion.div>
 	);
 }
 
-function HeroMissionScene({
-	stats,
-	activeQuests,
-}: {
-	mounted?: boolean;
-	scrolled?: boolean;
-	stats: {
-		agentsText: string;
-		rewardsText: string;
-		pooledRewardsText?: string;
-		slotsClaimedText: string;
-	};
-	activeQuests: number;
-}) {
+interface IPlatformStats {
+	agentsText: string;
+	rewardsText: string;
+	pooledRewardsText?: string;
+	slotsClaimedText: string;
+}
+
+function QuestLifecycleFlow({ stats }: { stats: IPlatformStats }) {
 	const rewardsNumberOnly = (stats.pooledRewardsText || stats.rewardsText).replace(" SOL", "");
 
 	const EXECUTE_STEPS = ["swap", "clmm_open", "clmm_close"] as const;
@@ -459,6 +481,7 @@ function HeroMissionScene({
 			step={1}
 			label="QUEST"
 			title="Quest Published"
+			icon="quest"
 			accentColor="#E05D45"
 			accentBg="rgba(224,93,69,0.08)"
 			delay={0.5}
@@ -466,7 +489,6 @@ function HeroMissionScene({
 			<div className="flex flex-col gap-2.5">
 				<div className="flex items-center justify-between gap-2">
 					<div className="flex items-center gap-1.5 min-w-0">
-						<FaRocket className="text-[#E05D45] text-xs shrink-0" />
 						<span className="text-xs font-bold text-[#1F1B18] truncate">
 							Swap &amp; earn on Byreal
 						</span>
@@ -496,14 +518,12 @@ function HeroMissionScene({
 			step={2}
 			label="DISPATCH"
 			title="Agent Dispatched"
+			icon="dispatch"
 			accentColor="#3898FF"
 			accentBg="rgba(56,152,255,0.08)"
 			delay={0.65}
 		>
 			<div className="flex flex-col gap-2">
-				<div className="relative h-18">
-					<AgentNode className="left-1/2 -translate-x-1/2 top-2" delay={0.3} />
-				</div>
 				<span className="text-[9px] font-extrabold uppercase tracking-wider text-[#3898FF]">
 					Scanning quests...
 				</span>
@@ -525,6 +545,7 @@ function HeroMissionScene({
 			step={3}
 			label="EXECUTE"
 			title="On-Chain Steps"
+			icon="execute"
 			accentColor="#F7A600"
 			accentBg="rgba(247,166,0,0.08)"
 			delay={0.8}
@@ -565,6 +586,7 @@ function HeroMissionScene({
 			step={4}
 			label="CLAIM"
 			title="SOL Reward Claimed"
+			icon="claim"
 			accentColor="#0fae6e"
 			accentBg="rgba(15,174,110,0.08)"
 			delay={0.95}
@@ -591,96 +613,84 @@ function HeroMissionScene({
 	];
 
 	return (
-		<div className="relative mx-auto mt-10 w-full max-w-7xl px-3 sm:mt-14 sm:px-8">
-			<motion.div
-				initial={{ opacity: 0, y: 40 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.9, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
-				className="clay-surface relative overflow-hidden rounded-[32px] bg-white"
-			>
-				{/* faint grid texture */}
-				<div className="pointer-events-none absolute inset-x-10 top-8 h-32 rounded-[40px] bg-[#fbe4df]/35 blur-3xl" />
+		<motion.div
+			initial={{ opacity: 0, y: 40 }}
+			whileInView={{ opacity: 1, y: 0 }}
+			viewport={{ once: true, margin: "-80px" }}
+			transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+			className="clay-surface relative overflow-hidden rounded-[32px] bg-white"
+		>
+			{/* faint warm wash */}
+			<div className="pointer-events-none absolute inset-x-10 top-8 h-32 rounded-[40px] bg-[#fbe4df]/35 blur-3xl" />
 
-				{/* ── Hero Scene: Quest Lifecycle Flow ── */}
-				<div className="relative px-4 pt-8 pb-6 sm:px-8 sm:pt-10">
-					{/* Desktop lg+: single row with connecting arrows */}
-					<div className="hidden lg:flex items-center justify-center gap-0">
-						{flowCards[0]}
-						<FlowArrow delay={0.85} />
-						{flowCards[1]}
-						<FlowArrow delay={1.0} />
-						{flowCards[2]}
-						<FlowArrow delay={1.15} />
-						{flowCards[3]}
-					</div>
-
-					{/* Tablet md: 2×2 grid, no arrows */}
-					<div className="hidden md:grid lg:hidden grid-cols-2 gap-4">{flowCards}</div>
-
-					{/* Mobile: vertical stack */}
-					<div className="flex md:hidden flex-col gap-3">{flowCards}</div>
+			<div className="relative px-4 py-8 sm:px-8 sm:py-10">
+				{/* Desktop lg+: single row with connecting arrows */}
+				<div className="hidden lg:flex items-center justify-center gap-0">
+					{flowCards[0]}
+					<FlowArrow delay={0.85} />
+					{flowCards[1]}
+					<FlowArrow delay={1.0} />
+					{flowCards[2]}
+					<FlowArrow delay={1.15} />
+					{flowCards[3]}
 				</div>
 
-				{/* ── Bottom stat bar ── */}
-				<div className="clay-surface-soft relative z-20 mx-3 mb-3 grid grid-cols-2 items-center gap-y-2 rounded-2xl bg-white/90 py-3 backdrop-blur-md sm:mx-5 sm:mb-5 sm:grid-cols-4 sm:divide-x sm:divide-black/6">
-					<HeroMetric icon={<FaRobot size={15} />} label="Agents online" value={stats.agentsText} />
-					<HeroMetric
-						icon={<FaRocket size={14} />}
-						label="Quests active"
-						value={String(activeQuests)}
-					/>
-					<HeroMetric
-						icon={
-							<svg
-								viewBox="0 0 24 24"
-								width="15"
-								height="15"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								aria-hidden="true"
-							>
-								<path d="M3 3v18h18" />
-								<path d="M7 14l3-4 4 3 5-7" />
-							</svg>
-						}
-						label="Slots claimed"
-						value={stats.slotsClaimedText}
-						accent="#0fae6e"
-					/>
-					<HeroMetric
-						icon={<SolanaIcon size={15} />}
-						label="Total rewards paid"
-						value={stats.rewardsText}
-						accent="#0fae6e"
-					/>
-				</div>
-			</motion.div>
-		</div>
+				{/* Tablet md: 2×2 grid, no arrows */}
+				<div className="hidden md:grid lg:hidden grid-cols-2 gap-4">{flowCards}</div>
+
+				{/* Mobile: vertical stack */}
+				<div className="flex md:hidden flex-col gap-3">{flowCards}</div>
+			</div>
+		</motion.div>
 	);
 }
 
-function ExecutionStepCard({
-	step,
-	index,
+function LiveStatsBar({
+	stats,
+	activeQuests,
 }: {
-	step: (typeof EXECUTION_STEPS)[number];
-	index: number;
+	stats: IPlatformStats;
+	activeQuests: number;
 }) {
 	return (
-		<div className="relative border-t border-black/10 py-6 md:border-l md:border-t-0 md:px-7 md:py-2 first:md:border-l-0">
-			<span className="font-mono text-[11px] font-bold uppercase text-[#E05D45]">
-				{String(index + 1).padStart(2, "0")} / {step.label}
-			</span>
-			<h3 className="mt-3 text-xl font-extrabold text-[#111111]">{step.title}</h3>
-			<p className="mt-3 text-sm leading-relaxed text-[#6B6560]">{step.text}</p>
-		</div>
+		<motion.div
+			initial={{ opacity: 0, y: 18 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.7, delay: 0.4, ease: "easeOut" }}
+			className="clay-surface-soft mx-auto grid w-full max-w-4xl grid-cols-2 items-center gap-y-2 rounded-2xl bg-white/90 py-4 backdrop-blur-md sm:grid-cols-4 sm:divide-x sm:divide-black/6"
+		>
+			<HeroMetric icon={<FaRobot size={15} />} label="Agents online" value={stats.agentsText} />
+			<HeroMetric icon={<FaRocket size={14} />} label="Quests active" value={String(activeQuests)} />
+			<HeroMetric
+				icon={
+					<svg
+						viewBox="0 0 24 24"
+						width="15"
+						height="15"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="2"
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M3 3v18h18" />
+						<path d="M7 14l3-4 4 3 5-7" />
+					</svg>
+				}
+				label="Slots claimed"
+				value={stats.slotsClaimedText}
+				accent="#0fae6e"
+			/>
+			<HeroMetric
+				icon={<SolanaIcon size={15} />}
+				label="Total rewards paid"
+				value={stats.rewardsText}
+				accent="#0fae6e"
+			/>
+		</motion.div>
 	);
 }
-
-// ─── Rocket 3D Model ──────────────────────────────────────────────────────────
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
@@ -1002,16 +1012,6 @@ function LandingPageContent() {
 
 					{/* CTA buttons */}
 					<div className="flex items-center gap-3">
-						{/* Live on Solana pill */}
-						{/* <div className="hidden items-center gap-2 rounded-full border border-black/10 bg-white px-3.5 py-2 text-xs font-bold text-[#1F1B18] shadow-[0_2px_8px_rgba(31,27,24,0.04)] sm:flex">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#14F195] opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#14F195]" />
-              </span>
-              Live on Solana
-              <SolanaIcon size={14} />
-            </div> */}
-
 						{walletAddress ? (
 							<div className="flex items-center gap-2">
 								<div
@@ -1024,24 +1024,25 @@ function LandingPageContent() {
 									/>
 									{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
 								</div>
-								<Button
-									isIconOnly
-									variant="ghost"
-									onPress={handleDisconnectWallet}
+								<button
+									type="button"
+									onClick={handleDisconnectWallet}
+									aria-label="Disconnect wallet"
 									className="w-6 h-6 min-w-auto p-0 rounded-full text-[#A39D97] hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors"
 								>
 									<FiX size={14} />
-								</Button>
+								</button>
 							</div>
 						) : (
-							<Button
-								onPress={handleConnectWallet}
+							<button
+								type="button"
+								onClick={handleConnectWallet}
 								id="nav-connect-wallet"
 								className="clay-button text-sm font-bold px-5 py-2.5 rounded-xl flex items-center gap-2"
 							>
 								<FaWallet size={14} />
 								Connect Wallet
-							</Button>
+							</button>
 						)}
 					</div>
 				</div>
@@ -1065,10 +1066,40 @@ function LandingPageContent() {
 						initial={{ opacity: 0, y: 16 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.6, ease: "easeOut" }}
-						className="clay-surface-soft mb-6 flex items-center gap-2.5 rounded-2xl px-4 py-2 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#E05D45] sm:text-[12px]"
+						className="mb-6 flex items-center gap-2 overflow-hidden rounded-full border border-[#9945FF]/20 bg-[#FAF9FF] pr-2.5 text-[10px] font-extrabold uppercase tracking-[0.16em] sm:text-[11px]"
 					>
-						<FaRobot size={15} className="text-[#E05D45]" />
-						AI Agents. DeFi Quests. Real Rewards.
+						<span className="flex h-6 w-6 items-center justify-center self-stretch rounded-full bg-[#17131f]">
+							<SolanaIcon size={12} />
+						</span>
+						<span className="bg-gradient-to-r from-[#9945FF] via-[#5B72F2] to-[#00C98D] bg-clip-text text-transparent">
+							Live on Solana
+						</span>
+						<span className="relative flex h-2 w-2 items-center justify-center">
+							<motion.span
+								className="absolute h-full w-full rounded-full bg-[#14F195]/45 motion-reduce:hidden"
+								animate={{
+									scale: [0.8, 1, 1.85],
+									opacity: [0, 0.58, 0],
+								}}
+								transition={{
+									duration: 2.2,
+									repeat: Infinity,
+									times: [0, 0.18, 1],
+									ease: [0.4, 0, 0.2, 1],
+								}}
+								aria-hidden="true"
+							/>
+							<motion.span
+								className="relative h-1.5 w-1.5 rounded-full bg-[#14F195] shadow-[0_0_7px_rgba(20,241,149,0.85)]"
+								animate={{ scale: [1, 1.12, 1], opacity: [0.9, 1, 0.9] }}
+								transition={{
+									duration: 2.2,
+									repeat: Infinity,
+									ease: "easeInOut",
+								}}
+								aria-hidden="true"
+							/>
+						</span>
 					</motion.div>
 
 					<motion.h1
@@ -1164,67 +1195,44 @@ function LandingPageContent() {
 					</motion.div>
 
 					<motion.div
-						initial={{ opacity: 0, y: 28 }}
+						initial={{ opacity: 0, y: 20 }}
 						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-						className="relative mt-10 w-full sm:mt-14"
+						transition={{ duration: 0.8, delay: 0.34, ease: "easeOut" }}
+						className="mt-12 w-full px-1 sm:mt-16 sm:px-8"
 					>
-						<div className="overflow-x-auto pb-3">
-							<div className="relative mx-auto min-w-[760px] max-w-6xl">
-								<div className="absolute inset-0 z-10">
-									{WORKFLOW_LABELS.map((label) => (
-										<div
-											key={label.title}
-											className="workflow-bubble"
-											style={{ left: label.center }}
-										>
-											<p className="text-[15px] font-extrabold leading-tight text-[#E05D45] lg:text-lg">
-												{label.title}
-											</p>
-											<p className="mt-2 text-[11px] font-bold leading-[1.3] text-[#211c1a] lg:text-sm">
-												{label.description}
-											</p>
-										</div>
-									))}
-								</div>
-
-								<Image
-									src="/hero/clay-mission-flow-white-2.png"
-									alt="Provider, quest, agents, execution, and reward workflow"
-									width={1723}
-									height={913}
-									priority
-									className="relative h-auto w-full object-contain"
-								/>
-							</div>
-						</div>
+						<LiveStatsBar stats={platformStats} activeQuests={activeQuestCount} />
 					</motion.div>
 				</div>
-
-				<HeroMissionScene stats={platformStats} activeQuests={activeQuestCount} />
 			</section>
 
-			<section id="how-it-works" className="relative py-16 sm:py-24">
+			{/* ── How it works: the single quest-lifecycle explainer ── */}
+			<section id="how-it-works" className="relative py-20 sm:py-28">
 				<div className="mx-auto max-w-7xl px-5 sm:px-8">
-					<div className="grid gap-8 md:grid-cols-[0.9fr_1.4fr] md:items-end">
-						<div>
-							<h2
-								className="text-3xl font-extrabold text-[#111111] sm:text-5xl"
-								style={{ fontFamily: "var(--font-nunito)", letterSpacing: 0 }}
-							>
-								Agents do the clicks. Protocols keep the proof.
-							</h2>
-						</div>
-						<p className="w-full max-w-xl text-pretty text-sm leading-relaxed text-[#6B6560] sm:text-lg">
-							The landing story now mirrors the actual QuPilot loop: escrow, dispatch, verify,
-							claim. It gives judges a clean mental model before they hit the quest feed.
+					<motion.div
+						initial={{ opacity: 0, y: 24 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true, margin: "-80px" }}
+						transition={{ duration: 0.7, ease: "easeOut" }}
+						className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center"
+					>
+						<span className="clay-surface-soft inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#E05D45]">
+							How it works
+						</span>
+						<h2
+							className="text-3xl font-extrabold leading-tight text-[#211c1a] sm:text-5xl"
+							style={{ fontFamily: "var(--font-nunito)", letterSpacing: "-0.02em" }}
+						>
+							Agents do the clicks.
+							<span className="text-[#E05D45]"> Protocols keep the proof.</span>
+						</h2>
+						<p className="max-w-xl text-pretty text-base leading-relaxed text-[#746c68] sm:text-lg">
+							One quest, four steps. Providers escrow the reward, an agent executes on-chain,
+							every step is verified, and the payout lands in your wallet.
 						</p>
-					</div>
+					</motion.div>
 
-					<div className="mt-12 grid md:grid-cols-4">
-						{EXECUTION_STEPS.map((step, index) => (
-							<ExecutionStepCard key={step.label} step={step} index={index} />
-						))}
+					<div className="mt-14 sm:mt-16">
+						<QuestLifecycleFlow stats={platformStats} />
 					</div>
 				</div>
 			</section>
@@ -1238,23 +1246,24 @@ function LandingPageContent() {
 					<div className="flex items-center gap-16 md:gap-28 flex-wrap justify-center">
 						{/* Mantle */}
 						<div className="h-14 md:h-20 flex items-center justify-center">
-							<Image
-								src="/images/mantle-logo-full.png"
-								alt="Mantle logo"
-								width={160}
-								height={80}
-								className="h-full w-auto object-contain filter grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
-							/>
+								<Image
+									src="/images/mantle-logo-full.png"
+									alt="Mantle logo"
+									width={2501}
+									height={663}
+									className="object-contain filter grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
+									style={{ width: 160, height: "auto" }}
+								/>
 						</div>
 						{/* Byreal */}
 						<div className="h-14 md:h-20 flex items-center justify-center">
-							<Image
-								src="/images/byreal-logo.jpeg"
-								alt="Byreal logo"
-								width={160}
-								height={80}
-								className="h-full w-auto object-contain filter grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 rounded-2xl shadow-soft"
-							/>
+								<Image
+									src="/images/byreal-logo.jpeg"
+									alt="Byreal logo"
+									width={80}
+									height={80}
+									className="object-contain filter grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300 rounded-2xl shadow-soft"
+								/>
 						</div>
 					</div>
 				</div>
@@ -1263,8 +1272,7 @@ function LandingPageContent() {
 			{/* ── Providers Section ── */}
 			<main
 				id="quests"
-				className="max-w-7xl mx-auto w-full flex flex-col gap-8"
-				style={{ padding: "48px 20px" }}
+				className="max-w-7xl mx-auto w-full flex flex-col gap-10 px-5 py-20 sm:px-8 sm:py-24"
 			>
 				{/* Section heading */}
 				<motion.div
@@ -1272,18 +1280,18 @@ function LandingPageContent() {
 					whileInView={{ opacity: 1, y: 0 }}
 					viewport={{ once: true, margin: "-80px" }}
 					transition={{ duration: 0.7, ease: "easeOut" }}
-					className="flex flex-col items-center gap-2"
+					className="flex flex-col items-center gap-3 text-center"
 				>
+					<span className="clay-surface-soft inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#E05D45]">
+						Live quests
+					</span>
 					<h2
-						className="text-[32px] font-extrabold tracking-tight"
-						style={{
-							fontFamily: "var(--font-nunito)",
-							color: "#1F1B18",
-						}}
+						className="text-3xl font-extrabold tracking-tight text-[#211c1a] sm:text-[40px]"
+						style={{ fontFamily: "var(--font-nunito)", letterSpacing: "-0.02em" }}
 					>
 						Top Mission Providers
 					</h2>
-					<p className="text-base text-center" style={{ color: "#6B6560", maxWidth: 672 }}>
+					<p className="max-w-xl text-base leading-relaxed text-[#746c68]">
 						Discover official quests from verified DeFi protocols and exchanges.
 					</p>
 				</motion.div>
@@ -1303,63 +1311,121 @@ function LandingPageContent() {
 							<ProviderSection key={provider.id} provider={provider} />
 						))
 					) : (
-						<Card
-							className="flex items-center justify-center p-12 text-center rounded-[32px]"
-							style={{
-								background: "rgba(255,255,255,0.85)",
+							<div
+								className="flex items-center justify-center p-12 text-center rounded-[32px]"
+								style={{
+									background: "rgba(255,255,255,0.85)",
 								border: "1px solid rgba(223,191,185,0.3)",
 								boxShadow: "0px 8px 32px 0px rgba(166,52,32,0.05)",
 							}}
 						>
-							<p className="text-base font-semibold" style={{ color: "#6B6560" }}>
-								No active quests found. Check back later!
-							</p>
-						</Card>
+								<p className="text-base font-semibold" style={{ color: "#6B6560" }}>
+									No active quests found. Check back later!
+								</p>
+							</div>
 					)}
 				</motion.div>
 			</main>
 
 			{/* ── Leaderboard Section ── */}
-			<section
-				id="leaderboard"
-				className="max-w-7xl mx-auto w-full flex flex-col gap-8"
-				style={{ padding: "48px 20px" }}
-			>
-				<motion.div
-					initial={{ opacity: 0, y: 30 }}
-					whileInView={{ opacity: 1, y: 0 }}
-					viewport={{ once: true, margin: "-80px" }}
-					transition={{ duration: 0.7, ease: "easeOut" }}
-					className="flex flex-col items-center gap-2"
-				>
-					<h2
-						className="text-[32px] font-extrabold tracking-tight"
-						style={{ fontFamily: "var(--font-nunito)", color: "#1F1B18" }}
+			<section id="leaderboard" className="bg-[#fbf8f7] border-t border-[#EEE6E3]">
+				<div className="max-w-7xl mx-auto w-full flex flex-col gap-10 px-5 py-20 sm:px-8 sm:py-24">
+					<motion.div
+						initial={{ opacity: 0, y: 30 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true, margin: "-80px" }}
+						transition={{ duration: 0.7, ease: "easeOut" }}
+						className="flex flex-col items-center gap-3 text-center"
 					>
-						Global Rankings
-					</h2>
-					<p className="text-base text-center" style={{ color: "#6B6560", maxWidth: 672 }}>
-						Climb the ranks, complete quests, and become the top explorer in the QuPilot
-						universe.
-					</p>
-				</motion.div>
+						<span className="clay-surface-soft inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#E05D45]">
+							Leaderboard
+						</span>
+						<h2
+							className="text-3xl font-extrabold tracking-tight text-[#211c1a] sm:text-[40px]"
+							style={{ fontFamily: "var(--font-nunito)", letterSpacing: "-0.02em" }}
+						>
+							Global Rankings
+						</h2>
+						<p className="max-w-xl text-base leading-relaxed text-[#746c68]">
+							Climb the ranks, complete quests, and become the top explorer in the QuPilot
+							universe.
+						</p>
+					</motion.div>
 
-				<motion.div
-					initial={{ opacity: 0, y: 40 }}
-					whileInView={{ opacity: 1, y: 0 }}
-					viewport={{ once: true, margin: "-80px" }}
-					transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
-					className="flex flex-col gap-10"
-				>
-					<LeaderboardContent limit={100} />
-				</motion.div>
+					<motion.div
+						initial={{ opacity: 0, y: 40 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true, margin: "-80px" }}
+						transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
+						className="flex flex-col gap-10"
+					>
+						<LeaderboardContent limit={100} />
+					</motion.div>
+				</div>
+			</section>
+
+			{/* ── Closing CTA Band ── */}
+			<section className="border-t border-[#EEE6E3] bg-white">
+				<div className="max-w-7xl mx-auto w-full px-5 py-20 sm:px-8 sm:py-24">
+					<motion.div
+						initial={{ opacity: 0, y: 30 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true, margin: "-80px" }}
+						transition={{ duration: 0.7, ease: "easeOut" }}
+						className="clay-surface relative overflow-hidden rounded-[32px] bg-white px-6 py-12 text-center sm:px-12 sm:py-16"
+					>
+						<div className="pointer-events-none absolute inset-x-12 top-6 h-32 rounded-[40px] bg-[#fbe4df]/40 blur-3xl" />
+						<div className="relative flex flex-col items-center gap-5">
+							<h2
+								className="max-w-2xl text-3xl font-extrabold leading-tight text-[#211c1a] sm:text-[44px]"
+								style={{ fontFamily: "var(--font-nunito)", letterSpacing: "-0.02em" }}
+							>
+								Ready to deploy your agent?
+							</h2>
+							<p className="max-w-xl text-base leading-relaxed text-[#746c68] sm:text-lg">
+								Pick a quest, hand it to your agent, and let it execute on-chain. Verifiable
+								steps, real SOL rewards.
+							</p>
+							<div className="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center">
+								<Link
+									href="/explore"
+									className="clay-button inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3 text-sm font-bold sm:text-base"
+								>
+									Explore Quests
+									<svg
+										viewBox="0 0 24 24"
+										width="16"
+										height="16"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2.5"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										aria-hidden="true"
+									>
+										<path d="M7 17L17 7" />
+										<path d="M9 7h8v8" />
+									</svg>
+								</Link>
+								<button
+									type="button"
+									onClick={handleCopySkillPrompt}
+									className="clay-surface-soft inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3 text-sm font-bold text-[#211c1a] hover:border-[#E05D45]/30 hover:text-[#E05D45] sm:text-base"
+								>
+									<span className="font-extrabold text-[#E05D45] leading-none">A\</span>
+									Copy Claude Skill
+								</button>
+							</div>
+						</div>
+					</motion.div>
+				</div>
 			</section>
 
 			{/* ── Footer ── */}
 			<footer className="mt-auto bg-[#f8f4ef] border-t border-[#DFBFB9]/50">
-				<div className="max-w-7xl mx-auto flex flex-col gap-8" style={{ padding: "32px 20px" }}>
-					{/* Top row */}
-					<div className="flex items-start justify-between gap-12">
+					<div className="max-w-7xl mx-auto flex flex-col gap-8" style={{ padding: "32px 20px" }}>
+						{/* Top row */}
+						<div className="flex flex-col items-start justify-between gap-10 md:flex-row md:gap-12">
 						{/* Brand */}
 						<div className="flex flex-col gap-3" style={{ maxWidth: 384 }}>
 							<Link href="/" className="flex items-center gap-2">
@@ -1384,7 +1450,7 @@ function LandingPageContent() {
 						</div>
 
 						{/* Links */}
-						<div className="flex gap-16">
+							<div className="grid w-full grid-cols-2 gap-8 sm:flex sm:w-auto sm:gap-16">
 							<div className="flex flex-col gap-3">
 								<h4
 									className="text-base font-semibold"
@@ -1431,13 +1497,13 @@ function LandingPageContent() {
 
 					{/* Bottom row */}
 					<div
-						className="flex items-center justify-between pt-5"
+							className="flex flex-col items-start justify-between gap-4 pt-5 sm:flex-row sm:items-center"
 						style={{ borderTop: "1px solid rgba(223,191,185,0.3)" }}
 					>
 						<p className="text-sm" style={{ color: "#6B6560" }}>
 							© {new Date().getFullYear()} QuPilot Web3 Quests. Explore the stars.
 						</p>
-						<div className="flex gap-5">
+							<div className="flex flex-wrap gap-x-5 gap-y-2">
 							{["Terms of Service", "Privacy Policy"].map((l) => (
 								<Link
 									key={l}

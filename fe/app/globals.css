@@ -296,6 +296,10 @@
    Global Styles
    ============================================ */
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--bg-base);
   color: var(--text-primary);
@@ -304,6 +308,13 @@ body {
   line-height: var(--line-height-body-md);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Offset anchored sections so they clear the sticky header when scrolled to. */
+[id="how-it-works"],
+[id="quests"],
+[id="leaderboard"] {
+  scroll-margin-top: 88px;
 }
 
 ::selection {
@@ -431,52 +442,6 @@ a {
 textarea.clay-field {
   min-height: 132px;
   padding-top: 18px;
-}
-
-.workflow-bubble {
-  position: absolute;
-  top: 2.5%;
-  width: 16.5%;
-  transform: translateX(-50%);
-  min-height: 96px;
-  padding: 14px 10px 12px;
-  border: 1px solid #e8e8e8;
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: var(--clay-shadow-soft);
-  text-align: center;
-}
-
-.workflow-bubble::before,
-.workflow-bubble::after {
-  position: absolute;
-  left: 50%;
-  width: 0;
-  height: 0;
-  content: "";
-  transform: translateX(-50%);
-}
-
-.workflow-bubble::before {
-  bottom: -18px;
-  border-top: 18px solid #e8e8e8;
-  border-right: 15px solid transparent;
-  border-left: 15px solid transparent;
-}
-
-.workflow-bubble::after {
-  bottom: -16px;
-  border-top: 17px solid #ffffff;
-  border-right: 14px solid transparent;
-  border-left: 14px solid transparent;
-}
-
-@media (min-width: 1024px) {
-  .workflow-bubble {
-    min-height: 128px;
-    padding: 22px 18px 18px;
-    border-radius: 26px;
-  }
 }
 
 /* Apply the chosen material consistently to existing HeroUI and Tailwind surfaces. */
