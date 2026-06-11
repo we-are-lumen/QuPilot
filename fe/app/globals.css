@@ -393,6 +393,12 @@ a {
     inset 2px 3px 3px rgba(255, 255, 255, 0.96);
 }
 
+.brand-logo-frame {
+  border: 1px solid rgba(224, 93, 69, 0.22);
+  background: #fde8e5;
+  box-shadow: 0 5px 14px rgba(224, 93, 69, 0.13);
+}
+
 .clay-field {
   width: 100%;
   min-height: 58px;

@@ -67,13 +67,13 @@ export default function UserLayout({
             className="flex items-center gap-2 group"
           >
             <span className="text-[#211c1a] text-2xl font-extrabold flex items-center gap-2">
-              <span className="clay-icon flex h-10 w-10 items-center justify-center rounded-2xl">
+              <span className="brand-logo-frame flex h-10 w-10 items-center justify-center rounded-xl">
                 <Image
                   src="/logo.png"
                   alt="QuPilot Logo"
-                  width={24}
-                  height={24}
-                  className="object-contain"
+                  width={26}
+                  height={26}
+                  className="h-6.5 w-6.5 object-contain"
                 />
               </span>
               <span className="font-extrabold tracking-tight">QuPilot</span>

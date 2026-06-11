@@ -984,13 +984,13 @@ function LandingPageContent() {
 				<div className="max-w-7xl mx-auto px-5 py-3 flex items-center justify-between">
 					{/* Logo */}
 					<Link href="/" className="flex items-center gap-2.5 group" id="nav-logo">
-						<span className="clay-icon flex h-10 w-10 items-center justify-center rounded-2xl">
+						<span className="brand-logo-frame flex h-10 w-10 items-center justify-center rounded-xl">
 							<Image
 								src="/logo.png"
 								alt="QuPilot Logo"
-								width={24}
-								height={24}
-								className="w-6 h-6 object-contain"
+								width={26}
+								height={26}
+								className="h-6.5 w-6.5 object-contain"
 							/>
 						</span>
 						<span className="text-2xl font-extrabold tracking-tight font-sans text-[#211c1a]">
@@ -1429,13 +1429,15 @@ function LandingPageContent() {
 						{/* Brand */}
 						<div className="flex flex-col gap-3" style={{ maxWidth: 384 }}>
 							<Link href="/" className="flex items-center gap-2">
-								<Image
-									src="/logo.png"
-									alt="QuPilot Logo"
-									width={24}
-									height={24}
-									className="w-6 h-6 object-contain"
-								/>
+								<span className="brand-logo-frame flex h-9 w-9 items-center justify-center rounded-xl">
+									<Image
+										src="/logo.png"
+										alt="QuPilot Logo"
+										width={22}
+										height={22}
+										className="h-5.5 w-5.5 object-contain"
+									/>
+								</span>
 								<span
 									className="text-2xl font-extrabold tracking-tight"
 									style={{ fontFamily: "var(--font-nunito)", color: "#E05D45" }}

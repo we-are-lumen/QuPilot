@@ -69,13 +69,13 @@ export default function ProviderLayout({
               href="/dashboard"
               className="flex items-center gap-2 group"
             >
-              <span className="clay-icon flex h-10 w-10 items-center justify-center rounded-2xl">
+              <span className="brand-logo-frame flex h-10 w-10 items-center justify-center rounded-xl">
                 <Image
                   src="/logo.png"
                   alt="QuPilot Logo"
-                  width={24}
-                  height={24}
-                  className="object-contain"
+                  width={26}
+                  height={26}
+                  className="h-6.5 w-6.5 object-contain"
                 />
               </span>
               <span className="text-xl text-[#211c1a] font-extrabold tracking-tight">
