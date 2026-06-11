@@ -139,7 +139,7 @@ export default function UserLayout({
               <Popover>
                 <Popover.Trigger>
                   <button type="button" className="clay-surface-soft flex items-center gap-2 px-3 py-1.5 rounded-2xl cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#e05d45]">
-                    <Avatar size="sm" className="bg-[#e05d45] text-white font-bold">
+                    <Avatar size="sm" className="bg-[#e05d45] text-white font-bold shadow-none">
                       <Avatar.Fallback>{initials}</Avatar.Fallback>
                     </Avatar>
                     <div className="hidden lg:flex flex-col text-left">

@@ -255,9 +255,9 @@ export default function AuthModal({ isOpen, onOpenChange, onSuccess }: AuthModal
                   </p>
                 </Modal.Header>
 
-                <Modal.Body className="py-4 px-6 flex flex-col gap-4">
+                <Modal.Body className="pt-4 pb-5 px-6 flex flex-col gap-4">
                   {/* Role Cards */}
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-3 pb-1">
                     <button
                       type="button"
                       onClick={() => setRole("user")}

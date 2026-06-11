@@ -3,8 +3,9 @@
 import React from "react";
 import Link from "next/link";
 import { Card, Button, Chip, Avatar, Skeleton } from "@heroui/react";
-import { FaFire, FaCoins, FaAward, FaChevronRight } from "react-icons/fa6";
+import { FaFire, FaChevronRight } from "react-icons/fa6";
 import { FiClock as FiClockIcon, FiCpu as FiCpuIcon, FiCompass as FiCompassIcon } from "react-icons/fi";
+import SolanaIcon from "@/app/components/SolanaIcon";
 import { useQuery } from "@tanstack/react-query";
 import { getPublicHighlights } from "@/lib/api/quests";
 
@@ -193,7 +194,7 @@ export default function ExploreFeedPage() {
               </Link>
               
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#e05d45] bg-[#f3efff] px-3 py-1.5 rounded-full border border-[#e5dcff]">
-                <FaAward size={14} />
+                <SolanaIcon size={14} />
                 <span>{formatReward(hotQuest.reward_per_user)} SOL</span>
               </div>
             </Card.Footer>
@@ -318,7 +319,7 @@ export default function ExploreFeedPage() {
 
                 <Card.Footer className="flex items-center justify-between p-0 border-t border-[#f8f4ef] pt-4 mt-auto">
                   <div className="flex items-center gap-1 text-[#f59e0b] font-bold text-xs">
-                    <FaCoins size={12} />
+                    <SolanaIcon size={12} />
                     <span>{formatReward(provider.total_deposit_reward_pool)} SOL Pool</span>
                   </div>
                   
