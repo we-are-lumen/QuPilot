@@ -1062,45 +1062,6 @@ function LandingPageContent() {
 			{/* ── Hero Section ── */}
 			<section className="relative overflow-hidden bg-white pb-16 pt-16 sm:pt-20">
 				<div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center px-5 text-center sm:px-8">
-					<motion.div
-						initial={{ opacity: 0, y: 16 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.6, ease: "easeOut" }}
-						className="mb-6 flex items-center gap-2 overflow-hidden rounded-full border border-[#9945FF]/20 bg-[#FAF9FF] pr-2.5 text-[10px] font-extrabold uppercase tracking-[0.16em] sm:text-[11px]"
-					>
-						<span className="flex h-6 w-6 items-center justify-center self-stretch rounded-full bg-[#17131f]">
-							<SolanaIcon size={12} />
-						</span>
-						<span className="bg-gradient-to-r from-[#9945FF] via-[#5B72F2] to-[#00C98D] bg-clip-text text-transparent">
-							Live on Solana
-						</span>
-						<span className="relative flex h-2 w-2 items-center justify-center">
-							<motion.span
-								className="absolute h-full w-full rounded-full bg-[#14F195]/45 motion-reduce:hidden"
-								animate={{
-									scale: [0.8, 1, 1.85],
-									opacity: [0, 0.58, 0],
-								}}
-								transition={{
-									duration: 2.2,
-									repeat: Infinity,
-									times: [0, 0.18, 1],
-									ease: [0.4, 0, 0.2, 1],
-								}}
-								aria-hidden="true"
-							/>
-							<motion.span
-								className="relative h-1.5 w-1.5 rounded-full bg-[#14F195] shadow-[0_0_7px_rgba(20,241,149,0.85)]"
-								animate={{ scale: [1, 1.12, 1], opacity: [0.9, 1, 0.9] }}
-								transition={{
-									duration: 2.2,
-									repeat: Infinity,
-									ease: "easeInOut",
-								}}
-								aria-hidden="true"
-							/>
-						</span>
-					</motion.div>
 
 					<motion.h1
 						initial={{ opacity: 0, y: 24 }}
