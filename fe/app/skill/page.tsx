@@ -64,7 +64,7 @@ export default async function SkillPage() {
             a: ({ href, children }) => (
               <a
                 href={href}
-                className="text-[#e05d45] font-semibold hover:underline break-words"
+                className="text-[#f97316] font-semibold hover:underline break-words"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -85,7 +85,7 @@ export default async function SkillPage() {
               );
             },
             pre: ({ children }) => (
-              <pre className="mt-4 p-4 rounded-xl bg-[#251916f2] text-[#ffdad3] overflow-x-auto shadow-inner">
+              <pre className="mt-4 p-4 rounded-xl bg-[#251916f2] text-[#fed7aa] overflow-x-auto shadow-inner">
                 {children}
               </pre>
             ),
@@ -100,7 +100,7 @@ export default async function SkillPage() {
             ),
             td: ({ children }) => <td className="border border-[#f8f4ef] px-3 py-2 align-top">{children}</td>,
             blockquote: ({ children }) => (
-              <blockquote className="mt-4 border-l-4 border-[#dfbfb9] pl-4 text-[#6b6560] italic">
+              <blockquote className="mt-4 border-l-4 border-[#fdba74] pl-4 text-[#6b6560] italic">
                 {children}
               </blockquote>
             ),

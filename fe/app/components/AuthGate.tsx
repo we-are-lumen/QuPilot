@@ -45,9 +45,9 @@ export default function AuthGate({ children, allowedRoles }: AuthGateProps) {
       <div className="min-h-[60vh] w-full flex flex-col items-center justify-center bg-white gap-5 py-12">
         <div className="clay-icon relative flex items-center justify-center w-20 h-20 rounded-[28px]">
           {/* Animated cosmic ripples */}
-          <div className="absolute inset-0 rounded-full border-4 border-[#ffe9e5] animate-ping opacity-75" />
-          <div className="absolute inset-2 rounded-full border-4 border-t-[#e05d45] border-r-transparent border-b-transparent border-l-transparent animate-spin" />
-          <LuRocket className="text-3xl text-[#e05d45]" />
+          <div className="absolute inset-0 rounded-full border-4 border-[#fff7ed] animate-ping opacity-75" />
+          <div className="absolute inset-2 rounded-full border-4 border-t-[#f97316] border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+          <LuRocket className="text-3xl text-[#f97316]" />
         </div>
         <div className="flex flex-col items-center text-center gap-1">
           <h3 className="text-sm font-bold text-[#1f1b18] uppercase tracking-wider">

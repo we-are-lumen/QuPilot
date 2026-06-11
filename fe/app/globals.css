@@ -2,8 +2,8 @@
 @import "@heroui/styles";
 
 /* ============================================
-   QuPilot Design System - Sculpted Coral Console
-   White canvas, tactile coral clay, crisp product data
+   QuPilot Design System - Sculpted Orange Console
+   White canvas, tactile orange clay, crisp product data
    ============================================ */
 
 :root {
@@ -14,26 +14,26 @@
   --surface-muted: #f8f8f9;
   --surface-raised: #f1f2f4;
   
-  /* Primary Color System (Coral) */
-  --primary: #E05D45;
-  --primary-hover: #C94D35;
-  --primary-light: #FDE8E5;
-  --primary-container: #c84b35;
+  /* Primary Color System (Bright Orange) */
+  --primary: #F97316;
+  --primary-hover: #C2410C;
+  --primary-light: #FFEDD5;
+  --primary-container: #c2410c;
   --on-primary: #ffffff;
   --on-primary-container: #fffbff;
-  --primary-fixed: #ffdad3;
-  --primary-fixed-dim: #ffb4a5;
+  --primary-fixed: #fed7aa;
+  --primary-fixed-dim: #fdba74;
   --on-primary-fixed: #3f0400;
   --on-primary-fixed-variant: #891e0c;
   
-  /* Secondary Color System (Coral tonal range) */
-  --secondary: #E05D45;
-  --secondary-light: #FBE4DF;
-  --secondary-container: #F08A75;
+  /* Secondary Color System (Dark Orange tonal range) */
+  --secondary: #F97316;
+  --secondary-light: #FFEDD5;
+  --secondary-container: #EA580C;
   --on-secondary: #ffffff;
   --on-secondary-container: #33008a;
-  --secondary-fixed: #fbe4df;
-  --secondary-fixed-dim: #f3b8ac;
+  --secondary-fixed: #ffedd5;
+  --secondary-fixed-dim: #fdba74;
   --on-secondary-fixed: #46130b;
   --on-secondary-fixed-variant: #8d2d1c;
   
@@ -83,16 +83,16 @@
   --surface-variant: #f0f3f3;
   --on-surface: #211c1a;
   --on-surface-variant: #625652;
-  --surface-tint: #e05d45;
+  --surface-tint: #f97316;
   
   /* Inverse Colors */
   --inverse-surface: #3b2d2a;
   --inverse-on-surface: #ffede9;
-  --inverse-primary: #ffb4a5;
+  --inverse-primary: #fdba74;
   
   /* Outline Colors */
   --outline: #8c716c;
-  --outline-variant: #dfbfb9;
+  --outline-variant: #fdba74;
   
   /* Background */
   --background: #ffffff;
@@ -112,10 +112,10 @@
     inset 2px 3px 5px rgba(255, 255, 255, 1),
     inset -2px -3px 7px rgba(190, 190, 196, 0.2);
   --clay-shadow-primary:
-    0 14px 26px rgba(201, 77, 53, 0.34),
-    0 6px 12px rgba(201, 77, 53, 0.2),
+    0 14px 26px rgba(194, 65, 12, 0.34),
+    0 6px 12px rgba(194, 65, 12, 0.2),
     inset 0 3px 3px rgba(255, 255, 255, 0.42),
-    inset 0 -5px 9px rgba(143, 45, 28, 0.3);
+    inset 0 -5px 9px rgba(154, 52, 18, 0.3);
   --clay-shadow-pressed:
     inset 6px 8px 16px rgba(120, 120, 128, 0.2),
     inset -6px -6px 14px rgba(255, 255, 255, 1),
@@ -287,7 +287,7 @@
   --shadow-medium: var(--clay-shadow);
   --shadow-lifted: 14px 18px 38px rgba(109, 62, 51, 0.16);
   
-  --glow-primary: 0 0 0 3px rgba(224, 93, 69, 0.15);
+  --glow-primary: 0 0 0 3px rgba(249, 115, 22, 0.15);
   --glow-secondary: 0 0 0 3px rgba(124, 92, 219, 0.15);
   --glow-success: 0 0 0 3px rgba(16, 185, 129, 0.15);
 }
@@ -359,7 +359,7 @@ a {
 }
 
 .clay-button {
-  border: 1px solid rgba(189, 73, 54, 0.42);
+  border: 1px solid rgba(194, 65, 12, 0.42);
   border-radius: 22px;
   background: var(--primary);
   color: #ffffff;
@@ -369,22 +369,22 @@ a {
 .clay-button:hover {
   background: var(--primary-hover);
   box-shadow:
-    0 18px 30px rgba(201, 77, 53, 0.38),
-    0 8px 14px rgba(201, 77, 53, 0.22),
+    0 18px 30px rgba(194, 65, 12, 0.38),
+    0 8px 14px rgba(194, 65, 12, 0.22),
     inset 0 3px 3px rgba(255, 255, 255, 0.4),
-    inset 0 -5px 9px rgba(143, 45, 28, 0.32);
+    inset 0 -5px 9px rgba(154, 52, 18, 0.32);
   transform: translateY(-2px);
 }
 
 .clay-button:active {
   box-shadow:
-    0 5px 11px rgba(201, 77, 53, 0.24),
-    inset 0 4px 8px rgba(143, 45, 28, 0.32);
+    0 5px 11px rgba(194, 65, 12, 0.24),
+    inset 0 4px 8px rgba(154, 52, 18, 0.32);
   transform: translateY(1px) scale(0.99);
 }
 
 .clay-icon {
-  border: 1px solid rgba(224, 93, 69, 0.13);
+  border: 1px solid rgba(249, 115, 22, 0.13);
   background: var(--primary-light);
   color: var(--primary);
   box-shadow:
@@ -394,9 +394,9 @@ a {
 }
 
 .brand-logo-frame {
-  border: 1px solid rgba(224, 93, 69, 0.22);
-  background: #fde8e5;
-  box-shadow: 0 5px 14px rgba(224, 93, 69, 0.13);
+  border: 1px solid rgba(249, 115, 22, 0.22);
+  background: #ffedd5;
+  box-shadow: 0 5px 14px rgba(249, 115, 22, 0.13);
 }
 
 .clay-field {
@@ -420,19 +420,19 @@ a {
 }
 
 .clay-field:hover {
-  border-color: rgba(224, 93, 69, 0.2);
+  border-color: rgba(249, 115, 22, 0.2);
   background: #ebecef;
 }
 
 .clay-field:focus,
 .clay-field:focus-visible,
 .clay-field[data-focus-visible="true"] {
-  border-color: rgba(224, 93, 69, 0.45);
+  border-color: rgba(249, 115, 22, 0.45);
   background: #f2f3f5;
   box-shadow:
     inset 4px 5px 11px rgba(120, 120, 128, 0.14),
     inset -4px -5px 12px rgba(255, 255, 255, 0.96),
-    0 0 0 4px rgba(224, 93, 69, 0.1);
+    0 0 0 4px rgba(249, 115, 22, 0.1);
 }
 
 .clay-field:disabled,
@@ -466,10 +466,10 @@ body [class*="bg-white"][class*="rounded-3xl"] {
   border-radius: clamp(20px, 2vw, 32px);
 }
 
-body [class*="bg-[#E05D45]"],
-body [class*="bg-[#e05d45]"],
+body [class*="bg-[#F97316]"],
+body [class*="bg-[#f97316]"],
 body [class*="bg-primary"] {
-  border-color: rgba(189, 73, 54, 0.42);
+  border-color: rgba(194, 65, 12, 0.42);
   box-shadow: var(--clay-shadow-primary);
 }
 

@@ -49,7 +49,7 @@ function QuestExplorerPageContent() {
     <div className="flex flex-col gap-10">
       {/* Header Section */}
       <section className="flex flex-col gap-3">
-        <h1 className="text-4xl font-extrabold text-[#e05d45] tracking-tight">Quest Explorer</h1>
+        <h1 className="text-4xl font-extrabold text-[#f97316] tracking-tight">Quest Explorer</h1>
         <p className="text-[17px] text-[#6b6560] max-w-200 leading-relaxed">
           Explore new frontiers, connect with top providers, and embark on personalized quests
           designed for your journey across the Web3 galaxy.
@@ -58,16 +58,16 @@ function QuestExplorerPageContent() {
 
       {/* Filters Section */}
       <section className="flex flex-wrap items-center justify-between gap-6">
-        <h2 className="text-2xl font-bold text-[#e05d45]">Active Missions</h2>
+        <h2 className="text-2xl font-bold text-[#f97316]">Active Missions</h2>
         {!isLoading && !error && FILTERS.length > 1 && (
-          <div className="flex flex-wrap items-center gap-2 p-1 bg-white border border-[#dfbfb94d] rounded-full">
+          <div className="flex flex-wrap items-center gap-2 p-1 bg-white border border-[#fdba744d] rounded-full">
             {FILTERS.map((filter) => (
               <button
                 key={filter}
                 onClick={() => setActiveFilter(filter)}
                 className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap capitalize ${
                   activeFilter === filter
-                    ? "bg-[#ffdad3] text-[#3f0400]"
+                    ? "bg-[#fed7aa] text-[#3f0400]"
                     : "text-[#6b6560] hover:bg-[#f8f4ef]"
                 }`}
               >
@@ -101,7 +101,7 @@ function QuestExplorerPageContent() {
                   <Skeleton className="h-3 w-4/5 rounded" />
                 </div>
               </Card.Content>
-              <Card.Footer className="p-0 pt-4 mt-auto border-t border-[#f5ddd9] flex justify-between items-center">
+              <Card.Footer className="p-0 pt-4 mt-auto border-t border-[#ffedd5] flex justify-between items-center">
                 <Skeleton className="h-4 w-16 rounded" />
                 <Skeleton className="h-4 w-12 rounded" />
               </Card.Footer>
@@ -112,8 +112,8 @@ function QuestExplorerPageContent() {
 
       {/* Error State */}
       {error && (
-        <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#fff5f5] border border-[#ffc1c1] rounded-2xl">
-          <p className="text-lg font-bold text-[#e53e3e]">Failed to load quests</p>
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#ffedd5] border border-[#fdba74] rounded-2xl">
+          <p className="text-lg font-bold text-[#c2410c]">Failed to load quests</p>
           <p className="text-sm text-[#6b6560] w-full">
             We encountered an error while retrieving the active missions. Please try again later.
           </p>
@@ -122,9 +122,9 @@ function QuestExplorerPageContent() {
 
       {/* Empty State */}
       {!isLoading && !error && filteredQuests.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#fcfbfa] border border-[#dfbfb94d] rounded-2xl">
-          <FiCompass className="text-4xl text-[#dfbfb9]" />
-          <p className="text-lg font-bold text-[#e05d45]">No missions found</p>
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#fcfbfa] border border-[#fdba744d] rounded-2xl">
+          <FiCompass className="text-4xl text-[#fdba74]" />
+          <p className="text-lg font-bold text-[#f97316]">No missions found</p>
           <p className="text-sm text-[#6b6560]">
             There are currently no active quests for this category. Check back later for new updates!
           </p>
@@ -135,7 +135,7 @@ function QuestExplorerPageContent() {
       {!isLoading && !error && filteredQuests.length > 0 && (
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredQuests.map((quest) => (
-            <Card key={quest.uuid} className="p-5 border border-transparent hover:border-[#dfbfb94d] shadow-sm hover:shadow-md transition-all rounded-2xl flex flex-col gap-4">
+            <Card key={quest.uuid} className="p-5 border border-transparent hover:border-[#fdba744d] shadow-sm hover:shadow-md transition-all rounded-2xl flex flex-col gap-4">
               <Card.Header className="flex flex-col gap-y-3 items-start p-0">
                 <div className="flex items-center gap-3">
                   {quest.provider?.logo_url ? (
@@ -145,7 +145,7 @@ function QuestExplorerPageContent() {
                       className="w-10 h-10 rounded-full object-cover bg-[#f8f4ef]"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#ffdad3] text-[#e05d45] font-bold">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#fed7aa] text-[#f97316] font-bold">
                       {(quest.provider?.display_name || "P").charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -159,23 +159,23 @@ function QuestExplorerPageContent() {
                   </div>
                 </div>
                 
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#f8f4ef] text-[#6b6560] border border-[#dfbfb94d] capitalize">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#f8f4ef] text-[#6b6560] border border-[#fdba744d] capitalize">
                   {quest.steps[0]?.step_type || "General"}
                 </span>
               </Card.Header>
               <Card.Content className="p-0 flex flex-col gap-1.5 grow">
-                <h3 className="text-lg font-bold text-[#e05d45]">{quest.title}</h3>
+                <h3 className="text-lg font-bold text-[#f97316]">{quest.title}</h3>
                 <p className="text-[13px] text-[#6b6560] leading-relaxed line-clamp-3">
                   {quest.description}
                 </p>
               </Card.Content>
-              <Card.Footer className="p-0 pt-4 mt-auto border-t border-[#f5ddd9] flex justify-between items-center">
+              <Card.Footer className="p-0 pt-4 mt-auto border-t border-[#ffedd5] flex justify-between items-center">
                 <span className="font-bold font-mono text-[13px] text-[#f59e0b]">
                   {formatReward(quest.reward_per_user)} SOL
                 </span>
                 <Link
                   href={`/quests/${quest.uuid}`}
-                  className="flex items-center gap-1 text-xs font-bold text-[#e05d45] hover:text-[#891e0c] transition-colors group"
+                  className="flex items-center gap-1 text-xs font-bold text-[#f97316] hover:text-[#891e0c] transition-colors group"
                 >
                   Join <FiArrowRight className="transition-transform group-hover:translate-x-1" />
                 </Link>
@@ -188,7 +188,7 @@ function QuestExplorerPageContent() {
       {/* Load More Button (static placeholder for future pagination) */}
       {/* {!isLoading && !error && filteredQuests.length > 0 && (
         <div className="flex justify-center mt-4">
-          <Button className="bg-white border border-[#dfbfb9] text-[#e05d45] font-bold px-8 py-3 rounded-full hover:bg-[#ffffff] transition-colors shadow-sm">
+          <Button className="bg-white border border-[#fdba74] text-[#f97316] font-bold px-8 py-3 rounded-full hover:bg-[#ffffff] transition-colors shadow-sm">
             Load More Missions
           </Button>
         </div>
@@ -202,7 +202,7 @@ export default function QuestExplorerPage() {
     <Suspense fallback={
       <div className="flex flex-col gap-10">
         <section className="flex flex-col gap-3">
-          <h1 className="text-4xl font-extrabold text-[#e05d45] tracking-tight animate-pulse">Loading Quests...</h1>
+          <h1 className="text-4xl font-extrabold text-[#f97316] tracking-tight animate-pulse">Loading Quests...</h1>
         </section>
       </div>
     }>

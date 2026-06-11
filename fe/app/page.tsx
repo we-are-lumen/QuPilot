@@ -57,7 +57,7 @@ interface IMappedProvider {
 const THEME_COLORS = [
 	{ accentColor: "#3898FF", accentBg: "rgba(56,152,255,0.1)" }, // Sui Blue
 	{ accentColor: "#F7A600", accentBg: "rgba(247,166,0,0.1)" }, // Bybit Orange
-	{ accentColor: "#E05D45", accentBg: "rgba(166,52,32,0.1)" }, // QuPilot Red
+	{ accentColor: "#F97316", accentBg: "rgba(194,65,12,0.1)" }, // QuPilot Orange
 	{ accentColor: "#10B981", accentBg: "rgba(16,185,129,0.1)" }, // Emerald Green
 	{ accentColor: "#8B5CF6", accentBg: "rgba(139,92,246,0.1)" }, // Violet
 ];
@@ -168,10 +168,10 @@ function ProviderSection({ provider }: { provider: IMappedProvider }) {
 		<div className="clay-surface rounded-[2rem] p-1.5">
 			<div className="flex w-full flex-col gap-5 rounded-[calc(2rem-6px)] bg-white p-4 sm:p-5">
 				{/* Provider header row */}
-				<div className="flex flex-col justify-between gap-4 border-b border-[#DFBFB9]/30 pb-4 md:flex-row md:items-center">
+				<div className="flex flex-col justify-between gap-4 border-b border-[#FDBA74]/30 pb-4 md:flex-row md:items-center">
 					<div className="flex items-start gap-3.5">
 						{/* Logo placeholder */}
-						<div className="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-[#DFBFB9]/30 bg-white p-1 shadow-soft">
+						<div className="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-[#FDBA74]/30 bg-white p-1 shadow-soft">
 							<div className="w-full h-full rounded-3xl overflow-hidden flex items-center justify-center">
 								{provider.icon}
 							</div>
@@ -253,7 +253,7 @@ function ProviderSkeleton() {
 		<div className="clay-surface rounded-[2rem] p-1.5">
 			<div className="flex w-full flex-col gap-5 rounded-[calc(2rem-6px)] bg-white p-4 sm:p-5">
 				{/* Header Skeleton */}
-				<div className="flex flex-col justify-between gap-4 border-b border-[#DFBFB9]/30 pb-4 md:flex-row md:items-center">
+				<div className="flex flex-col justify-between gap-4 border-b border-[#FDBA74]/30 pb-4 md:flex-row md:items-center">
 					<div className="flex items-start gap-3.5">
 						<Skeleton className="h-13 w-13 rounded-2xl" />
 						<div className="flex flex-col gap-2">
@@ -402,7 +402,7 @@ function FlowArrow({ delay }: { delay: number }) {
 					<svg viewBox="0 0 10 16" width="8" height="12" fill="none" aria-hidden="true">
 						<path
 							d="M1 1l8 7-8 7"
-							stroke="#E05D45"
+							stroke="#F97316"
 							strokeWidth="2.5"
 							strokeLinecap="round"
 							strokeLinejoin="round"
@@ -482,8 +482,8 @@ function QuestLifecycleFlow({ stats }: { stats: IPlatformStats }) {
 			label="QUEST"
 			title="Quest Published"
 			icon="quest"
-			accentColor="#E05D45"
-			accentBg="rgba(224,93,69,0.08)"
+			accentColor="#F97316"
+			accentBg="rgba(249,115,22,0.08)"
 			delay={0.5}
 		>
 			<div className="flex flex-col gap-2.5">
@@ -495,7 +495,7 @@ function QuestLifecycleFlow({ stats }: { stats: IPlatformStats }) {
 					</div>
 					<span
 						className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
-						style={{ background: "rgba(224,93,69,0.08)", color: "#E05D45" }}
+						style={{ background: "rgba(249,115,22,0.08)", color: "#F97316" }}
 					>
 						+0.05 SOL
 					</span>
@@ -506,7 +506,7 @@ function QuestLifecycleFlow({ stats }: { stats: IPlatformStats }) {
 						<span>60% Full</span>
 					</div>
 					<div className="h-1 w-full rounded-full bg-black/5 overflow-hidden">
-						<div className="h-full w-[60%] rounded-full bg-[#E05D45]" />
+						<div className="h-full w-[60%] rounded-full bg-[#F97316]" />
 					</div>
 				</div>
 				<span className="text-[9px] text-[#A39D97] font-medium">by Byreal</span>
@@ -621,7 +621,7 @@ function QuestLifecycleFlow({ stats }: { stats: IPlatformStats }) {
 			className="clay-surface relative overflow-hidden rounded-[32px] bg-white"
 		>
 			{/* faint warm wash */}
-			<div className="pointer-events-none absolute inset-x-10 top-8 h-32 rounded-[40px] bg-[#fbe4df]/35 blur-3xl" />
+			<div className="pointer-events-none absolute inset-x-10 top-8 h-32 rounded-[40px] bg-[#ffedd5]/35 blur-3xl" />
 
 			<div className="relative px-4 py-8 sm:px-8 sm:py-10">
 				{/* Desktop lg+: single row with connecting arrows */}
@@ -966,7 +966,7 @@ function LandingPageContent() {
 
 	if (isCheckingAuth) {
 		return (
-			<div className="min-h-screen flex flex-col items-center justify-center bg-[#FFFFFF] text-[#E05D45]">
+			<div className="min-h-screen flex flex-col items-center justify-center bg-[#FFFFFF] text-[#F97316]">
 				<div className="flex flex-col items-center gap-4">
 					<FaRocket className="w-12 h-12 animate-bounce" />
 					<span className="font-bold tracking-wide text-sm font-sans animate-pulse">
@@ -999,13 +999,13 @@ function LandingPageContent() {
 					</Link>
 
 					<nav className="hidden items-center gap-7 text-sm font-bold text-[#6B6560] lg:flex">
-						<a href="#how-it-works" className="transition-colors hover:text-[#E05D45]">
+						<a href="#how-it-works" className="transition-colors hover:text-[#F97316]">
 							How it works
 						</a>
-						<a href="#quests" className="transition-colors hover:text-[#E05D45]">
+						<a href="#quests" className="transition-colors hover:text-[#F97316]">
 							Quests
 						</a>
-						<a href="#leaderboard" className="transition-colors hover:text-[#E05D45]">
+						<a href="#leaderboard" className="transition-colors hover:text-[#F97316]">
 							Leaderboard
 						</a>
 					</nav>
@@ -1016,7 +1016,7 @@ function LandingPageContent() {
 							<div className="flex items-center gap-2">
 								<div
 									className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-bold"
-									style={{ background: "#FFE9E5", color: "#E05D45" }}
+									style={{ background: "#FFF7ED", color: "#F97316" }}
 								>
 									<span
 										className="w-2 h-2 rounded-full animate-pulse"
@@ -1053,7 +1053,7 @@ function LandingPageContent() {
 						className="h-full transition-all duration-75 ease-out"
 						style={{
 							width: `${scrollProgress}%`,
-							background: "#E05D45",
+							background: "#F97316",
 						}}
 					/>
 				</div>
@@ -1109,7 +1109,7 @@ function LandingPageContent() {
 						className="max-w-6xl text-[48px] font-extrabold leading-[0.96] text-[#211c1a] sm:text-[72px] md:text-[88px] lg:text-[98px] font-sans tracking-[-0.025em]"
 					>
 						Coordinate quests.
-						<span className="block text-[#E05D45] [text-shadow:0_5px_0_#f6c9c0]">
+						<span className="block text-[#F97316] [text-shadow:0_5px_0_#f6c9c0]">
 							Let agents execute.
 						</span>
 					</motion.h1>
@@ -1155,7 +1155,7 @@ function LandingPageContent() {
 						<Link
 							href="/quests"
 							id="hero-view-quests"
-							className="clay-surface-soft inline-flex items-center justify-center rounded-xl px-7 py-3 text-sm font-bold text-[#211c1a] hover:border-[#E05D45]/30 hover:text-[#E05D45] sm:text-base"
+							className="clay-surface-soft inline-flex items-center justify-center rounded-xl px-7 py-3 text-sm font-bold text-[#211c1a] hover:border-[#F97316]/30 hover:text-[#F97316] sm:text-base"
 						>
 							Become a Provider
 						</Link>
@@ -1170,11 +1170,11 @@ function LandingPageContent() {
 						<button
 							type="button"
 							onClick={handleCopySkillPrompt}
-							className="clay-surface-soft group inline-flex items-center gap-2.5 rounded-2xl px-4 py-2.5 text-left hover:border-[#E05D45]/25"
+							className="clay-surface-soft group inline-flex items-center gap-2.5 rounded-2xl px-4 py-2.5 text-left hover:border-[#F97316]/25"
 							aria-label="Copy skill prompt to clipboard"
 							title="Click to copy"
 						>
-							<span className="font-extrabold text-[#E05D45] text-base leading-none">A\</span>
+							<span className="font-extrabold text-[#F97316] text-base leading-none">A\</span>
 							<span className="text-sm font-bold text-[#111111]">Claude Skill included</span>
 							<span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#14F195]/15 text-[#0fae6e]">
 								<svg
@@ -1215,7 +1215,7 @@ function LandingPageContent() {
 						transition={{ duration: 0.7, ease: "easeOut" }}
 						className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center"
 					>
-						<span className="clay-surface-soft inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#E05D45]">
+						<span className="clay-surface-soft inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#F97316]">
 							How it works
 						</span>
 						<h2
@@ -1223,7 +1223,7 @@ function LandingPageContent() {
 							style={{ fontFamily: "var(--font-nunito)", letterSpacing: "-0.02em" }}
 						>
 							Agents do the clicks.
-							<span className="text-[#E05D45]"> Protocols keep the proof.</span>
+							<span className="text-[#F97316]"> Protocols keep the proof.</span>
 						</h2>
 						<p className="max-w-xl text-pretty text-base leading-relaxed text-[#746c68] sm:text-lg">
 							One quest, four steps. Providers escrow the reward, an agent executes on-chain,
@@ -1282,7 +1282,7 @@ function LandingPageContent() {
 					transition={{ duration: 0.7, ease: "easeOut" }}
 					className="flex flex-col items-center gap-3 text-center"
 				>
-					<span className="clay-surface-soft inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#E05D45]">
+					<span className="clay-surface-soft inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#F97316]">
 						Live quests
 					</span>
 					<h2
@@ -1316,7 +1316,7 @@ function LandingPageContent() {
 								style={{
 									background: "rgba(255,255,255,0.85)",
 								border: "1px solid rgba(223,191,185,0.3)",
-								boxShadow: "0px 8px 32px 0px rgba(166,52,32,0.05)",
+								boxShadow: "0px 8px 32px 0px rgba(194,65,12,0.05)",
 							}}
 						>
 								<p className="text-base font-semibold" style={{ color: "#6B6560" }}>
@@ -1328,7 +1328,7 @@ function LandingPageContent() {
 			</main>
 
 			{/* ── Leaderboard Section ── */}
-			<section id="leaderboard" className="bg-[#fbf8f7] border-t border-[#EEE6E3]">
+			<section id="leaderboard" className="bg-[#fff7ed] border-t border-[#fed7aa]">
 				<div className="max-w-7xl mx-auto w-full flex flex-col gap-10 px-5 py-20 sm:px-8 sm:py-24">
 					<motion.div
 						initial={{ opacity: 0, y: 30 }}
@@ -1337,7 +1337,7 @@ function LandingPageContent() {
 						transition={{ duration: 0.7, ease: "easeOut" }}
 						className="flex flex-col items-center gap-3 text-center"
 					>
-						<span className="clay-surface-soft inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#E05D45]">
+						<span className="clay-surface-soft inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#F97316]">
 							Leaderboard
 						</span>
 						<h2
@@ -1374,7 +1374,7 @@ function LandingPageContent() {
 						transition={{ duration: 0.7, ease: "easeOut" }}
 						className="clay-surface relative overflow-hidden rounded-[32px] bg-white px-6 py-12 text-center sm:px-12 sm:py-16"
 					>
-						<div className="pointer-events-none absolute inset-x-12 top-6 h-32 rounded-[40px] bg-[#fbe4df]/40 blur-3xl" />
+						<div className="pointer-events-none absolute inset-x-12 top-6 h-32 rounded-[40px] bg-[#ffedd5]/40 blur-3xl" />
 						<div className="relative flex flex-col items-center gap-5">
 							<h2
 								className="max-w-2xl text-3xl font-extrabold leading-tight text-[#211c1a] sm:text-[44px]"
@@ -1410,9 +1410,9 @@ function LandingPageContent() {
 								<button
 									type="button"
 									onClick={handleCopySkillPrompt}
-									className="clay-surface-soft inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3 text-sm font-bold text-[#211c1a] hover:border-[#E05D45]/30 hover:text-[#E05D45] sm:text-base"
+									className="clay-surface-soft inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3 text-sm font-bold text-[#211c1a] hover:border-[#F97316]/30 hover:text-[#F97316] sm:text-base"
 								>
-									<span className="font-extrabold text-[#E05D45] leading-none">A\</span>
+									<span className="font-extrabold text-[#F97316] leading-none">A\</span>
 									Copy Claude Skill
 								</button>
 							</div>
@@ -1422,7 +1422,7 @@ function LandingPageContent() {
 			</section>
 
 			{/* ── Footer ── */}
-			<footer className="mt-auto bg-[#f8f4ef] border-t border-[#DFBFB9]/50">
+			<footer className="mt-auto bg-[#f8f4ef] border-t border-[#FDBA74]/50">
 					<div className="max-w-7xl mx-auto flex flex-col gap-8" style={{ padding: "32px 20px" }}>
 						{/* Top row */}
 						<div className="flex flex-col items-start justify-between gap-10 md:flex-row md:gap-12">
@@ -1440,7 +1440,7 @@ function LandingPageContent() {
 								</span>
 								<span
 									className="text-2xl font-extrabold tracking-tight"
-									style={{ fontFamily: "var(--font-nunito)", color: "#E05D45" }}
+									style={{ fontFamily: "var(--font-nunito)", color: "#F97316" }}
 								>
 									QuPilot
 								</span>
@@ -1464,7 +1464,7 @@ function LandingPageContent() {
 									<Link
 										key={l}
 										href="#"
-										className="text-sm hover:text-[#E05D45] transition-colors"
+										className="text-sm hover:text-[#F97316] transition-colors"
 										style={{ color: "#6B6560" }}
 									>
 										{l}
@@ -1487,7 +1487,7 @@ function LandingPageContent() {
 									<Link
 										key={label}
 										href="#"
-										className="flex items-center gap-2 text-sm hover:text-[#E05D45] transition-colors"
+										className="flex items-center gap-2 text-sm hover:text-[#F97316] transition-colors"
 										style={{ color: "#6B6560" }}
 									>
 										{icon} {label}
@@ -1510,7 +1510,7 @@ function LandingPageContent() {
 								<Link
 									key={l}
 									href="#"
-									className="text-sm hover:text-[#E05D45] transition-colors"
+									className="text-sm hover:text-[#F97316] transition-colors"
 									style={{ color: "#6B6560" }}
 								>
 									{l}
@@ -1534,7 +1534,7 @@ export default function Home() {
 	return (
 		<Suspense
 			fallback={
-				<div className="min-h-screen flex items-center justify-center bg-[#FFFFFF] text-[#E05D45] font-bold">
+				<div className="min-h-screen flex items-center justify-center bg-[#FFFFFF] text-[#F97316] font-bold">
 					Loading...
 				</div>
 			}

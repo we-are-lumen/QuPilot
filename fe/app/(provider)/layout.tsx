@@ -81,7 +81,7 @@ export default function ProviderLayout({
               <span className="text-xl text-[#211c1a] font-extrabold tracking-tight">
                 QuPilot
               </span>
-              <span className="px-2.5 py-1 rounded-xl bg-[#fbe4df] text-[#e05d45] text-[10px] font-bold border border-[#e05d45]/15 tracking-wider shadow-[inset_0_1px_0_white]">
+              <span className="px-2.5 py-1 rounded-xl bg-[#ffedd5] text-[#f97316] text-[10px] font-bold border border-[#f97316]/15 tracking-wider shadow-[inset_0_1px_0_white]">
                 PROVIDER
               </span>
             </Link>
@@ -93,9 +93,9 @@ export default function ProviderLayout({
               <button
                 type="button"
                 onClick={() => setIsMenuOpen((prev) => !prev)}
-                className="clay-surface-soft flex items-center gap-2 px-3 py-1.5 rounded-2xl cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#e05d45]"
+                className="clay-surface-soft flex items-center gap-2 px-3 py-1.5 rounded-2xl cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#f97316]"
               >
-                <Avatar size="sm" className="bg-[#e05d45] text-white font-bold">
+                <Avatar size="sm" className="bg-[#f97316] text-white font-bold">
                   <Avatar.Fallback>{initials}</Avatar.Fallback>
                 </Avatar>
                 <div className="hidden lg:flex flex-col text-left">
@@ -109,9 +109,9 @@ export default function ProviderLayout({
               </button>
 
               {isMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl border border-[#f5ddd9] shadow-lg p-2 z-50">
+                <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl border border-[#ffedd5] shadow-lg p-2 z-50">
                   {/* Profile info */}
-                  <div className="px-3 py-2 border-b border-[#f5ddd9] mb-1">
+                  <div className="px-3 py-2 border-b border-[#ffedd5] mb-1">
                     <p className="text-xs font-bold text-[#1f1b18] truncate">
                       {user?.display_name ?? "Provider"}
                     </p>
@@ -128,7 +128,7 @@ export default function ProviderLayout({
 
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-[#e05d45] hover:bg-[#ffe9e5] rounded-md transition-colors w-full text-left font-medium cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-[#f97316] hover:bg-[#fff7ed] rounded-md transition-colors w-full text-left font-medium cursor-pointer"
                   >
                     <LuLogOut size={16} />
                     <span>Logout</span>
@@ -149,17 +149,17 @@ export default function ProviderLayout({
       <footer className="border-t border-[#eee6e3] bg-white py-8 text-[#746c68] mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-[#e05d45] text-sm">QuPilot</span>
+            <span className="font-bold text-[#f97316] text-sm">QuPilot</span>
             <span className="text-xs">| Provider Console</span>
           </div>
           <p className="text-xs text-center">
             &copy; 2026 QuPilot Web3 Quests. Powering decentralized autonomous discovery. &#x1FA90;
           </p>
           <div className="flex gap-4 text-xs font-bold">
-            <Link href="#" className="hover:text-[#e05d45] transition-colors">Terms</Link>
-            <Link href="#" className="hover:text-[#e05d45] transition-colors">Privacy</Link>
-            <Link href="#" className="hover:text-[#e05d45] transition-colors">Twitter</Link>
-            <Link href="#" className="hover:text-[#e05d45] transition-colors">Discord</Link>
+            <Link href="#" className="hover:text-[#f97316] transition-colors">Terms</Link>
+            <Link href="#" className="hover:text-[#f97316] transition-colors">Privacy</Link>
+            <Link href="#" className="hover:text-[#f97316] transition-colors">Twitter</Link>
+            <Link href="#" className="hover:text-[#f97316] transition-colors">Discord</Link>
           </div>
         </div>
       </footer>

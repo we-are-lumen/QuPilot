@@ -86,8 +86,8 @@ export default function UserLayout({
               href="/explore"
               className={`px-1 py-1 text-sm font-bold transition-all flex items-center gap-1.5 ${
                 pathname === "/explore"
-                  ? "text-[#e05d45] border-b-2 border-[#e05d45]"
-                  : "text-[#6b6560] hover:text-[#e05d45]"
+                  ? "text-[#f97316] border-b-2 border-[#f97316]"
+                  : "text-[#6b6560] hover:text-[#f97316]"
               }`}
             >
               <FiLayout size={16} />
@@ -98,8 +98,8 @@ export default function UserLayout({
               href="/quests"
               className={`px-1 py-1 text-sm font-bold transition-all flex items-center gap-1.5 ${
                 pathname === "/quests"
-                  ? "text-[#e05d45] border-b-2 border-[#e05d45]"
-                  : "text-[#6b6560] hover:text-[#e05d45]"
+                  ? "text-[#f97316] border-b-2 border-[#f97316]"
+                  : "text-[#6b6560] hover:text-[#f97316]"
               }`}
             >
               <FiCompass size={16} />
@@ -111,8 +111,8 @@ export default function UserLayout({
                 href="/profile"
                 className={`px-1 py-1 text-sm font-bold transition-all flex items-center gap-1.5 ${
                   pathname === "/profile"
-                    ? "text-[#e05d45] border-b-2 border-[#e05d45]"
-                    : "text-[#6b6560] hover:text-[#e05d45]"
+                    ? "text-[#f97316] border-b-2 border-[#f97316]"
+                    : "text-[#6b6560] hover:text-[#f97316]"
                 }`}
               >
                 <FiUser size={16} />
@@ -124,8 +124,8 @@ export default function UserLayout({
               href="/leaderboard"
               className={`px-1 py-1 text-sm font-bold transition-all flex items-center gap-1.5 ${
                 pathname === "/leaderboard"
-                  ? "text-[#e05d45] border-b-2 border-[#e05d45]"
-                  : "text-[#6b6560] hover:text-[#e05d45]"
+                  ? "text-[#f97316] border-b-2 border-[#f97316]"
+                  : "text-[#6b6560] hover:text-[#f97316]"
               }`}
             >
               <FiAward size={16} />
@@ -138,8 +138,8 @@ export default function UserLayout({
             {user ? (
               <Popover>
                 <Popover.Trigger>
-                  <button type="button" className="clay-surface-soft flex items-center gap-2 px-3 py-1.5 rounded-2xl cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#e05d45]">
-                    <Avatar size="sm" className="bg-[#e05d45] text-white font-bold shadow-none">
+                  <button type="button" className="clay-surface-soft flex items-center gap-2 px-3 py-1.5 rounded-2xl cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#f97316]">
+                    <Avatar size="sm" className="bg-[#f97316] text-white font-bold shadow-none">
                       <Avatar.Fallback>{initials}</Avatar.Fallback>
                     </Avatar>
                     <div className="hidden lg:flex flex-col text-left">
@@ -156,7 +156,7 @@ export default function UserLayout({
                   <Popover.Dialog className="w-52 p-2">
                     <div className="flex flex-col w-full gap-1">
                       {/* Profile info */}
-                      <div className="px-3 py-2 border-b border-[#f5ddd9] mb-1">
+                      <div className="px-3 py-2 border-b border-[#ffedd5] mb-1">
                         <p className="text-xs font-bold text-[#1f1b18] truncate">
                           {user?.display_name ?? "User"}
                         </p>
@@ -173,7 +173,7 @@ export default function UserLayout({
 
                       <button
                         onClick={handleDisconnectWallet}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-[#e05d45] hover:bg-[#ffe9e5] rounded-md transition-colors w-full text-left font-medium cursor-pointer"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-[#f97316] hover:bg-[#fff7ed] rounded-md transition-colors w-full text-left font-medium cursor-pointer"
                       >
                         <LuLogOut size={16} />
                         <span>Disconnect Wallet</span>
@@ -205,20 +205,20 @@ export default function UserLayout({
       <footer className="bg-white border-t border-[#eee6e3] py-8 text-sm text-[#746c68]">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="font-extrabold text-[#e05d45] text-lg">QuPilot</span>
+            <span className="font-extrabold text-[#f97316] text-lg">QuPilot</span>
             <span>© 2026 QuPilot Web3 Quests. Explore the stars.</span>
           </div>
 
           <div className="flex items-center gap-6">
             <Link
               href="/terms"
-              className="hover:text-[#e05d45] transition-colors"
+              className="hover:text-[#f97316] transition-colors"
             >
               Terms
             </Link>
             <Link
               href="/privacy"
-              className="hover:text-[#e05d45] transition-colors"
+              className="hover:text-[#f97316] transition-colors"
             >
               Privacy
             </Link>
@@ -226,7 +226,7 @@ export default function UserLayout({
               href="https://twitter.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[#e05d45] transition-colors flex items-center gap-1"
+              className="hover:text-[#f97316] transition-colors flex items-center gap-1"
             >
               <FaTwitter size={14} />
               Twitter
@@ -235,7 +235,7 @@ export default function UserLayout({
               href="https://discord.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[#e05d45] transition-colors flex items-center gap-1"
+              className="hover:text-[#f97316] transition-colors flex items-center gap-1"
             >
               <FaDiscord size={14} />
               Discord

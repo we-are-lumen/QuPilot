@@ -8,7 +8,7 @@ export default function LeaderboardPage() {
     <div className="flex flex-col gap-10 max-w-6xl mx-auto px-4 md:px-8 py-6">
       {/* Header Section */}
       <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
-        <h1 className="text-display text-[#e05d45] text-4xl md:text-5xl font-extrabold tracking-tight">
+        <h1 className="text-display text-[#f97316] text-4xl md:text-5xl font-extrabold tracking-tight">
           Global Rankings
         </h1>
         <p className="text-body-lg text-[#6b6560] leading-relaxed">

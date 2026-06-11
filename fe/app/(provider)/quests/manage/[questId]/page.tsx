@@ -158,7 +158,7 @@ export default function ProviderQuestDetailPage() {
 						</Link>
 						<button
 							onClick={() => refetch()}
-							className="bg-[#e05d45] hover:bg-[#e05d45]/90 text-white font-bold text-xs rounded-full px-6 py-3 shadow-sm transition-all"
+							className="bg-[#f97316] hover:bg-[#f97316]/90 text-white font-bold text-xs rounded-full px-6 py-3 shadow-sm transition-all"
 						>
 							Retry Fetch
 						</button>
@@ -187,7 +187,7 @@ export default function ProviderQuestDetailPage() {
 			{/* Quest Header Hero */}
 			<div className="bg-surface border-2 border-surface-variant rounded-xl p-6 md:p-8 flex flex-col gap-6 relative overflow-hidden shadow-soft">
 				{/* Decorative Blob */}
-				<div className="absolute -right-10 -top-10 w-64 h-64 bg-[#ffdad3] rounded-full blur-3xl opacity-60 pointer-events-none" />
+				<div className="absolute -right-10 -top-10 w-64 h-64 bg-[#fed7aa] rounded-full blur-3xl opacity-60 pointer-events-none" />
 
 				{/* Content Info */}
 				<div className="flex-1 flex flex-col gap-4 z-10 w-full">
@@ -239,7 +239,7 @@ export default function ProviderQuestDetailPage() {
 							<span className="text-label text-text-muted font-bold tracking-wider">
 								TOTAL REWARD POOL
 							</span>
-							<div className="flex items-center gap-2 text-[#e05d45] font-heading font-bold text-[17px]">
+							<div className="flex items-center gap-2 text-[#f97316] font-heading font-bold text-[17px]">
 								<FiTrendingUp className="text-lg" />
 								<span>{formatReward(quest.total_reward_pool)}</span>
 							</div>
@@ -393,7 +393,7 @@ export default function ProviderQuestDetailPage() {
 				{/* Right Column: Stats (takes 1 col on lg) */}
 				<div className="flex flex-col gap-8">
 					{/* Total Agents Badge (Red/Coral Card) */}
-					<div className="bg-[#c84b35] rounded-xl p-6 text-white flex flex-col gap-2 relative overflow-hidden shadow-medium select-none border border-outline-variant">
+					<div className="bg-[#c2410c] rounded-xl p-6 text-white flex flex-col gap-2 relative overflow-hidden shadow-medium select-none border border-outline-variant">
 						<div className="absolute -right-5 -bottom-5 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
 						<span className="text-label text-white/80 font-bold tracking-wider">
 							TOTAL AGENTS DEPLOYED
@@ -425,7 +425,7 @@ export default function ProviderQuestDetailPage() {
 									value={analytics.success_rate * 100}
 									className="w-full"
 								>
-									<ProgressBar.Track className="bg-[#ffe9e5] h-3.5 rounded-full overflow-hidden border border-[#f5ddd9]">
+									<ProgressBar.Track className="bg-[#fff7ed] h-3.5 rounded-full overflow-hidden border border-[#ffedd5]">
 										<ProgressBar.Fill
 											className="bg-accent rounded-full h-full"
 											style={{ width: `${analytics.success_rate * 100}%` }}
@@ -487,7 +487,7 @@ export default function ProviderQuestDetailPage() {
 											href={`https://solscan.io/tx/${quest.tx_hash}${SOLANA_RPC_URL.includes("devnet") ? "?cluster=devnet" : ""}`}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="flex items-center gap-2 text-[#e05d45] hover:underline"
+											className="flex items-center gap-2 text-[#f97316] hover:underline"
 										>
 											<FiActivity className="text-secondary shrink-0" />
 											<span>
@@ -509,7 +509,7 @@ export default function ProviderQuestDetailPage() {
 											href={`https://solscan.io/account/${quest.quest_pool_pda}${SOLANA_RPC_URL.includes("devnet") ? "?cluster=devnet" : ""}`}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="flex items-center gap-2 text-[#e05d45] hover:underline"
+											className="flex items-center gap-2 text-[#f97316] hover:underline"
 										>
 											<FiCheckCircle className="text-success shrink-0" />
 											<span>
@@ -531,7 +531,7 @@ export default function ProviderQuestDetailPage() {
 											href={`https://solscan.io/account/${quest.quest_id_onchain}${SOLANA_RPC_URL.includes("devnet") ? "?cluster=devnet" : ""}`}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="flex items-center gap-2 text-[#e05d45] hover:underline"
+											className="flex items-center gap-2 text-[#f97316] hover:underline"
 										>
 											<FiCheckCircle className="text-success shrink-0" />
 											<span>
@@ -611,7 +611,7 @@ export default function ProviderQuestDetailPage() {
 															href={`https://solscan.io/tx/${p.join_tx_hash}${clusterSuffix}`}
 															target="_blank"
 															rel="noopener noreferrer"
-															className="flex items-center gap-1.5 text-[#e05d45] hover:underline font-mono text-[12px]"
+															className="flex items-center gap-1.5 text-[#f97316] hover:underline font-mono text-[12px]"
 														>
 															<span>{p.join_tx_hash.slice(0, 6)}...{p.join_tx_hash.slice(-4)}</span>
 															<FiExternalLink className="text-[10px] shrink-0" />

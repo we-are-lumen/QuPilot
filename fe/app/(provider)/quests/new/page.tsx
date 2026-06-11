@@ -297,10 +297,10 @@ export default function CreateQuestPage() {
             <Autocomplete.ClearButton />
             <Autocomplete.Indicator />
           </Autocomplete.Trigger>
-          <Autocomplete.Popover className="bg-white border border-[#dfbfb9] rounded-md shadow-lg max-h-80 overflow-auto w-(--trigger-width)">
+          <Autocomplete.Popover className="bg-white border border-[#fdba74] rounded-md shadow-lg max-h-80 overflow-auto w-(--trigger-width)">
             <Autocomplete.Filter filter={contains}>
               <SearchField autoFocus name="search" variant="secondary" className="p-1">
-                <SearchField.Group className="flex items-center gap-1 border border-[#dfbfb9] rounded-md px-2 py-1 bg-white">
+                <SearchField.Group className="flex items-center gap-1 border border-[#fdba74] rounded-md px-2 py-1 bg-white">
                   <SearchField.SearchIcon className="text-gray-400 size-4" />
                   <SearchField.Input placeholder="Search tokens..." className="w-full text-xs outline-none bg-transparent" />
                   <SearchField.ClearButton />
@@ -312,7 +312,7 @@ export default function CreateQuestPage() {
                     key={token.mint}
                     id={token.mint}
                     textValue={getTokenLabel(token)}
-                    className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between gap-3"
+                    className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#ffedd5] rounded-md cursor-pointer flex items-center justify-between gap-3"
                   >
                     <span className="flex items-center gap-3 min-w-0">
                       {token.logo_uri ? (
@@ -322,7 +322,7 @@ export default function CreateQuestPage() {
                           style={{ backgroundImage: `url(${token.logo_uri})` }}
                         />
                       ) : (
-                        <span className="size-6 rounded-full bg-[#f5ddd9] text-[#e05d45] text-[10px] font-extrabold flex items-center justify-center">
+                        <span className="size-6 rounded-full bg-[#ffedd5] text-[#f97316] text-[10px] font-extrabold flex items-center justify-center">
                           {token.symbol.slice(0, 2)}
                         </span>
                       )}
@@ -543,8 +543,8 @@ export default function CreateQuestPage() {
         >
           {/* Section 1: Identity */}
           <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-2 pb-3 border-b border-[#f5ddd9]">
-              <FiTarget className="text-[#e05d45] text-xl" />
+            <div className="flex items-center gap-2 pb-3 border-b border-[#ffedd5]">
+              <FiTarget className="text-[#f97316] text-xl" />
               <h2 className="text-[#1f1b18] text-xl font-bold font-nunito">Quest Identity</h2>
             </div>
 
@@ -575,8 +575,8 @@ export default function CreateQuestPage() {
 
           {/* Section 2: Protocol Details */}
           <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-2 pb-3 border-b border-[#f5ddd9]">
-              <FiSliders className="text-[#e05d45] text-xl" />
+            <div className="flex items-center gap-2 pb-3 border-b border-[#ffedd5]">
+              <FiSliders className="text-[#f97316] text-xl" />
               <h2 className="text-[#1f1b18] text-xl font-bold font-nunito">Target & Action Configuration</h2>
             </div>
 
@@ -593,17 +593,17 @@ export default function CreateQuestPage() {
                   <Select.Value />
                   <Select.Indicator className="ml-2" />
                 </Select.Trigger>
-                <Select.Popover className="bg-white border border-[#dfbfb9] rounded-md shadow-lg">
+                <Select.Popover className="bg-white border border-[#fdba74] rounded-md shadow-lg">
                   <ListBox className="p-1">
-                    <ListBox.Item id="byreal" textValue="Byreal" className="px-3 py-2 text-base text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                    <ListBox.Item id="byreal" textValue="Byreal" className="px-3 py-2 text-base text-[#1f1b18] hover:bg-[#ffedd5] rounded-md cursor-pointer flex items-center justify-between">
                       Byreal
                       <ListBox.ItemIndicator />
                     </ListBox.Item>
-                    <ListBox.Item id="bybit" textValue="Bybit" className="px-3 py-2 text-base text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                    <ListBox.Item id="bybit" textValue="Bybit" className="px-3 py-2 text-base text-[#1f1b18] hover:bg-[#ffedd5] rounded-md cursor-pointer flex items-center justify-between">
                       Bybit
                       <ListBox.ItemIndicator />
                     </ListBox.Item>
-                    <ListBox.Item id="sui" textValue="Sui" className="px-3 py-2 text-base text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                    <ListBox.Item id="sui" textValue="Sui" className="px-3 py-2 text-base text-[#1f1b18] hover:bg-[#ffedd5] rounded-md cursor-pointer flex items-center justify-between">
                       Sui (Aptos/Move-based)
                       <ListBox.ItemIndicator />
                     </ListBox.Item>
@@ -615,7 +615,7 @@ export default function CreateQuestPage() {
 
           {/* Section 3: Dynamic Step Builder */}
           <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-2 pb-3 border-b border-[#f5ddd9]">
+            <div className="flex items-center gap-2 pb-3 border-b border-[#ffedd5]">
               <FiSliders className="text-[#008282] text-xl" />
               <h2 className="text-[#1f1b18] text-xl font-bold font-nunito">AI Execution Steps</h2>
             </div>
@@ -628,7 +628,7 @@ export default function CreateQuestPage() {
               {steps.map((step, sIdx) => (
                 <div key={step.step} className="relative pl-10 pb-8">
                   {/* Connecting Line */}
-                  <div className="absolute left-3.75 top-8 bottom-0 w-0.5 border-l-2 border-dashed border-[#dfbfb9]" />
+                  <div className="absolute left-3.75 top-8 bottom-0 w-0.5 border-l-2 border-dashed border-[#fdba74]" />
 
                   {/* Timeline Dot */}
                   <div className="absolute left-0 top-0 size-8 rounded-full bg-[#008282] text-white flex items-center justify-center font-nunito font-extrabold text-sm shadow-sm border-2 border-white ring-4 ring-white">
@@ -637,7 +637,7 @@ export default function CreateQuestPage() {
 
                   {/* Step Container Box */}
                   <div className="clay-surface-soft rounded-[28px] p-6 flex flex-col gap-5">
-                    <div className="flex items-center justify-between border-b border-[#dfbfb9]/30 pb-2">
+                    <div className="flex items-center justify-between border-b border-[#fdba74]/30 pb-2">
                       <span className="font-nunito font-extrabold text-sm text-[#008282] tracking-wider uppercase">
                         Configure Step {step.step}
                       </span>
@@ -646,7 +646,7 @@ export default function CreateQuestPage() {
                           type="button"
                           variant="tertiary"
                           onPress={() => removeStep(sIdx)}
-                          className="text-[#e05d45] bg-transparent border-0 p-1 hover:text-[#8c2a1a] flex items-center gap-1 cursor-pointer text-xs"
+                          className="text-[#f97316] bg-transparent border-0 p-1 hover:text-[#8c2a1a] flex items-center gap-1 cursor-pointer text-xs"
                         >
                           <FiTrash2 /> Remove Step
                         </Button>
@@ -667,21 +667,21 @@ export default function CreateQuestPage() {
                           <Select.Value />
                           <Select.Indicator className="ml-2" />
                         </Select.Trigger>
-                        <Select.Popover className="bg-white border border-[#dfbfb9] rounded-md shadow-lg">
+                        <Select.Popover className="bg-white border border-[#fdba74] rounded-md shadow-lg">
                           <ListBox className="p-1">
-                            <ListBox.Item id="swap" textValue="Token Swap" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                            <ListBox.Item id="swap" textValue="Token Swap" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#ffedd5] rounded-md cursor-pointer flex items-center justify-between">
                               Token Swap (swap)
                               <ListBox.ItemIndicator />
                             </ListBox.Item>
-                            <ListBox.Item id="clmm_open" textValue="Open CLMM Position" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                            <ListBox.Item id="clmm_open" textValue="Open CLMM Position" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#ffedd5] rounded-md cursor-pointer flex items-center justify-between">
                               Open CLMM Position (clmm_open)
                               <ListBox.ItemIndicator />
                             </ListBox.Item>
-                            <ListBox.Item id="clmm_close" textValue="Close CLMM Position" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                            <ListBox.Item id="clmm_close" textValue="Close CLMM Position" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#ffedd5] rounded-md cursor-pointer flex items-center justify-between">
                               Close CLMM Position (clmm_close)
                               <ListBox.ItemIndicator />
                             </ListBox.Item>
-                            <ListBox.Item id="clmm_copy" textValue="Copy Strategy" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#f5ddd9] rounded-md cursor-pointer flex items-center justify-between">
+                            <ListBox.Item id="clmm_copy" textValue="Copy Strategy" className="px-3 py-2 text-sm text-[#1f1b18] hover:bg-[#ffedd5] rounded-md cursor-pointer flex items-center justify-between">
                               Copy Strategy (clmm_copy)
                               <ListBox.ItemIndicator />
                             </ListBox.Item>
@@ -695,7 +695,7 @@ export default function CreateQuestPage() {
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-[#1f1b18] text-xs font-bold tracking-wide">Action Parameters</span>
                         {byrealTokensQuery.isError && (
-                          <span className="text-[11px] text-[#e05d45] font-semibold">
+                          <span className="text-[11px] text-[#f97316] font-semibold">
                             Byreal token list unavailable. Manual mint input is active.
                           </span>
                         )}
@@ -733,7 +733,7 @@ export default function CreateQuestPage() {
                 <Button
                   type="button"
                   onPress={addStep}
-                  className="bg-white border-2 border-[#e05d45] text-[#e05d45] hover:bg-[#e05d45]/5 font-bold py-2 px-5 rounded-full flex items-center gap-2 transition-all cursor-pointer text-sm shadow-sm"
+                  className="bg-white border-2 border-[#f97316] text-[#f97316] hover:bg-[#f97316]/5 font-bold py-2 px-5 rounded-full flex items-center gap-2 transition-all cursor-pointer text-sm shadow-sm"
                   isDisabled={isLoading}
                 >
                   <FiPlus className="text-lg" /> Add Next Step
@@ -744,7 +744,7 @@ export default function CreateQuestPage() {
 
           {/* Section 4: Rewards */}
           <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-2 pb-3 border-b border-[#f5ddd9]">
+            <div className="flex items-center gap-2 pb-3 border-b border-[#ffedd5]">
               <FiGift className="text-[#f59e0b] text-xl" />
               <h2 className="text-[#1f1b18] text-xl font-bold font-nunito">Reward & Treasury Allocation</h2>
             </div>
@@ -790,7 +790,7 @@ export default function CreateQuestPage() {
                 )}
               </div>
 
-              <div className="md:col-span-2 bg-[#faf7f5] rounded-2xl border border-[#f5ddd9] p-6 flex flex-col gap-2 mt-2">
+              <div className="md:col-span-2 bg-[#faf7f5] rounded-2xl border border-[#ffedd5] p-6 flex flex-col gap-2 mt-2">
                 <h3 className="text-[#1f1b18] text-sm font-bold tracking-wide">On-chain Deposit</h3>
                 <p className="text-[#6b6560] text-xs leading-relaxed">
                   When you submit this form, QuPilot will create an on-chain deposit via the QuPilot program using your connected wallet. If you already deposited, you can paste the deposit signature below.
@@ -825,7 +825,7 @@ export default function CreateQuestPage() {
 
           {/* Section 5: Expiration Settings */}
           <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-2 pb-3 border-b border-[#f5ddd9]">
+            <div className="flex items-center gap-2 pb-3 border-b border-[#ffedd5]">
               <FiClock className="text-[#008282] text-xl" />
               <h2 className="text-[#1f1b18] text-xl font-bold font-nunito">Quest Expiration</h2>
             </div>
@@ -850,7 +850,7 @@ export default function CreateQuestPage() {
                     </DatePicker.Trigger>
                   </DateField.Suffix>
                 </DateField.Group>
-                <DatePicker.Popover className="bg-white border border-[#dfbfb9] rounded-md shadow-lg p-3">
+                <DatePicker.Popover className="bg-white border border-[#fdba74] rounded-md shadow-lg p-3">
                   <Calendar aria-label="Expiration date" minValue={today(getLocalTimeZone())}>
                     <Calendar.Header className="flex items-center justify-between mb-2">
                       <Calendar.YearPickerTrigger className="font-bold flex items-center gap-1 cursor-pointer">
@@ -858,8 +858,8 @@ export default function CreateQuestPage() {
                         <Calendar.YearPickerTriggerIndicator />
                       </Calendar.YearPickerTrigger>
                       <div className="flex items-center gap-1">
-                        <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-[#f5ddd9] cursor-pointer" />
-                        <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-[#f5ddd9] cursor-pointer" />
+                        <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-[#ffedd5] cursor-pointer" />
+                        <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-[#ffedd5] cursor-pointer" />
                       </div>
                     </Calendar.Header>
                     <Calendar.Grid className="w-full border-collapse">
@@ -874,10 +874,10 @@ export default function CreateQuestPage() {
                               cn(
                                 "text-center text-sm p-1 rounded transition-colors flex items-center justify-center size-8",
                                 isDisabled
-                                  ? "text-[#dfbfb9]/40 cursor-not-allowed pointer-events-none opacity-40"
+                                  ? "text-[#fdba74]/40 cursor-not-allowed pointer-events-none opacity-40"
                                   : isSelected
-                                  ? "bg-[#e05d45] text-white font-bold"
-                                  : "hover:bg-[#f5ddd9]/60 cursor-pointer text-[#1f1b18]"
+                                  ? "bg-[#f97316] text-white font-bold"
+                                  : "hover:bg-[#ffedd5]/60 cursor-pointer text-[#1f1b18]"
                               ) || ""
                             }
                           />
@@ -889,7 +889,7 @@ export default function CreateQuestPage() {
                         {({ year }) => (
                           <Calendar.YearPickerCell
                             year={year}
-                            className="text-center p-2 hover:bg-[#f5ddd9] rounded cursor-pointer"
+                            className="text-center p-2 hover:bg-[#ffedd5] rounded cursor-pointer"
                           />
                         )}
                       </Calendar.YearPickerGridBody>
@@ -901,11 +901,11 @@ export default function CreateQuestPage() {
           </div>
 
           {/* Action Button */}
-          <div className="pt-8 mt-2 flex justify-end border-t border-[#f5ddd9]">
+          <div className="pt-8 mt-2 flex justify-end border-t border-[#ffedd5]">
             <Button
               type="submit"
               isDisabled={isLoading}
-              className="bg-[#e05d45] text-white font-bold py-3 px-8 rounded-full flex items-center gap-2 hover:bg-[#8c2a1a] transition-colors cursor-pointer"
+              className="bg-[#f97316] text-white font-bold py-3 px-8 rounded-full flex items-center gap-2 hover:bg-[#8c2a1a] transition-colors cursor-pointer"
             >
               {isLoading ? (
                 <div className="flex items-center gap-2">

@@ -59,7 +59,7 @@ export function BackpackIcon({ size = 24, ...props }: WalletIconProps) {
       xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
-      <rect x="4" y="6" width="16" height="14" rx="3" fill="#E05D45" />
+      <rect x="4" y="6" width="16" height="14" rx="3" fill="#F97316" />
       <path
         d="M8 6V4C8 3.45 8.45 3 9 3H15C15.55 3 16 3.45 16 4V6"
         stroke="white"
@@ -86,7 +86,7 @@ export function OkxIcon({ size = 24, ...props }: WalletIconProps) {
       <rect x="14" y="3" width="7" height="7" rx="1" fill="#1F1B18" />
       <rect x="3" y="14" width="7" height="7" rx="1" fill="#1F1B18" />
       <rect x="14" y="14" width="7" height="7" rx="1" fill="#1F1B18" />
-      <rect x="8.5" y="8.5" width="7" height="7" rx="1" fill="#E05D45" />
+      <rect x="8.5" y="8.5" width="7" height="7" rx="1" fill="#F97316" />
     </svg>
   );
 }

@@ -55,7 +55,7 @@ function TokenPill({ symbol, logoUri, mint }: { symbol?: string; logoUri?: strin
           onError={() => setImgError(true)}
         />
       ) : (
-        <div className="w-8 h-8 rounded-full bg-[#c84b351a] flex items-center justify-center shrink-0 text-[#e05d45] font-extrabold text-sm select-none">
+        <div className="w-8 h-8 rounded-full bg-[#c2410c1a] flex items-center justify-center shrink-0 text-[#f97316] font-extrabold text-sm select-none">
           {label.charAt(0).toUpperCase()}
         </div>
       )}
@@ -111,15 +111,15 @@ export default function UserQuestDetailPage() {
 
   if (error || !quest) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center gap-4 bg-[#fff5f5] border border-[#ffc1c1] rounded-2xl mx-auto my-10 p-10">
-        <p className="text-lg font-bold text-[#e53e3e]">Failed to load quest</p>
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center gap-4 bg-[#ffedd5] border border-[#fdba74] rounded-2xl mx-auto my-10 p-10">
+        <p className="text-lg font-bold text-[#c2410c]">Failed to load quest</p>
         <p className="text-sm text-[#6b6560]">
           We encountered an error while retrieving the quest details. Please
           verify the Quest ID or try again later.
         </p>
         <Link
           href="/quests"
-          className="text-body-sm text-[#e05d45] hover:underline flex items-center gap-1.5 font-bold uppercase tracking-wider mt-4"
+          className="text-body-sm text-[#f97316] hover:underline flex items-center gap-1.5 font-bold uppercase tracking-wider mt-4"
         >
           <FiArrowLeft className="w-4 h-4" /> Back to Quests
         </Link>
@@ -151,7 +151,7 @@ export default function UserQuestDetailPage() {
         <div>
           <Link
             href="/quests"
-            className="text-body-sm text-[#6b6560] hover:text-[#e05d45] transition-colors flex items-center gap-1.5 font-bold uppercase tracking-wider"
+            className="text-body-sm text-[#6b6560] hover:text-[#f97316] transition-colors flex items-center gap-1.5 font-bold uppercase tracking-wider"
           >
             <FiArrowLeft className="w-4 h-4" /> Back to Quests
           </Link>
@@ -160,10 +160,10 @@ export default function UserQuestDetailPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
           <div className="flex flex-col gap-2 grow">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1 rounded-full text-label font-bold bg-[#c84b351a] text-[#e05d45] capitalize">
+              <span className="px-3 py-1 rounded-full text-label font-bold bg-[#c2410c1a] text-[#f97316] capitalize">
                 {quest.protocol} Protocol
               </span>
-              <span className="px-3 py-1 rounded-full text-label font-bold bg-[#fbe3df] text-[#6b6560] flex items-center gap-1.5">
+              <span className="px-3 py-1 rounded-full text-label font-bold bg-[#ffedd5] text-[#6b6560] flex items-center gap-1.5">
                 <FiCpu className="w-3.5 h-3.5 text-[#6b6560]" />
                 {quest.participation_count} Agents Active
               </span>
@@ -186,7 +186,7 @@ export default function UserQuestDetailPage() {
                 href={`https://solscan.io/account/${quest.quest_pool_pda}${SOLANA_RPC_URL.includes("devnet") ? "?cluster=devnet" : ""}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-mono text-[#e05d45] hover:underline font-bold flex items-center gap-1.5"
+                className="text-mono text-[#f97316] hover:underline font-bold flex items-center gap-1.5"
               >
                 <span className="tracking-wide text-xs">
                   {quest.quest_pool_pda.slice(0, 6)}...{quest.quest_pool_pda.slice(-4)}
@@ -203,13 +203,13 @@ export default function UserQuestDetailPage() {
                 isIconOnly
                 onPress={handleCopyId}
                 variant="tertiary"
-                className="w-8 h-8 rounded-full bg-[#f8f4ef] hover:bg-[#fbe3df] transition-all flex items-center justify-center p-0"
+                className="w-8 h-8 rounded-full bg-[#f8f4ef] hover:bg-[#ffedd5] transition-all flex items-center justify-center p-0"
                 aria-label="Copy Quest ID"
               >
                 {copiedId ? (
                   <FiCheck className="w-4 h-4 text-[#10B981]" />
                 ) : (
-                  <FiCopy className="w-4 h-4 text-[#e05d45]" />
+                  <FiCopy className="w-4 h-4 text-[#f97316]" />
                 )}
               </Button>
             </div>
@@ -224,7 +224,7 @@ export default function UserQuestDetailPage() {
           {/* Mission Briefing Card */}
           <Card className="bg-white border border-[#f8f4ef] rounded-xl p-8 shadow-soft">
             <Card.Header className="flex items-center gap-2.5 p-0 mb-6 border-b border-[#f8f4ef] pb-4">
-              <FiBookOpen className="w-6 h-6 text-[#e05d45]" />
+              <FiBookOpen className="w-6 h-6 text-[#f97316]" />
               <Card.Title className="text-h2 text-[#1f1b18] font-bold">
                 Mission Briefing
               </Card.Title>
@@ -250,7 +250,7 @@ export default function UserQuestDetailPage() {
           {/* Agent Configuration Details Card */}
           <Card className="bg-white border border-[#f8f4ef] rounded-xl p-8 shadow-soft">
             <Card.Header className="flex items-center gap-2.5 p-0 mb-6 border-b border-[#f8f4ef] pb-4">
-              <FiCpu className="w-6 h-6 text-[#e05d45]" />
+              <FiCpu className="w-6 h-6 text-[#f97316]" />
               <Card.Title className="text-h2 text-[#1f1b18] font-bold">
                 Agent Configuration Details
               </Card.Title>
@@ -273,8 +273,8 @@ export default function UserQuestDetailPage() {
                         <div key={step.uuid} className="flex gap-3">
                           {/* Rail */}
                           <div className="flex flex-col items-center">
-                            <div className="w-7 h-7 rounded-full bg-[#f8f4ef] border-2 border-[#e05d45] flex items-center justify-center shrink-0 z-10">
-                              <span className="text-[#e05d45] text-[10px] font-extrabold">{step.order_index + 1}</span>
+                            <div className="w-7 h-7 rounded-full bg-[#f8f4ef] border-2 border-[#f97316] flex items-center justify-center shrink-0 z-10">
+                              <span className="text-[#f97316] text-[10px] font-extrabold">{step.order_index + 1}</span>
                             </div>
                             {!isLast && <div className="w-px flex-1 bg-[#e8e0d8] my-1 min-h-5" />}
                           </div>
@@ -292,7 +292,7 @@ export default function UserQuestDetailPage() {
                                 return (
                                   <div className="bg-[#f8f4ef] border border-[#e8e0d8] rounded-lg p-3 flex items-center gap-2">
                                     <TokenPill symbol={p.from_token_symbol} logoUri={p.from_logo_uri} mint={p.from_token} />
-                                    <FiRepeat className="text-[#e05d45] text-lg shrink-0" />
+                                    <FiRepeat className="text-[#f97316] text-lg shrink-0" />
                                     <TokenPill symbol={p.to_token_symbol} logoUri={p.to_logo_uri} mint={p.to_token} />
                                   </div>
                                 );
@@ -399,7 +399,7 @@ export default function UserQuestDetailPage() {
 
               {/* Secondary Reward */}
               <div className="flex items-center gap-4 bg-[#f8f4ef] rounded-2xl p-4">
-                <div className="w-12 h-12 bg-[#e05d451a] rounded-full flex items-center justify-center text-[#e05d45] shrink-0">
+                <div className="w-12 h-12 bg-[#f973161a] rounded-full flex items-center justify-center text-[#f97316] shrink-0">
                   <FiAward className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col">

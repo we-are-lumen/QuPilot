@@ -27,9 +27,9 @@ export default function LeaderboardContent({ limit = 100 }: LeaderboardContentPr
 
   const rankConfigs = {
     1: {
-      bgColor: "bg-[#ffdad3]",
-      textColor: "text-[#e05d45]",
-      pointsColor: "text-[#c84b35]",
+      bgColor: "bg-[#fed7aa]",
+      textColor: "text-[#f97316]",
+      pointsColor: "text-[#c2410c]",
       accentColor: "text-[#f59e0b]",
       cardHeight: "h-40 md:h-[175px]",
       cupImage: "/images/gold-cup.png",
@@ -37,17 +37,17 @@ export default function LeaderboardContent({ limit = 100 }: LeaderboardContentPr
       tier: "Gold Tier",
     },
     2: {
-      bgColor: "bg-[#f5ddd9]",
+      bgColor: "bg-[#ffedd5]",
       textColor: "text-[#1f1b18]",
       pointsColor: "text-[#6b6560]",
-      accentColor: "text-[#e05d45]",
+      accentColor: "text-[#f97316]",
       cardHeight: "h-30 md:h-[130px]",
       cupImage: "/images/silver-cup.png",
       cupSize: 192,
       tier: "Silver Tier",
     },
     3: {
-      bgColor: "bg-[#fbe3df]",
+      bgColor: "bg-[#ffedd5]",
       textColor: "text-[#1f1b18]",
       pointsColor: "text-[#6b6560]",
       accentColor: "text-[#006767]",
@@ -90,7 +90,7 @@ export default function LeaderboardContent({ limit = 100 }: LeaderboardContentPr
                   rank === 1 ? "order-1 md:order-2 z-10" : rank === 2 ? "order-2 md:order-1" : "order-3"
                 }`}
               >
-                <div className="bg-[#ffffff] border border-[#f5ddd9] rounded-2xl p-2 px-4 shadow-soft flex flex-col items-center justify-center mb-6 w-full text-center relative z-20 animate-pulse">
+                <div className="bg-[#ffffff] border border-[#ffedd5] rounded-2xl p-2 px-4 shadow-soft flex flex-col items-center justify-center mb-6 w-full text-center relative z-20 animate-pulse">
                   <Skeleton className="h-4 w-24 rounded" />
                   <Skeleton className="h-3 w-16 rounded mt-1" />
                 </div>
@@ -104,7 +104,7 @@ export default function LeaderboardContent({ limit = 100 }: LeaderboardContentPr
                 </div>
 
                 <Card
-                  className={`w-full bg-[#ffdad3]/10 rounded-t-none rounded-b-[24px] shadow-medium flex flex-col justify-end items-center text-center p-6 pt-10 ${
+                  className={`w-full bg-[#fed7aa]/10 rounded-t-none rounded-b-[24px] shadow-medium flex flex-col justify-end items-center text-center p-6 pt-10 ${
                     rank === 1 ? "h-40 md:h-43.75" : rank === 2 ? "h-30 md:h-32.5" : "h-25 md:h-27.5"
                   } animate-pulse`}
                 >
@@ -122,7 +122,7 @@ export default function LeaderboardContent({ limit = 100 }: LeaderboardContentPr
             <Table className="w-full">
               <Table.ScrollContainer>
                 <Table.Content aria-label="Leaderboard Table Loading">
-                  <Table.Header className="bg-[#f8f4ef] border-b border-[#f5ddd9]">
+                  <Table.Header className="bg-[#f8f4ef] border-b border-[#ffedd5]">
                     <Table.Column className="py-4 px-6 text-[12px] text-[#6b6560] font-bold text-center w-25">Rank</Table.Column>
                     <Table.Column isRowHeader className="py-4 px-6 text-[12px] text-[#6b6560] font-bold text-left">Explorer</Table.Column>
                     <Table.Column className="py-4 px-6 text-[12px] text-[#6b6560] font-bold text-left">Wallet</Table.Column>
@@ -165,8 +165,8 @@ export default function LeaderboardContent({ limit = 100 }: LeaderboardContentPr
 
       {/* Error State */}
       {error && !isLoading && (
-        <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#fff5f5] border border-[#ffc1c1] rounded-2xl max-w-4xl mx-auto w-full">
-          <p className="text-lg font-bold text-[#e53e3e]">Failed to load rankings</p>
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#ffedd5] border border-[#fdba74] rounded-2xl max-w-4xl mx-auto w-full">
+          <p className="text-lg font-bold text-[#c2410c]">Failed to load rankings</p>
           <p className="text-sm text-[#6b6560]">
             We encountered an error while retrieving the global leaderboard. Please try again later.
           </p>
@@ -175,8 +175,8 @@ export default function LeaderboardContent({ limit = 100 }: LeaderboardContentPr
 
       {/* Empty State */}
       {!isLoading && !error && entries.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#fcfbfa] border border-[#dfbfb94d] rounded-2xl max-w-4xl mx-auto w-full">
-          <p className="text-lg font-bold text-[#e05d45]">Leaderboard is empty</p>
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-[#fcfbfa] border border-[#fdba744d] rounded-2xl max-w-4xl mx-auto w-full">
+          <p className="text-lg font-bold text-[#f97316]">Leaderboard is empty</p>
           <p className="text-sm text-[#6b6560]">
             There are currently no active explorer records in the system. Start completing quests to appear on the board!
           </p>
@@ -195,7 +195,7 @@ export default function LeaderboardContent({ limit = 100 }: LeaderboardContentPr
                   pilot.rank === 1 ? "order-1 md:order-2 z-10" : pilot.rank === 2 ? "order-2 md:order-1" : "order-3"
                 }`}
               >
-                <div className="bg-[#ffffff] border border-[#f5ddd9] rounded-2xl p-2 px-4 shadow-soft flex flex-col items-center justify-center mb-6 w-full text-center relative z-20">
+                <div className="bg-[#ffffff] border border-[#ffedd5] rounded-2xl p-2 px-4 shadow-soft flex flex-col items-center justify-center mb-6 w-full text-center relative z-20">
                   <span className={`text-body-sm font-bold ${pilot.accentColor} font-mono`}>
                     {truncateAddress(pilot.entry.wallet_address)}
                   </span>
@@ -242,7 +242,7 @@ export default function LeaderboardContent({ limit = 100 }: LeaderboardContentPr
               <Table className="w-full">
                 <Table.ScrollContainer>
                   <Table.Content aria-label="Explorer Leaderboard Table">
-                    <Table.Header className="bg-[#f8f4ef] border-b border-[#f5ddd9]">
+                    <Table.Header className="bg-[#f8f4ef] border-b border-[#ffedd5]">
                       <Table.Column className="py-4 px-6 text-[12px] text-[#6b6560] font-bold text-center w-25">
                         Rank
                       </Table.Column>
@@ -260,7 +260,7 @@ export default function LeaderboardContent({ limit = 100 }: LeaderboardContentPr
                       </Table.Column>
                     </Table.Header>
 
-                    <Table.Body className="divide-y divide-[#f5ddd9]/40">
+                    <Table.Body className="divide-y divide-[#ffedd5]/40">
                       {tableData.map((row, idx) => (
                         <Table.Row key={row.user_uuid} className="hover:bg-[#f8f4ef]/30 transition-colors">
                           <Table.Cell className="py-4 px-6 font-bold text-[#6b6560] text-center">
@@ -284,7 +284,7 @@ export default function LeaderboardContent({ limit = 100 }: LeaderboardContentPr
                             {truncateAddress(row.wallet_address)}
                           </Table.Cell>
 
-                          <Table.Cell className="py-4 px-6 text-right font-bold text-[#e05d45] text-body-md">
+                          <Table.Cell className="py-4 px-6 text-right font-bold text-[#f97316] text-body-md">
                             {formatReward(row.total_reward)}
                           </Table.Cell>
 
@@ -298,7 +298,7 @@ export default function LeaderboardContent({ limit = 100 }: LeaderboardContentPr
                                 {Math.round(row.success_rate * 100)}%
                               </span>
 
-                              <div className="w-16 h-2 bg-[#f5ddd9] rounded-full overflow-hidden">
+                              <div className="w-16 h-2 bg-[#ffedd5] rounded-full overflow-hidden">
                                 <div
                                   className={`h-full rounded-full ${
                                     row.success_rate >= 0.9 ? "bg-[#10b981]" : "bg-[#f59e0b]"
@@ -315,15 +315,15 @@ export default function LeaderboardContent({ limit = 100 }: LeaderboardContentPr
                 </Table.ScrollContainer>
               </Table>
 
-              <div className="bg-[#f8f4ef] border-t border-[#f5ddd9] py-4 px-8 flex items-center justify-between">
+              <div className="bg-[#f8f4ef] border-t border-[#ffedd5] py-4 px-8 flex items-center justify-between">
                 <span className="text-body-sm text-[#6b6560]">
                   Showing 1-{entries.length} of {entries.length}
                 </span>
                 <div className="flex items-center gap-2">
-                  <button className="h-8 w-8 rounded-lg bg-[#ffffff] border border-[#f5ddd9] text-[#6b6560] hover:text-[#1f1b18] hover:border-[#1f1b18]/30 transition-all flex items-center justify-center">
+                  <button className="h-8 w-8 rounded-lg bg-[#ffffff] border border-[#ffedd5] text-[#6b6560] hover:text-[#1f1b18] hover:border-[#1f1b18]/30 transition-all flex items-center justify-center">
                     <FaChevronLeft className="text-[10px]" />
                   </button>
-                  <button className="h-8 w-8 rounded-lg bg-[#ffffff] border border-[#f5ddd9] text-[#1f1b18] hover:bg-[#e05d45] hover:text-white hover:border-[#e05d45] transition-all flex items-center justify-center font-bold">
+                  <button className="h-8 w-8 rounded-lg bg-[#ffffff] border border-[#ffedd5] text-[#1f1b18] hover:bg-[#f97316] hover:text-white hover:border-[#f97316] transition-all flex items-center justify-center font-bold">
                     <FaChevronRight className="text-[10px]" />
                   </button>
                 </div>

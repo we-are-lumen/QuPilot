@@ -57,14 +57,14 @@ export default function ProviderDashboard() {
         </div>
 
         {/* Hosted Quests Title Skeleton */}
-        <div className="flex flex-col gap-1 border-b border-[#dfbfb94d] pb-2">
+        <div className="flex flex-col gap-1 border-b border-[#fdba744d] pb-2">
           <Skeleton className="h-7 w-32 rounded" />
         </div>
 
         {/* Quests List Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[1, 2].map((i) => (
-            <Card key={i} className="bg-white border border-[#dfbfb94d] rounded-xl overflow-hidden shadow-sm">
+            <Card key={i} className="bg-white border border-[#fdba744d] rounded-xl overflow-hidden shadow-sm">
               <Skeleton className="h-40 w-full" />
               <Card.Content className="p-5 flex flex-col gap-4">
                 <div className="flex justify-between items-center">
@@ -75,7 +75,7 @@ export default function ProviderDashboard() {
                 <Skeleton className="h-4 w-5/6 rounded" />
                 
                 {/* Metric row skeleton */}
-                <div className="border border-[#dfbfb94d] rounded-lg p-3 grid grid-cols-3 gap-2">
+                <div className="border border-[#fdba744d] rounded-lg p-3 grid grid-cols-3 gap-2">
                   <Skeleton className="h-10 w-full rounded" />
                   <Skeleton className="h-10 w-full rounded" />
                   <Skeleton className="h-10 w-full rounded" />
@@ -101,7 +101,7 @@ export default function ProviderDashboard() {
           </p>
           <button 
             onClick={() => window.location.reload()}
-            className="mt-2 bg-[#e05d45] hover:bg-[#e05d45]/90 text-white font-bold text-xs rounded-full px-6 py-3.5 shadow-sm inline-flex items-center gap-1.5 justify-center transition-all self-center"
+            className="mt-2 bg-[#f97316] hover:bg-[#f97316]/90 text-white font-bold text-xs rounded-full px-6 py-3.5 shadow-sm inline-flex items-center gap-1.5 justify-center transition-all self-center"
           >
             Retry
           </button>
@@ -128,7 +128,7 @@ export default function ProviderDashboard() {
           </div>
           <Link
             href="/quests/new"
-            className="bg-[#e05d45] hover:bg-[#e05d45]/90 text-white font-bold text-xs rounded-full px-6 py-3.5 shadow-sm inline-flex items-center gap-1.5 justify-center transition-all text-center"
+            className="bg-[#f97316] hover:bg-[#f97316]/90 text-white font-bold text-xs rounded-full px-6 py-3.5 shadow-sm inline-flex items-center gap-1.5 justify-center transition-all text-center"
           >
             <LuPlus className="text-sm" />
             Register New Quest
@@ -136,9 +136,9 @@ export default function ProviderDashboard() {
         </div>
 
         {/* Empty State Card */}
-        <Card className="bg-white border border-[#dfbfb94d] rounded-2xl p-12 text-center shadow-sm">
+        <Card className="bg-white border border-[#fdba744d] rounded-2xl p-12 text-center shadow-sm">
           <Card.Content className="flex flex-col items-center gap-4 mx-auto p-0">
-            <div className="w-16 h-16 rounded-full bg-[#ffffff] border border-[#dfbfb94d] flex items-center justify-center text-[#e05d45] mb-2">
+            <div className="w-16 h-16 rounded-full bg-[#ffffff] border border-[#fdba744d] flex items-center justify-center text-[#f97316] mb-2">
               <LuSparkles className="text-2xl animate-pulse" />
             </div>
             <h3 className="text-lg font-bold text-[#1f1b18]">No Quests Registered Yet</h3>
@@ -147,7 +147,7 @@ export default function ProviderDashboard() {
             </p>
             <Link
               href="/quests/new"
-              className="mt-2 bg-[#e05d45] hover:bg-[#e05d45]/90 text-white font-bold text-xs rounded-full px-6 py-2.5 shadow-sm inline-flex items-center gap-1.5 justify-center transition-all text-center"
+              className="mt-2 bg-[#f97316] hover:bg-[#f97316]/90 text-white font-bold text-xs rounded-full px-6 py-2.5 shadow-sm inline-flex items-center gap-1.5 justify-center transition-all text-center"
             >
               <LuPlus className="text-xs" />
               Create Your First Quest
@@ -199,7 +199,7 @@ export default function ProviderDashboard() {
         </div>
         <Link
           href="/quests/new"
-          className="bg-[#e05d45] hover:bg-[#e05d45]/90 text-white font-bold text-xs rounded-full px-6 py-3.5 shadow-sm inline-flex items-center gap-1.5 justify-center transition-all text-center"
+          className="bg-[#f97316] hover:bg-[#f97316]/90 text-white font-bold text-xs rounded-full px-6 py-3.5 shadow-sm inline-flex items-center gap-1.5 justify-center transition-all text-center"
         >
           <LuPlus className="text-sm" />
           Register New Quest
@@ -211,7 +211,7 @@ export default function ProviderDashboard() {
         {/* Stat 1: Active Quests */}
         <Card className="bg-[#ffffffb2] border border-white/80 rounded-xl p-5 shadow-sm backdrop-blur-md">
           <Card.Content className="flex flex-row items-center gap-4 p-0">
-            <div className="w-12 h-12 rounded-full bg-[#c84b3533] flex items-center justify-center text-[#e05d45]">
+            <div className="w-12 h-12 rounded-full bg-[#c2410c33] flex items-center justify-center text-[#f97316]">
               <LuActivity className="text-xl" />
             </div>
             <div className="flex flex-col">
@@ -228,7 +228,7 @@ export default function ProviderDashboard() {
         {/* Stat 2: Total Agents Deployed */}
         <Card className="bg-[#ffffffb2] border border-white/80 rounded-xl p-5 shadow-sm backdrop-blur-md">
           <Card.Content className="flex flex-row items-center gap-4 p-0">
-            <div className="w-12 h-12 rounded-full bg-[#f08a7533] flex items-center justify-center text-[#e05d45]">
+            <div className="w-12 h-12 rounded-full bg-[#ea580c33] flex items-center justify-center text-[#f97316]">
               <LuBot className="text-xl" />
             </div>
             <div className="flex flex-col">
@@ -261,7 +261,7 @@ export default function ProviderDashboard() {
       </div>
 
       {/* Hosted Quests Title */}
-      <div className="flex flex-col gap-1 border-b border-[#dfbfb94d] pb-2">
+      <div className="flex flex-col gap-1 border-b border-[#fdba744d] pb-2">
         <h2 className="text-xl font-bold text-[#1f1b18]">Hosted Quests</h2>
       </div>
 
@@ -278,13 +278,13 @@ export default function ProviderDashboard() {
           const isActive = new Date(quest.expires_at) > new Date();
 
           return (
-            <Card key={quest.uuid} className="bg-white border border-[#dfbfb94d] rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            <Card key={quest.uuid} className="bg-white border border-[#fdba744d] rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               {/* Quest Details */}
               <Card.Content className="p-5 flex flex-col gap-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex flex-col gap-1.5 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-lg font-bold text-[#1f1b18] hover:text-[#e05d45] transition-colors leading-snug">
+                      <h3 className="text-lg font-bold text-[#1f1b18] hover:text-[#f97316] transition-colors leading-snug">
                         <Link href={`/quests/manage/${quest.uuid}`}>{quest.title}</Link>
                       </h3>
                       <Chip 
@@ -300,7 +300,7 @@ export default function ProviderDashboard() {
                       </Chip>
                     </div>
                   </div>
-                  <Chip size="sm" className="bg-[#ffe9e5] text-[#e05d45] border-[#e05d45]/20 border font-bold px-2 py-0.5 capitalize shrink-0">
+                  <Chip size="sm" className="bg-[#fff7ed] text-[#f97316] border-[#f97316]/20 border font-bold px-2 py-0.5 capitalize shrink-0">
                     {quest.protocol}
                   </Chip>
                 </div>
@@ -309,13 +309,13 @@ export default function ProviderDashboard() {
                   {quest.description}
                 </p>
 
-                <div className="bg-[#fcfbfa] border border-[#dfbfb94d] rounded-lg p-3 flex items-center justify-between">
+                <div className="bg-[#fcfbfa] border border-[#fdba744d] rounded-lg p-3 flex items-center justify-between">
                   <span className="text-[10px] text-[#6b6560] uppercase tracking-wider font-bold">Pool PDA</span>
                   <a
                     href={`https://solscan.io/account/${quest.quest_pool_pda}${SOLANA_RPC_URL.includes("devnet") ? "?cluster=devnet" : ""}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs font-mono font-bold text-[#e05d45] hover:underline flex items-center gap-1"
+                    className="text-xs font-mono font-bold text-[#f97316] hover:underline flex items-center gap-1"
                   >
                     {truncateAddress(quest.quest_pool_pda)}
                     <LuExternalLink className="text-[10px] shrink-0" />
@@ -323,7 +323,7 @@ export default function ProviderDashboard() {
                 </div>
 
                 {/* Metrics Row */}
-                <div className="bg-[#ffffff] border border-[#dfbfb94d] rounded-lg p-3 flex items-center justify-between">
+                <div className="bg-[#ffffff] border border-[#fdba744d] rounded-lg p-3 flex items-center justify-between">
                   {/* Metric 1: Agents */}
                   <div className="flex flex-col items-center flex-1 text-center">
                     <span className="text-[10px] text-[#6b6560] uppercase tracking-wider">Agents</span>
@@ -332,7 +332,7 @@ export default function ProviderDashboard() {
                     </span>
                   </div>
                   
-                  <div className="w-px h-8 bg-[#dfbfb94d]" />
+                  <div className="w-px h-8 bg-[#fdba744d]" />
 
                   {/* Metric 2: Completion */}
                   <div className="flex flex-col items-center flex-1 text-center">
@@ -348,12 +348,12 @@ export default function ProviderDashboard() {
                     </span>
                   </div>
 
-                  <div className="w-px h-8 bg-[#dfbfb94d]" />
+                  <div className="w-px h-8 bg-[#fdba744d]" />
 
                   {/* Metric 3: Reward Pool */}
                   <div className="flex flex-col items-center flex-1 text-center">
                     <span className="text-[10px] text-[#6b6560] uppercase tracking-wider">Per User</span>
-                    <span className="text-sm font-bold text-[#e05d45] font-mono mt-0.5">
+                    <span className="text-sm font-bold text-[#f97316] font-mono mt-0.5">
                       {formatReward(quest.reward_per_user).split(" ")[0]}
                     </span>
                   </div>
@@ -361,7 +361,7 @@ export default function ProviderDashboard() {
 
                 <Link
                   href={`/quests/manage/${quest.uuid}`}
-                  className="w-full border border-[#e05d45] text-[#e05d45] hover:bg-[#ffe9e5] font-bold rounded-full py-2.5 text-xs transition-colors inline-flex items-center justify-center gap-1.5 text-center"
+                  className="w-full border border-[#f97316] text-[#f97316] hover:bg-[#fff7ed] font-bold rounded-full py-2.5 text-xs transition-colors inline-flex items-center justify-center gap-1.5 text-center"
                 >
                   View Analytics
                   <LuArrowRight className="text-sm" />
