@@ -1,4 +1,10 @@
 {
-  "reviews": [],
-  "status": "in_progress"
+  "reviews": [
+    {
+      "note": "Rerun with corrected API contract (qupilot-api.md): x-api-key auth header, /agent/participations endpoints, flat { tx_hash } complete body, synchronous verification. Previous benchmark.json used outdated SKILL.md contract (Authorization: Bearer, claim_token, nested proof, async polling). All 3 evals regenerated from scratch against corrected reference.",
+      "model": "claude-sonnet-4.6",
+      "timestamp": "2026-05-23T17:30:00Z"
+    }
+  ],
+  "status": "complete"
 }

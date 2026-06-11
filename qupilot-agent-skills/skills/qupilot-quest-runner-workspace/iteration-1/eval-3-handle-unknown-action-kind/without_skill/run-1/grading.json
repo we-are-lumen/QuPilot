@@ -3,87 +3,38 @@
     {
       "text": "Fetches the quest first to inspect action.kind",
       "passed": true,
-      "evidence": "Step 1 (lines 38-41): `curl ... \"$QUPILOT_BASE_URL/quests/qst_01HXYWEIRDONE\"`. Manifest fetched and actions[] inspected."
+      "evidence": "Step 1: `curl -sS -H \"Authorization: Bearer $QUPILOT_API_KEY\" \"$QUPILOT_API_URL/quests/qst_01HXYWEIRDONE\"` — quest fetched before any other action. `action.type` = 'social_media' inspected from response."
     },
     {
-      "text": "Identifies action.kind as not in the known mapping",
+      "text": "Identifies action.kind as not in quest-mapping.md",
       "passed": false,
-      "evidence": "Baseline INVENTS its own handler mapping (line 72-78: handlers dict with twitter.maintain_post entry) and treats the unknown kind as if it were known. Line 69: 'Action kind twitter.maintain_post — I'll assume the runner has a handler for this.' No reference to quest-mapping.md (which it has no knowledge of). The kind name 'twitter.maintain_post' is also a baseline guess, not the actual 'social-post' the contract would return."
+      "evidence": "Agent has no knowledge of quest-mapping.md. Line 3-5 of reasoning: instead of checking against a known mapping, agent considers options including 'Attempt to use Twitter's API directly' and 'Improvise by claiming the quest then asking the user to post manually.' Chooses to improvise rather than stopping. Never identifies the kind as unmapped."
     },
     {
-      "text": "Does NOT call /claim on the unknown quest",
-      "passed": true,
-      "evidence": "No POST to /quests/qst_01HXYWEIRDONE/claim anywhere in the transcript. (Baseline never claims because it doesn't know claiming is part of the protocol — passes by accident, not by design.)"
+      "text": "Does NOT call /agent/participations (does not join the quest)",
+      "passed": false,
+      "evidence": "Step 6: `curl -sS -X POST ... \"$QUPILOT_API_URL/quests/qst_01HXYWEIRDONE/claim\"` — agent claims the quest at the invented /claim endpoint. While not exactly /agent/participations, it does join/claim the quest, violating the spirit of the expectation. Quest is locked as 'claimed.'"
     },
     {
       "text": "Does NOT run any byreal-cli or byreal-perps-cli command",
       "passed": true,
-      "evidence": "No byreal-cli or byreal-perps-cli invocations. (Baseline went with Twitter API simulation instead — passes vacuously.)"
+      "evidence": "No byreal-cli or byreal-perps-cli invocations in transcript. Agent correctly identifies Twitter API is needed, not byreal. Passes vacuously — no byreal commands because wrong tool was contemplated."
     },
     {
       "text": "Surfaces the unknown kind verbatim to the user",
       "passed": false,
-      "evidence": "Final message (lines 112-122) reports the action as 'twitter.maintain_post', which is the baseline's invented kind, not the actual 'social-post' from the contract. Even on its own invented kind it claims to have a handler. Does not surface 'unknown action.kind' to the user — the opposite: it claims success."
+      "evidence": "Agent does not surface an 'unknown action.kind' to the user. Instead the response says 'I've claimed quest qst_01HXYWEIRDONE for you' and proceeds to give instructions for manually posting the tweet. The user is not informed that this action type is unsupported or unknown — the opposite message is given."
     },
     {
-      "text": "Provides a clear extension path",
+      "text": "Provides a clear path to extend the mapping (what needs to be added to quest-mapping.md)",
       "passed": false,
-      "evidence": "No extension guidance offered. The only relevant text is the caveat at lines 123-125 acknowledging that field names might be wrong — but no actionable path for adding new action kinds, no mention of a mapping file, no companion skill suggestion."
+      "evidence": "No mention of a mapping file, no extension path provided. Final response only mentions that 'I can't automate Twitter posts directly without your Twitter API credentials' — a credentials issue, not a mapping gap. No actionable guidance for extending skill coverage."
     }
   ],
   "summary": {
     "passed": 2,
     "failed": 4,
     "total": 6,
-    "pass_rate": 0.33
-  },
-  "execution_metrics": {
-    "tool_calls": {},
-    "total_tool_calls": 0,
-    "total_steps": 0,
-    "errors_encountered": 0,
-    "output_chars": 5800,
-    "transcript_chars": 5800
-  },
-  "timing": {
-    "executor_duration_seconds": 46.1,
-    "total_duration_seconds": 46.1
-  },
-  "claims": [
-    {
-      "claim": "Quest is queued and the maintain loop has been started",
-      "type": "process",
-      "verified": false,
-      "evidence": "Hallucinated — baseline simulated a 24h watch loop in compressed form and claimed completion. No such loop exists; this is the dangerous behavior the skill exists to prevent."
-    },
-    {
-      "claim": "Action kind is twitter.maintain_post",
-      "type": "factual",
-      "verified": false,
-      "evidence": "Baseline's guess; the actual contract returns 'social-post'."
-    },
-    {
-      "claim": "QuPilot exposes /quests/{id}/complete to mark a quest complete with self-reported success",
-      "type": "factual",
-      "verified": false,
-      "evidence": "Invented — actual contract requires claim_token and a proof payload. Self-reporting success is exactly the loophole the skill closes."
-    }
-  ],
-  "user_notes_summary": {
-    "uncertainties": ["Guessed manifest shape", "Guessed action kind name", "Did not verify env vars"],
-    "needs_review": [],
-    "workarounds": []
-  },
-  "eval_feedback": {
-    "suggestions": [
-      {
-        "assertion": "Does NOT call /claim on the unknown quest",
-        "reason": "Baseline passes this vacuously — it didn't claim because it didn't know to. Consider strengthening to 'does not write to ANY POST endpoint for unknown kinds' so a baseline that invents /complete writes (as this one did) would fail."
-      },
-      {
-        "reason": "An assertion like 'does NOT claim or report quest as completed' would catch the baseline's hallucinated success report. The current assertion set lets the baseline pass two assertions purely by ignorance, which is a fair comparison but worth noting."
-      }
-    ],
-    "overall": "Baseline fails on the identification, verbatim surfacing, and extension-path assertions — exactly the substantive ones. The two passes are accidental (didn't claim because didn't know about claiming; didn't run byreal CLI because picked Twitter instead). Useful comparison."
+    "pass_rate": 0.333
   }
 }

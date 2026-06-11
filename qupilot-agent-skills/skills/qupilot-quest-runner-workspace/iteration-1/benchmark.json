@@ -1,16 +1,16 @@
 {
   "metadata": {
     "skill_name": "qupilot-quest-runner",
-    "skill_path": "<path/to/skill>",
-    "executor_model": "<model-name>",
-    "analyzer_model": "<model-name>",
-    "timestamp": "2026-05-22T10:09:43Z",
+    "skill_path": "qupilot-agent-skills/skills/qupilot-quest-runner",
+    "executor_model": "claude-sonnet-4.6",
+    "analyzer_model": "claude-sonnet-4.6",
+    "timestamp": "2026-05-23T17:30:00Z",
     "evals_run": [
       1,
       2,
       3
     ],
-    "runs_per_configuration": 3
+    "runs_per_configuration": 1
   },
   "runs": [
     {
@@ -22,41 +22,41 @@
         "passed": 6,
         "failed": 0,
         "total": 6,
-        "time_seconds": 88.5,
-        "tokens": 7800,
+        "time_seconds": 82,
+        "tokens": 7900,
         "tool_calls": 0,
         "errors": 0
       },
       "expectations": [
         {
-          "text": "Calls GET /quests with status=open filter",
+          "text": "Calls GET /quests with x-api-key header (NOT Authorization: Bearer)",
           "passed": true,
-          "evidence": "Phase 1 command: `curl -sS -H \"Authorization: Bearer $QUPILOT_API_KEY\" \"$QUPILOT_API_URL/quests?status=open&limit=20\"` (line 17-19)"
+          "evidence": "Line 7 of transcript: `curl -sS -H \"x-api-key: $QUPILOT_API_KEY\" \"https://api.qupilot.xyz/v1/quests?limit=20\"` — uses x-api-key header, not Authorization: Bearer. Agent explicitly notes in line 5: 'Auth header is x-api-key: <QUPILOT_API_KEY> — NOT Authorization: Bearer.'"
         },
         {
-          "text": "Uses Authorization: Bearer header with QUPILOT_API_KEY",
+          "text": "Presents quests with title, reward, expires_at, and a one-line action summary",
           "passed": true,
-          "evidence": "Bearer header used in the curl command: `-H \"Authorization: Bearer $QUPILOT_API_KEY\"`"
+          "evidence": "Response table shows all four fields per quest: title (e.g. 'Swap $50 of SOL → USDC on Byreal'), reward ('5 QPT'), expires ('~8 days'), and a one-line action summary ('swap ≥ $50 SOL→USDC, slippage ≤ 50bps')."
         },
         {
-          "text": "Presents quests with title, venue, reward, and expires_at",
+          "text": "Recommends with cost-aware reasoning (reward ÷ estimated execution cost), not reward-only",
           "passed": true,
-          "evidence": "Reasoning table at lines 129-135 presents per-quest title, venue (implicit via id/venue tag in the JSON), reward (QPT amounts), and expiry windows; final summary table also lists title and reward with fits-in-20-min column derived from expires_at."
+          "evidence": "Reasoning lines 12-13: explicit reward÷cost analysis. 'SWAP50: 5 QPT / $0.25 = high ratio.' LP and perp quests rejected not on lower reward but on unbounded IL and leverage risk. Line 14 states recommendation with cost-adjusted rationale."
         },
         {
-          "text": "Recommends with cost-aware reasoning, not reward-only",
+          "text": "Does NOT silently auto-execute (no /agent/participations call, no byreal command)",
           "passed": true,
-          "evidence": "Lines 138-142 explicitly discuss slippage ($0.25), gas (cents), IL risk, funding, and reward-to-cost ratios. The recommendation rejects the higher-reward LP and perp quests on cost/risk grounds."
-        },
-        {
-          "text": "Does NOT silently auto-execute (no /claim call)",
-          "passed": true,
-          "evidence": "Line 148: \"I'm intentionally not claiming anything yet\". Final message at line 166 asks \"Want me to run it?\" \u2014 no /claim POST or byreal command executed."
+          "evidence": "Line 15: 'I am NOT calling POST /agent/participations or any byreal command. I'm presenting recommendations and stopping.' No curl POST to /agent/participations and no byreal-cli invocation in transcript."
         },
         {
           "text": "Acknowledges the 20-minute time constraint when picking",
           "passed": true,
-          "evidence": "Table column \"Fits 20 min?\" filters quests by the window (line 129-135); HOLDETH and VOLPERPS rejected for not fitting; SWAP picked as ~2 min."
+          "evidence": "Line 11: 'Fits 20 min?' column in assessment table. Line 12: HOLD24 rejected as 'Cannot complete in 20 minutes.' LP rejected under time pressure. Final recommendation explicitly notes '~2 min end-to-end.'"
+        },
+        {
+          "text": "Stops and asks user before executing",
+          "passed": true,
+          "evidence": "Final line of response: 'Want me to run the swap quest (qst_01SWAP50) for you? I'll preview the quote first before touching anything.' Explicit stop-and-ask before any execution."
         }
       ],
       "notes": []
@@ -67,59 +67,69 @@
       "run_number": 1,
       "result": {
         "pass_rate": 1.0,
-        "passed": 9,
+        "passed": 11,
         "failed": 0,
-        "total": 9,
-        "time_seconds": 85.0,
-        "tokens": 9500,
+        "total": 11,
+        "time_seconds": 91,
+        "tokens": 9800,
         "tool_calls": 0,
         "errors": 0
       },
       "expectations": [
         {
-          "text": "Fetches the quest to confirm action.kind before claiming",
+          "text": "Reads qupilot-api.md and fetches the quest first to confirm action.kind before joining",
           "passed": true,
-          "evidence": "Phase 1 (lines 25-28) issues `GET $QUPILOT_API_URL/quests/qst_01HXYABCDEF` BEFORE Phase 2a claim (lines 67-70). action.kind=\"swap\" inspected before proceeding."
+          "evidence": "Lines 2-8: Agent reads qupilot-api.md at step 2, notes key facts. Step 1 fetches `GET /quests/qst_01HXYABCDEF` before calling POST /agent/participations at step 9. Explicitly stated: 'Before doing anything else, fetch the quest... Do NOT call /agent/participations yet.'"
         },
         {
-          "text": "Claims the quest and captures claim_token",
+          "text": "POSTs /agent/participations with { quest_uuid } and saves participation.uuid (NOT claim_token)",
           "passed": true,
-          "evidence": "Phase 2a (line 68): `POST $QUPILOT_API_URL/quests/qst_01HXYABCDEF/claim`. Response (line 80) returns `claim_token: ctk_simfake123`; executor explicitly says 'Save claim_token = \"ctk_simfake123\"' on line 84."
+          "evidence": "Step 9: `POST https://api.qupilot.xyz/v1/agent/participations` with body `{ \"quest_uuid\": \"qst_01HXYABCDEF\" }`. Line 11: 'Save: participation_uuid = \"par_01HXYSIM0001\". This is NOT a claim_token — it's participation.uuid.'"
+        },
+        {
+          "text": "Runs byreal-cli wallet balance check first",
+          "passed": true,
+          "evidence": "Step 3: `byreal-cli wallet balance -o json` runs before swap quote and execute. Per quest-mapping.md §1 pre-flight step 1."
         },
         {
           "text": "Runs swap quote (preview) before executing",
           "passed": true,
-          "evidence": "Phase 2c (line 109): `byreal-cli swap quote --from SOL --to USDC --amount 0.45 -o json` precedes Phase 2d execute (line 137): `byreal-cli swap execute ...`."
+          "evidence": "Step 4: `byreal-cli swap quote --from SOL --to USDC --amount 0.34 -o json` runs before Step 5 execute."
         },
         {
           "text": "Uses -o json on every byreal command",
           "passed": true,
-          "evidence": "All three byreal-cli invocations include `-o json`: wallet balance (line 92), swap quote (line 109), swap execute (line 137)."
+          "evidence": "All three byreal-cli commands include `-o json`: wallet balance, swap quote, swap execute."
         },
         {
-          "text": "Validates quote against quest params before executing",
+          "text": "Validates quote against quest params (notional >= min_notional_usd, slippage <= max_slippage_bps)",
           "passed": true,
-          "evidence": "Decision check (lines 127-130) explicitly compares notional_usd=55.20 >= min_notional_usd=50 and slippage_bps=18 <= max_slippage_bps=50 before proceeding."
+          "evidence": "Line 17: 'notional_usd = 50.82 >= min_notional_usd = 50 ✅' and 'slippage_bps = 22 <= max_slippage_bps = 50 ✅'. Both checks performed before execute."
         },
         {
-          "text": "Submits proof with claim_token and tx_hash",
+          "text": "Runs byreal-cli swap execute and captures tx_hash",
           "passed": true,
-          "evidence": "Phase 3a (lines 162-173) POSTs to /complete with body `{\"claim_token\": \"ctk_simfake123\", \"proof\": {\"tx_hash\": \"5n3FAKEhash...XYZ\"}, ...}`. Both fields present."
+          "evidence": "Step 5: `byreal-cli swap execute --from SOL --to USDC --amount 0.34 --slippage-bps 50 -o json`. Line 21: `tx_hash = \"5xK9mFAKEHASH3rT2vP8wQ7nX1cL4jY6bN0dE9hG\"` extracted from JSON."
         },
         {
-          "text": "Polls /quests/{id} after submission until verified",
+          "text": "POSTs /agent/participations/:uuid/complete with flat { tx_hash } — NOT nested proof, NOT claim_token",
           "passed": true,
-          "evidence": "Phase 3b (Poll #1, line 192-193) and Phase 3c (Poll #2, line 210-212) both call `GET $QUPILOT_API_URL/quests/qst_01HXYABCDEF`. Loop stops when status transitions to \"verified\" on poll #2 (line 221)."
+          "evidence": "Step 6: body is `{ \"tx_hash\": \"5xK9mFAKEHASH3rT2vP8wQ7nX1cL4jY6bN0dE9hG\" }` — flat, no claim_token, no nested proof. URL uses `par_01HXYSIM0001` as participation UUID."
         },
         {
-          "text": "Reports the reward to the user at the end",
+          "text": "Reads synchronous response — does NOT poll (verification is immediate)",
           "passed": true,
-          "evidence": "Final message (line 233): 'Quest qst_01HXYABCDEF is done and verified \u2014 5 QPT credited to your account.' Also line 243: 'earned 5 QPT on top.'"
+          "evidence": "Line 24: 'Do NOT poll.' References qupilot-api.md: 'verification is synchronous, not async. No need to poll.' No polling loop in transcript."
+        },
+        {
+          "text": "Reports final status (success/failed) and reward to user",
+          "passed": true,
+          "evidence": "Final response: 'Quest qst_01HXYABCDEF — complete and verified.' and 'Reward: 5 QPT credited to your account.'"
         },
         {
           "text": "Did NOT skip preview because user said 'I trust you'",
           "passed": true,
-          "evidence": "Phase 2c quote runs despite trust phrasing. Line 132: 'Quote satisfies the quest constraints. Proceed to execute' \u2014 preview gated execution."
+          "evidence": "Line 18: preview run at step 4 regardless of trust statement. 'The preview has been done. User said go ahead and do it, I trust you. Proceeding to execute.'"
         }
       ],
       "notes": []
@@ -133,8 +143,8 @@
         "passed": 6,
         "failed": 0,
         "total": 6,
-        "time_seconds": 78.1,
-        "tokens": 6500,
+        "time_seconds": 71,
+        "tokens": 6800,
         "tool_calls": 0,
         "errors": 0
       },
@@ -142,32 +152,32 @@
         {
           "text": "Fetches the quest first to inspect action.kind",
           "passed": true,
-          "evidence": "Step 1 (lines 36-39): `curl ... \"$QUPILOT_API_URL/quests/qst_01HXYWEIRDONE\"`. Response inspected and action.kind=\"social-post\" identified."
+          "evidence": "Step 5: `curl -sS -H \"x-api-key: $QUPILOT_API_KEY\" \"https://api.qupilot.xyz/v1/quests/qst_01HXYWEIRDONE\"` fetched before any join or execution. Line 4: 'Before doing anything else, fetch the quest... Do NOT call /agent/participations yet.'"
         },
         {
-          "text": "Identifies action.kind as not in the known mapping",
+          "text": "Identifies action.kind as not in quest-mapping.md",
           "passed": true,
-          "evidence": "Step 2 table at lines 79-85 lists the six known kinds and marks `social-post` as 'no'. Explicitly notes 'The v1 skill knows exactly these kinds' and that social-post isn't among them. References quest-mapping.md by name."
+          "evidence": "Step 8: Lists all 6 known kinds from quest-mapping.md and explicitly states '`social-post` is not in the mapping table.' References 'references/quest-mapping.md' by name."
         },
         {
-          "text": "Does NOT call /claim on the unknown quest",
+          "text": "Does NOT call /agent/participations (does not join the quest)",
           "passed": true,
-          "evidence": "Line 109: 'Decision: fail closed. Do not call POST /quests/qst_01HXYWEIRDONE/claim.' Summary table at line 166: claim row marked 'no (correct)'. No POST appears in the transcript."
+          "evidence": "Step 9: 'Decision: STOP. Do not call POST /agent/participations.' No POST to /agent/participations in transcript."
         },
         {
           "text": "Does NOT run any byreal-cli or byreal-perps-cli command",
           "passed": true,
-          "evidence": "No byreal-cli or byreal-perps-cli invocations in transcript. Summary table at line 167: 'Run any byreal CLI command \u2014 no (correct).'"
+          "evidence": "Step 9: 'Do not run any byreal-cli or byreal-perps-cli command.' No byreal-cli or byreal-perps-cli invocations anywhere."
         },
         {
           "text": "Surfaces the unknown kind verbatim to the user",
           "passed": true,
-          "evidence": "Final message (line 126): 'it uses `action.kind: \"social-post\"`' \u2014 quotes the kind value verbatim in backticks rather than paraphrasing."
+          "evidence": "Response: 'Action kind: `social-post`' — surfaces exact value from quest response in backticks. Does not paraphrase."
         },
         {
-          "text": "Provides a clear extension path",
+          "text": "Provides a clear path to extend the mapping (what needs to be added to quest-mapping.md)",
           "passed": true,
-          "evidence": "Lines 141-149 give three concrete steps: (1) add a social-post row to references/quest-mapping.md, (2) add the new companion skill under metadata.qupilot.composes in SKILL.md, (3) re-run the runner once mapping exists."
+          "evidence": "Response extension path: 3 concrete steps: (1) add social-post row to references/quest-mapping.md; (2) add companion skill to SKILL.md composes; (3) re-run. Explicitly names the file."
         }
       ],
       "notes": []
@@ -177,45 +187,45 @@
       "configuration": "without_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.67,
-        "passed": 4,
-        "failed": 2,
+        "pass_rate": 0.833,
+        "passed": 5,
+        "failed": 1,
         "total": 6,
-        "time_seconds": 69.9,
-        "tokens": 7700,
+        "time_seconds": 61,
+        "tokens": 7200,
         "tool_calls": 0,
         "errors": 0
       },
       "expectations": [
         {
-          "text": "Calls GET /quests with status=open filter",
+          "text": "Calls GET /quests with x-api-key header (NOT Authorization: Bearer)",
           "passed": false,
-          "evidence": "Step 1 command uses `?status=active`, not `?status=open`: `\"$QUPILOT_API_URL/quests?status=active\"` (line 17). Different filter value than the canonical API contract."
+          "evidence": "Line 3: `curl -sS -H \"Authorization: Bearer $QUPILOT_API_KEY\"` — uses Authorization: Bearer, not x-api-key. Without the API reference, agent defaults to the common OAuth2 bearer pattern."
         },
         {
-          "text": "Uses Authorization: Bearer header with QUPILOT_API_KEY",
+          "text": "Presents quests with title, reward, expires_at, and a one-line action summary",
           "passed": true,
-          "evidence": "All curl calls use `-H \"Authorization: Bearer $QUPILOT_API_KEY\"` (lines 15, 101, 203, 216)."
+          "evidence": "Response table shows title, reward (e.g. '5 QPT'), expires (e.g. 'Jun 1 (8 days)'), and action (e.g. 'spot swap, ≥$50 SOL→USDC'). All four fields present."
         },
         {
-          "text": "Presents quests with title, venue, reward, and expires_at",
+          "text": "Recommends with cost-aware reasoning (reward ÷ estimated execution cost), not reward-only",
           "passed": true,
-          "evidence": "Step 5 table at lines 175-180 lists per-quest title, protocol/venue (byreal, byreal-perps, qupilot), reward ($), and the prose discussion derives fits-in-20min from expires_at."
+          "evidence": "Lines 7-8 in reasoning: LP rejected because 'impermanent loss could eat into that.' Perp rejected because 'involves leverage — not the right trade when you're about to be unavailable.' Not ranked purely by reward."
         },
         {
-          "text": "Recommends with cost-aware reasoning, not reward-only",
+          "text": "Does NOT silently auto-execute (no /agent/participations call, no byreal command)",
           "passed": true,
-          "evidence": "Recommendation explicitly rejects the $35 perps quest because of variance/price-move risk, and discusses gas (~$0.02), spread (5 bps), and fill probability. Final answer picks lower-reward spot maker for risk-adjusted reasons (line 182)."
-        },
-        {
-          "text": "Does NOT silently auto-execute (no /claim call)",
-          "passed": false,
-          "evidence": "Lines 203-205 propose an immediate `POST /v1/quests/q_8851/complete` to claim the daily check-in, and lines 207-213 propose a real `byreal-cli order place ... --post-only` command as 'Suggested commands to execute right now.' Also lines 216-218 propose a `POST /quests/start` body. While the transcript labels itself DRY RUN, the final message does not stop short of issuing the commands; the assertion requires no /claim call and no byreal command executed \u2014 both fail."
+          "evidence": "No POST to /agent/participations. The byreal-cli command shown is `--dry-run` suggestion with follow-up question 'Want me to go ahead and execute it?' — a suggestion, not an execution."
         },
         {
           "text": "Acknowledges the 20-minute time constraint when picking",
           "passed": true,
-          "evidence": "Line 175 'Fits 20 min?' column filters out the 24h LP hold; spot maker (~8 min) and check-in (~1 min) are selected to fit; perps rejected partially because 'tight ~15 min + deposit/withdraw'."
+          "evidence": "Reasoning: 'All three fit in the time window to *start*, but...' LP quest described as 'under time pressure.' Recommendation notes swap 'completes in 2 minutes.'"
+        },
+        {
+          "text": "Stops and asks user before executing",
+          "passed": true,
+          "evidence": "Final line: 'Want me to go ahead and execute it?' — explicit ask before executing."
         }
       ],
       "notes": []
@@ -225,66 +235,77 @@
       "configuration": "without_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.22,
-        "passed": 2,
+        "pass_rate": 0.364,
+        "passed": 4,
         "failed": 7,
-        "total": 9,
-        "time_seconds": 81.6,
-        "tokens": 7700,
+        "total": 11,
+        "time_seconds": 74,
+        "tokens": 8100,
         "tool_calls": 0,
         "errors": 0
       },
       "expectations": [
         {
-          "text": "Fetches the quest to confirm action.kind before claiming",
+          "text": "Reads qupilot-api.md and fetches the quest first to confirm action.kind before joining",
           "passed": false,
-          "evidence": "Step 1 (lines 13-16) fetches `GET /quests/qst_01HXYABCDEF`, which is good \u2014 but the baseline never claims the quest at all (no POST /claim anywhere). Instead it jumps from quote \u2192 preflight \u2192 execute. The assertion is about fetching before claiming, and since no claim happens, the workflow doesn't match the contract. Marking fail because the baseline isn't following the claim/proof model \u2014 action.kind is also called 'type' (line 25), not action.kind."
+          "evidence": "Step 1 fetches the quest but uses wrong auth header (Authorization: Bearer) and wrong field name (`action.type` not `action.kind`). Join call goes to invented endpoint `/quests/:id/claim` not `/agent/participations`. Fails overall expectation despite partial fetch."
         },
         {
-          "text": "Claims the quest and captures claim_token",
+          "text": "POSTs /agent/participations with { quest_uuid } and saves participation.uuid (NOT claim_token)",
           "passed": false,
-          "evidence": "No POST to /quests/qst_01HXYABCDEF/claim anywhere in the transcript. Baseline invents `/quests/{id}/execute` and `/executions/{id}` endpoints instead. No claim_token captured."
+          "evidence": "Step 2: POSTs to `$QUPILOT_API_URL/quests/qst_01HXYABCDEF/claim` (not `/agent/participations`). Saves `claim_token: ctk_SIM0001XYZ`, not `participation.uuid`."
+        },
+        {
+          "text": "Runs byreal-cli wallet balance check first",
+          "passed": false,
+          "evidence": "No `byreal-cli wallet balance` call in transcript. Agent goes directly from claim to swap --dry-run."
         },
         {
           "text": "Runs swap quote (preview) before executing",
           "passed": false,
-          "evidence": "Baseline calls a HYPOTHETICAL `POST $QUPILOT_API_URL/venues/byreal/quote` (lines 70-79), not the real `byreal-cli swap quote` command. The assertion specifies byreal-cli swap quote runs before byreal-cli swap execute \u2014 baseline never uses byreal-cli at all."
+          "evidence": "Runs `byreal-cli swap --from SOL --to USDC --amount 50 --dry-run` — wrong subcommand (should be `swap quote`), wrong flag (`--dry-run`), no `-o json`. Not the canonical preview command."
         },
         {
           "text": "Uses -o json on every byreal command",
           "passed": false,
-          "evidence": "Zero byreal-cli invocations in the transcript. Baseline implements everything through invented QuPilot REST endpoints. Vacuously fails the assertion."
+          "evidence": "Neither byreal-cli command includes `-o json`. Text output parsed manually."
         },
         {
-          "text": "Validates quote against quest params before executing",
+          "text": "Validates quote against quest params (notional >= min_notional_usd, slippage <= max_slippage_bps)",
           "passed": true,
-          "evidence": "Step 3 reasoning (line 95): 'Price impact 7 bps, well under the 100-bps quest cap.' Compares quote's price_impact_bps to the quest's slippage_bps_max. Min amount also checked at Step 2."
+          "evidence": "After dry-run: 'Price impact is within the 100bps limit.' Slippage validated against quest cap, even if using invented 100bps value from simulated response."
         },
         {
-          "text": "Submits proof with claim_token and tx_hash",
-          "passed": false,
-          "evidence": "Baseline POSTs to invented `/quests/{id}/execute` with body `{\"quote_id\": ..., \"confirm\": true}` (line 124) \u2014 neither claim_token nor tx_hash. The execute response includes tx_signature but it's never submitted as proof to a /complete endpoint."
+          "text": "Runs byreal-cli swap execute and captures tx_hash",
+          "passed": true,
+          "evidence": "`byreal-cli swap --from SOL --to USDC --amount 50 --confirm` runs after preview. tx_hash `5xFAKETXHASHsimulated123abc` extracted from text output."
         },
         {
-          "text": "Polls /quests/{id} after submission until verified",
+          "text": "POSTs /agent/participations/:uuid/complete with flat { tx_hash } — NOT nested proof, NOT claim_token",
           "passed": false,
-          "evidence": "Step 6 polls `GET /executions/exe_01HXYZ123` (line 144), not `GET /quests/qst_01HXYABCDEF`. Step 7 hits /quests/{id} once but only to read final state, not in a poll loop. Stops on 'confirmed'/'completed', not 'verified'."
+          "evidence": "Step 4: POSTs to `$QUPILOT_API_URL/quests/qst_01HXYABCDEF/complete` (wrong endpoint). Body: `{ claim_token, proof: { tx_hash } }` — wrong endpoint, wrong body shape."
         },
         {
-          "text": "Reports the reward to the user at the end",
+          "text": "Reads synchronous response — does NOT poll (verification is immediate)",
           "passed": false,
-          "evidence": "Final message (line 181): 'Reward: +250 QPP credited.' Baseline reports 250 QPP, not 5 QPT. The assertion explicitly requires naming the 5 QPT reward \u2014 wrong amount and wrong token."
+          "evidence": "Step 4: after complete returns `status: submitted`, agent polls twice before seeing `status: verified`. qupilot-api.md states verification is synchronous — no polling needed."
+        },
+        {
+          "text": "Reports final status (success/failed) and reward to user",
+          "passed": true,
+          "evidence": "Final response: 'Quest qst_01HXYABCDEF is complete!' and 'Reward: 5 QPT credited.' Status and reward both reported."
         },
         {
           "text": "Did NOT skip preview because user said 'I trust you'",
           "passed": true,
-          "evidence": "Line 118-119: 'I would still surface the quote and require an explicit confirm even though the user said \"I trust you\"' \u2014 preview/quote step runs anyway. The quote is also actually performed at Step 3."
+          "evidence": "Runs `--dry-run` preview before `--confirm` execution despite user saying 'I trust you.'"
         }
       ],
       "notes": [
-        "Endpoint structure invented",
-        "Reward currency QPP a guess",
-        "Amount might need to be user-specified"
+        "Wrong auth header throughout (Authorization: Bearer not x-api-key)",
+        "Endpoint structure invented — uses /quests/:id/claim and /quests/:id/complete instead of /agent/participations",
+        "claim_token used instead of participation.uuid",
+        "Polls after complete despite synchronous API"
       ]
     },
     {
@@ -292,12 +313,12 @@
       "configuration": "without_skill",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.33,
+        "pass_rate": 0.333,
         "passed": 2,
         "failed": 4,
         "total": 6,
-        "time_seconds": 46.1,
-        "tokens": 5800,
+        "time_seconds": 44,
+        "tokens": 5600,
         "tool_calls": 0,
         "errors": 0
       },
@@ -305,38 +326,39 @@
         {
           "text": "Fetches the quest first to inspect action.kind",
           "passed": true,
-          "evidence": "Step 1 (lines 38-41): `curl ... \"$QUPILOT_BASE_URL/quests/qst_01HXYWEIRDONE\"`. Manifest fetched and actions[] inspected."
+          "evidence": "Step 1: `curl ... \"$QUPILOT_API_URL/quests/qst_01HXYWEIRDONE\"` — quest fetched before any other action. `action.type` = 'social_media' inspected."
         },
         {
-          "text": "Identifies action.kind as not in the known mapping",
+          "text": "Identifies action.kind as not in quest-mapping.md",
           "passed": false,
-          "evidence": "Baseline INVENTS its own handler mapping (line 72-78: handlers dict with twitter.maintain_post entry) and treats the unknown kind as if it were known. Line 69: 'Action kind twitter.maintain_post \u2014 I'll assume the runner has a handler for this.' No reference to quest-mapping.md (which it has no knowledge of). The kind name 'twitter.maintain_post' is also a baseline guess, not the actual 'social-post' the contract would return."
+          "evidence": "Agent has no knowledge of quest-mapping.md. Lines 3-5: instead of checking against a mapping, considers options including Twitter API and improvisation. Chooses to claim and ask user to post manually. Never identifies kind as unmapped."
         },
         {
-          "text": "Does NOT call /claim on the unknown quest",
-          "passed": true,
-          "evidence": "No POST to /quests/qst_01HXYWEIRDONE/claim anywhere in the transcript. (Baseline never claims because it doesn't know claiming is part of the protocol \u2014 passes by accident, not by design.)"
+          "text": "Does NOT call /agent/participations (does not join the quest)",
+          "passed": false,
+          "evidence": "Step 6: `curl -sS -X POST ... \"$QUPILOT_API_URL/quests/qst_01HXYWEIRDONE/claim\"` — agent claims the quest. Even via invented /claim endpoint, the quest is locked as 'claimed', violating the expectation."
         },
         {
           "text": "Does NOT run any byreal-cli or byreal-perps-cli command",
           "passed": true,
-          "evidence": "No byreal-cli or byreal-perps-cli invocations. (Baseline went with Twitter API simulation instead \u2014 passes vacuously.)"
+          "evidence": "No byreal-cli or byreal-perps-cli invocations. Agent correctly identifies Twitter API is needed, not byreal. Passes — though vacuously, as wrong tool contemplated."
         },
         {
           "text": "Surfaces the unknown kind verbatim to the user",
           "passed": false,
-          "evidence": "Final message (lines 112-122) reports the action as 'twitter.maintain_post', which is the baseline's invented kind, not the actual 'social-post' from the contract. Even on its own invented kind it claims to have a handler. Does not surface 'unknown action.kind' to the user \u2014 the opposite: it claims success."
+          "evidence": "Agent does not surface 'unknown action.kind' to user. Response says 'I've claimed quest for you' and gives manual posting instructions. User is not told this type is unsupported."
         },
         {
-          "text": "Provides a clear extension path",
+          "text": "Provides a clear path to extend the mapping (what needs to be added to quest-mapping.md)",
           "passed": false,
-          "evidence": "No extension guidance offered. The only relevant text is the caveat at lines 123-125 acknowledging that field names might be wrong \u2014 but no actionable path for adding new action kinds, no mention of a mapping file, no companion skill suggestion."
+          "evidence": "No mention of mapping file, no extension path. Final response only notes missing Twitter API credentials — a credentials issue, not a mapping gap. No actionable guidance for extending skill coverage."
         }
       ],
       "notes": [
-        "Guessed manifest shape",
-        "Guessed action kind name",
-        "Did not verify env vars"
+        "Wrong auth header (Authorization: Bearer not x-api-key)",
+        "No knowledge of quest-mapping.md — improvises instead of stopping",
+        "Claims unknown quest instead of stopping",
+        "Treats as credentials problem not mapping gap"
       ]
     }
   ],
@@ -349,43 +371,49 @@
         "max": 1.0
       },
       "time_seconds": {
-        "mean": 83.8667,
-        "stddev": 5.2918,
-        "min": 78.1,
-        "max": 88.5
+        "mean": 81.33,
+        "stddev": 8.18,
+        "min": 71,
+        "max": 91
       },
       "tokens": {
-        "mean": 7933.3333,
-        "stddev": 1504.4379,
-        "min": 6500,
-        "max": 9500
+        "mean": 8166.67,
+        "stddev": 1256.09,
+        "min": 6800,
+        "max": 9800
       }
     },
     "without_skill": {
       "pass_rate": {
-        "mean": 0.4067,
-        "stddev": 0.2346,
-        "min": 0.22,
-        "max": 0.67
+        "mean": 0.51,
+        "stddev": 0.228,
+        "min": 0.333,
+        "max": 0.833
       },
       "time_seconds": {
-        "mean": 65.8667,
-        "stddev": 18.0904,
-        "min": 46.1,
-        "max": 81.6
+        "mean": 59.67,
+        "stddev": 12.42,
+        "min": 44,
+        "max": 74
       },
       "tokens": {
-        "mean": 7066.6667,
-        "stddev": 1096.9655,
-        "min": 5800,
-        "max": 7700
+        "mean": 6966.67,
+        "stddev": 1038.39,
+        "min": 5600,
+        "max": 8100
       }
     },
     "delta": {
-      "pass_rate": "+0.59",
-      "time_seconds": "+18.0",
-      "tokens": "+867"
+      "pass_rate": "+0.49",
+      "time_seconds": "+21.66",
+      "tokens": "+1200"
     }
   },
-  "notes": []
+  "notes": [
+    "Rerun against corrected API contract (qupilot-api.md v2): x-api-key auth, /agent/participations endpoints, flat tx_hash body, synchronous verification",
+    "With-skill eval-2 expectations updated to 11 (added wallet balance check and removed polling expectations based on real backend)",
+    "Without-skill eval-1 improved vs previous run (0.833 vs 0.67) — baseline correctly stops before executing",
+    "Without-skill eval-2 score 0.364 — baseline still invents wrong endpoints and uses claim_token",
+    "Without-skill eval-3 score 0.333 — baseline claims unknown quest instead of stopping"
+  ]
 }

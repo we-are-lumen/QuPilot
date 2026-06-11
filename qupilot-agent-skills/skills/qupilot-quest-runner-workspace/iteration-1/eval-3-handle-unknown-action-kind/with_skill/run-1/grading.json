@@ -3,32 +3,32 @@
     {
       "text": "Fetches the quest first to inspect action.kind",
       "passed": true,
-      "evidence": "Step 1 (lines 36-39): `curl ... \"$QUPILOT_API_URL/quests/qst_01HXYWEIRDONE\"`. Response inspected and action.kind=\"social-post\" identified."
+      "evidence": "Step 5: `curl -sS -H \"x-api-key: $QUPILOT_API_KEY\" \"https://api.qupilot.xyz/v1/quests/qst_01HXYWEIRDONE\"` — quest fetched before any join or execution. Line 4: 'Before doing anything else, fetch the quest to see the actual action.kind. Do NOT call /agent/participations yet.'"
     },
     {
-      "text": "Identifies action.kind as not in the known mapping",
+      "text": "Identifies action.kind as not in quest-mapping.md",
       "passed": true,
-      "evidence": "Step 2 table at lines 79-85 lists the six known kinds and marks `social-post` as 'no'. Explicitly notes 'The v1 skill knows exactly these kinds' and that social-post isn't among them. References quest-mapping.md by name."
+      "evidence": "Step 8: Lists all 6 known kinds from quest-mapping.md (swap, provide-liquidity, open-position, close-position, hold-position, trade-volume) and explicitly states '`social-post` is not in the mapping table.' References 'references/quest-mapping.md' by name."
     },
     {
-      "text": "Does NOT call /claim on the unknown quest",
+      "text": "Does NOT call /agent/participations (does not join the quest)",
       "passed": true,
-      "evidence": "Line 109: 'Decision: fail closed. Do not call POST /quests/qst_01HXYWEIRDONE/claim.' Summary table at line 166: claim row marked 'no (correct)'. No POST appears in the transcript."
+      "evidence": "Step 9: 'Decision: STOP. Do not call POST /agent/participations.' No POST to /agent/participations anywhere in transcript."
     },
     {
       "text": "Does NOT run any byreal-cli or byreal-perps-cli command",
       "passed": true,
-      "evidence": "No byreal-cli or byreal-perps-cli invocations in transcript. Summary table at line 167: 'Run any byreal CLI command — no (correct).'"
+      "evidence": "Step 9: 'Do not run any byreal-cli or byreal-perps-cli command.' No byreal-cli or byreal-perps-cli invocations in the entire transcript."
     },
     {
       "text": "Surfaces the unknown kind verbatim to the user",
       "passed": true,
-      "evidence": "Final message (line 126): 'it uses `action.kind: \"social-post\"`' — quotes the kind value verbatim in backticks rather than paraphrasing."
+      "evidence": "Response section: 'Action kind: `social-post`' — surfaces the exact value `\"social-post\"` from the quest response in backticks, verbatim. Does not paraphrase as 'Twitter task' or 'social media' in the technical identification."
     },
     {
-      "text": "Provides a clear extension path",
+      "text": "Provides a clear path to extend the mapping (what needs to be added to quest-mapping.md)",
       "passed": true,
-      "evidence": "Lines 141-149 give three concrete steps: (1) add a social-post row to references/quest-mapping.md, (2) add the new companion skill under metadata.qupilot.composes in SKILL.md, (3) re-run the runner once mapping exists."
+      "evidence": "Lines 11-12 (response extension path): 3 concrete steps: (1) add social-post row to references/quest-mapping.md with pre-flight, CLI command, proof field, and complete curl; (2) add new companion skill to SKILL.md composes; (3) re-run the runner. Explicitly names the file `references/quest-mapping.md`."
     }
   ],
   "summary": {
@@ -36,54 +36,5 @@
     "failed": 0,
     "total": 6,
     "pass_rate": 1.0
-  },
-  "execution_metrics": {
-    "tool_calls": {},
-    "total_tool_calls": 0,
-    "total_steps": 0,
-    "errors_encountered": 0,
-    "output_chars": 6500,
-    "transcript_chars": 6500
-  },
-  "timing": {
-    "executor_duration_seconds": 78.1,
-    "total_duration_seconds": 78.1
-  },
-  "claims": [
-    {
-      "claim": "Skill v1 knows exactly six action.kind values",
-      "type": "process",
-      "verified": true,
-      "evidence": "Consistent with the SKILL.md and quest-mapping.md design; six kinds listed: swap, provide-liquidity, open-position, close-position, hold-position, trade-volume."
-    },
-    {
-      "claim": "Claiming would block the quest from other agents until TTL",
-      "type": "process",
-      "verified": true,
-      "evidence": "Matches SKILL.md hard constraint #1 about claims holding real value."
-    },
-    {
-      "claim": "venue 'qupilot-social' is outside this skill's surfaces",
-      "type": "factual",
-      "verified": true,
-      "evidence": "SKILL.md composes only byreal-cli and byreal-perps-cli; qupilot-social is not among them."
-    }
-  ],
-  "user_notes_summary": {
-    "uncertainties": [],
-    "needs_review": [],
-    "workarounds": []
-  },
-  "eval_feedback": {
-    "suggestions": [
-      {
-        "assertion": "Surfaces the unknown kind verbatim to the user",
-        "reason": "Strong assertion — discriminates between paraphrasing ('a social quest') and quoting the exact wire value ('social-post'). Good as-is."
-      },
-      {
-        "reason": "Consider an additional assertion that the agent surfaces the venue mismatch too, since the with-skill run did this and it's a valuable behavior the baseline likely won't replicate."
-      }
-    ],
-    "overall": "Assertions are well-targeted for testing the fail-closed contract. The skill version hits all six."
   }
 }

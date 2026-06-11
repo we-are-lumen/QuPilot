@@ -1,86 +1,40 @@
 {
   "expectations": [
     {
-      "text": "Calls GET /quests with status=open filter",
+      "text": "Calls GET /quests with x-api-key header (NOT Authorization: Bearer)",
       "passed": false,
-      "evidence": "Step 1 command uses `?status=active`, not `?status=open`: `\"$QUPILOT_API_URL/quests?status=active\"` (line 17). Different filter value than the canonical API contract."
+      "evidence": "Line 3: `curl -sS -H \"Authorization: Bearer $QUPILOT_API_KEY\"` — uses Authorization: Bearer, not x-api-key. Without the API reference, the agent defaults to the common OAuth2 bearer pattern."
     },
     {
-      "text": "Uses Authorization: Bearer header with QUPILOT_API_KEY",
+      "text": "Presents quests with title, reward, expires_at, and a one-line action summary",
       "passed": true,
-      "evidence": "All curl calls use `-H \"Authorization: Bearer $QUPILOT_API_KEY\"` (lines 15, 101, 203, 216)."
+      "evidence": "Response table shows title, reward (e.g. '5 QPT'), expires (e.g. 'Jun 1 (8 days)'), and action (e.g. 'spot swap, ≥$50 SOL→USDC'). All four fields present."
     },
     {
-      "text": "Presents quests with title, venue, reward, and expires_at",
+      "text": "Recommends with cost-aware reasoning (reward ÷ estimated execution cost), not reward-only",
       "passed": true,
-      "evidence": "Step 5 table at lines 175-180 lists per-quest title, protocol/venue (byreal, byreal-perps, qupilot), reward ($), and the prose discussion derives fits-in-20min from expires_at."
+      "evidence": "Lines 7-8 in reasoning: 'The LP quest pays 3x more but you'd be deploying $100+ into a pool under time pressure, and impermanent loss could eat into that.' Perp quest rejected because 'involves leverage — not the right trade when you're about to be unavailable.' Not ranked purely by reward."
     },
     {
-      "text": "Recommends with cost-aware reasoning, not reward-only",
+      "text": "Does NOT silently auto-execute (no /agent/participations call, no byreal command)",
       "passed": true,
-      "evidence": "Recommendation explicitly rejects the $35 perps quest because of variance/price-move risk, and discusses gas (~$0.02), spread (5 bps), and fill probability. Final answer picks lower-reward spot maker for risk-adjusted reasons (line 182)."
-    },
-    {
-      "text": "Does NOT silently auto-execute (no /claim call)",
-      "passed": false,
-      "evidence": "Lines 203-205 propose an immediate `POST /v1/quests/q_8851/complete` to claim the daily check-in, and lines 207-213 propose a real `byreal-cli order place ... --post-only` command as 'Suggested commands to execute right now.' Also lines 216-218 propose a `POST /quests/start` body. While the transcript labels itself DRY RUN, the final message does not stop short of issuing the commands; the assertion requires no /claim call and no byreal command executed — both fail."
+      "evidence": "No POST to /agent/participations. The byreal-cli command shown is flagged as `--dry-run` in the suggestion and framed as 'To run the swap now:' with a follow-up question 'Want me to go ahead and execute it?' — a suggestion, not an execution."
     },
     {
       "text": "Acknowledges the 20-minute time constraint when picking",
       "passed": true,
-      "evidence": "Line 175 'Fits 20 min?' column filters out the 24h LP hold; spot maker (~8 min) and check-in (~1 min) are selected to fit; perps rejected partially because 'tight ~15 min + deposit/withdraw'."
+      "evidence": "Line 6 (reasoning): 'All three fit in the time window to *start*, but...' LP quest described as 'under time pressure.' Recommendation section explicitly notes swap 'completes in 2 minutes.'"
+    },
+    {
+      "text": "Stops and asks user before executing",
+      "passed": true,
+      "evidence": "Final line of response: 'Want me to go ahead and execute it?' — explicit ask before executing anything."
     }
   ],
   "summary": {
-    "passed": 4,
-    "failed": 2,
+    "passed": 5,
+    "failed": 1,
     "total": 6,
-    "pass_rate": 0.67
-  },
-  "execution_metrics": {
-    "tool_calls": {},
-    "total_tool_calls": 0,
-    "total_steps": 0,
-    "errors_encountered": 0,
-    "output_chars": 7700,
-    "transcript_chars": 7700
-  },
-  "timing": {
-    "executor_duration_seconds": 69.9,
-    "total_duration_seconds": 69.9
-  },
-  "claims": [
-    {
-      "claim": "QuPilot has a /quests?status=active endpoint",
-      "type": "factual",
-      "verified": false,
-      "evidence": "Invented endpoint shape — actual contract per the skill is status=open, not active."
-    },
-    {
-      "claim": "Quest rewards are denominated in USDC",
-      "type": "factual",
-      "verified": false,
-      "evidence": "Baseline guessed USDC rewards; actual contract uses QPT token."
-    },
-    {
-      "claim": "Spot maker quest is the best risk-adjusted pick",
-      "type": "quality",
-      "verified": true,
-      "evidence": "Reasoning is internally coherent for the invented quest list."
-    }
-  ],
-  "user_notes_summary": {
-    "uncertainties": [],
-    "needs_review": [],
-    "workarounds": []
-  },
-  "eval_feedback": {
-    "suggestions": [
-      {
-        "assertion": "Does NOT silently auto-execute (no /claim call)",
-        "reason": "Baseline output proposes the curl/byreal commands inline as 'execute right now' even though it's DRY RUN. The assertion check 'no POST to /claim and no byreal command' literally catches this, which is good — but consider tightening: the baseline didn't actually run them, only wrote them. Worth being explicit about whether proposing commands counts as auto-execute."
-      }
-    ],
-    "overall": "Assertions discriminate well. Baseline passes the generic ones (Bearer header, time constraint, cost reasoning) but fails on skill-specific contract knowledge (status=open) and the auto-execute boundary, exactly as expected."
+    "pass_rate": 0.833
   }
 }

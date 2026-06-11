@@ -1,100 +1,65 @@
 {
   "expectations": [
     {
-      "text": "Fetches the quest to confirm action.kind before claiming",
+      "text": "Reads qupilot-api.md and fetches the quest first to confirm action.kind before joining",
       "passed": false,
-      "evidence": "Step 1 (lines 13-16) fetches `GET /quests/qst_01HXYABCDEF`, which is good — but the baseline never claims the quest at all (no POST /claim anywhere). Instead it jumps from quote → preflight → execute. The assertion is about fetching before claiming, and since no claim happens, the workflow doesn't match the contract. Marking fail because the baseline isn't following the claim/proof model — action.kind is also called 'type' (line 25), not action.kind."
+      "evidence": "Step 1 does fetch the quest via `GET /quests/qst_01HXYABCDEF` before joining — but the agent has no qupilot-api.md to read, uses wrong auth header (Authorization: Bearer instead of x-api-key), and interprets the field as `action.type` not `action.kind`. The join call that follows goes to the wrong endpoint (`/quests/:id/claim` rather than `/agent/participations`). Partial credit on fetch but fails the overall expectation because the pre-join confirmation uses wrong API contract."
     },
     {
-      "text": "Claims the quest and captures claim_token",
+      "text": "POSTs /agent/participations with { quest_uuid } and saves participation.uuid (NOT claim_token)",
       "passed": false,
-      "evidence": "No POST to /quests/qst_01HXYABCDEF/claim anywhere in the transcript. Baseline invents `/quests/{id}/execute` and `/executions/{id}` endpoints instead. No claim_token captured."
+      "evidence": "Step 2: POSTs to invented endpoint `$QUPILOT_API_URL/quests/qst_01HXYABCDEF/claim` (not `/agent/participations`). Response inventively contains `claim_token: ctk_SIM0001XYZ`. Agent saves `claim_token`, not `participation.uuid`. Both endpoint and saved value are wrong."
+    },
+    {
+      "text": "Runs byreal-cli wallet balance check first",
+      "passed": false,
+      "evidence": "No `byreal-cli wallet balance` call anywhere in the transcript. Agent goes directly from claim to swap --dry-run without checking balances."
     },
     {
       "text": "Runs swap quote (preview) before executing",
       "passed": false,
-      "evidence": "Baseline calls a HYPOTHETICAL `POST $QUPILOT_API_URL/venues/byreal/quote` (lines 70-79), not the real `byreal-cli swap quote` command. The assertion specifies byreal-cli swap quote runs before byreal-cli swap execute — baseline never uses byreal-cli at all."
+      "evidence": "Step 3: runs `byreal-cli swap --from SOL --to USDC --amount 50 --dry-run` — wrong subcommand (should be `swap quote`), wrong flag (`--dry-run` not a real byreal-cli flag per quest-mapping.md), and no `-o json`. The output is text, not JSON. The correct command is `byreal-cli swap quote --from SOL --to USDC --amount <calc> -o json`."
     },
     {
       "text": "Uses -o json on every byreal command",
       "passed": false,
-      "evidence": "Zero byreal-cli invocations in the transcript. Baseline implements everything through invented QuPilot REST endpoints. Vacuously fails the assertion."
+      "evidence": "Neither byreal-cli command includes `-o json`: `byreal-cli swap --from SOL --to USDC --amount 50 --dry-run` (missing) and `byreal-cli swap --from SOL --to USDC --amount 50 --confirm` (missing). Text output is parsed manually."
     },
     {
-      "text": "Validates quote against quest params before executing",
+      "text": "Validates quote against quest params (notional >= min_notional_usd, slippage <= max_slippage_bps)",
       "passed": true,
-      "evidence": "Step 3 reasoning (line 95): 'Price impact 7 bps, well under the 100-bps quest cap.' Compares quote's price_impact_bps to the quest's slippage_bps_max. Min amount also checked at Step 2."
+      "evidence": "Step 3 (after dry-run): 'The preview looks fine. Price impact is within the 100bps limit.' Agent checks slippage against the quest cap. Validation performed, even if the comparison is to the invented `max_slippage_bps: 100` from the simulated response rather than the real 50bps."
     },
     {
-      "text": "Submits proof with claim_token and tx_hash",
-      "passed": false,
-      "evidence": "Baseline POSTs to invented `/quests/{id}/execute` with body `{\"quote_id\": ..., \"confirm\": true}` (line 124) — neither claim_token nor tx_hash. The execute response includes tx_signature but it's never submitted as proof to a /complete endpoint."
+      "text": "Runs byreal-cli swap execute and captures tx_hash",
+      "passed": true,
+      "evidence": "Step 3: `byreal-cli swap --from SOL --to USDC --amount 50 --confirm` runs after preview. Tx hash `5xFAKETXHASHsimulated123abc` extracted manually from text output. Execution happens and tx captured, even though command format is non-canonical."
     },
     {
-      "text": "Polls /quests/{id} after submission until verified",
+      "text": "POSTs /agent/participations/:uuid/complete with flat { tx_hash } — NOT nested proof, NOT claim_token",
       "passed": false,
-      "evidence": "Step 6 polls `GET /executions/exe_01HXYZ123` (line 144), not `GET /quests/qst_01HXYABCDEF`. Step 7 hits /quests/{id} once but only to read final state, not in a poll loop. Stops on 'confirmed'/'completed', not 'verified'."
+      "evidence": "Step 4: POSTs to invented endpoint `$QUPILOT_API_URL/quests/qst_01HXYABCDEF/complete` (not `/agent/participations/:uuid/complete`). Body contains `claim_token` AND nested `proof: { tx_hash }` — both wrong. Correct body is flat `{ \"tx_hash\": \"...\" }` to `/agent/participations/:uuid/complete`."
     },
     {
-      "text": "Reports the reward to the user at the end",
+      "text": "Reads synchronous response — does NOT poll (verification is immediate)",
       "passed": false,
-      "evidence": "Final message (line 181): 'Reward: +250 QPP credited.' Baseline reports 250 QPP, not 5 QPT. The assertion explicitly requires naming the 5 QPT reward — wrong amount and wrong token."
+      "evidence": "Step 4: after complete returns `status: submitted`, agent polls twice (`GET /quests/qst_01HXYABCDEF` at 5s and 10s intervals) before seeing `status: verified`. qupilot-api.md states verification is synchronous and no polling is needed."
+    },
+    {
+      "text": "Reports final status (success/failed) and reward to user",
+      "passed": true,
+      "evidence": "Final response: 'Quest qst_01HXYABCDEF is complete!' and 'Reward: 5 QPT credited.' Status and reward both reported."
     },
     {
       "text": "Did NOT skip preview because user said 'I trust you'",
       "passed": true,
-      "evidence": "Line 118-119: 'I would still surface the quote and require an explicit confirm even though the user said \"I trust you\"' — preview/quote step runs anyway. The quote is also actually performed at Step 3."
+      "evidence": "Step 7-8: Agent runs `--dry-run` preview before `--confirm` execution despite user saying 'I trust you.' Preview step not skipped."
     }
   ],
   "summary": {
-    "passed": 2,
+    "passed": 4,
     "failed": 7,
-    "total": 9,
-    "pass_rate": 0.22
-  },
-  "execution_metrics": {
-    "tool_calls": {},
-    "total_tool_calls": 0,
-    "total_steps": 0,
-    "errors_encountered": 0,
-    "output_chars": 7700,
-    "transcript_chars": 7700
-  },
-  "timing": {
-    "executor_duration_seconds": 81.6,
-    "total_duration_seconds": 81.6
-  },
-  "claims": [
-    {
-      "claim": "QuPilot exposes /venues/{venue}/quote and /quests/{id}/execute endpoints",
-      "type": "factual",
-      "verified": false,
-      "evidence": "Invented endpoints not present in the skill's API contract (which uses claim → CLI dispatch → /complete with proof)."
-    },
-    {
-      "claim": "Reward is 250 QPP",
-      "type": "factual",
-      "verified": false,
-      "evidence": "Actual reward per the contract is 5 QPT. Baseline guessed both amount and token wrong."
-    },
-    {
-      "claim": "Swap involves 0.01 SOL → 1.6839 USDC",
-      "type": "factual",
-      "verified": false,
-      "evidence": "Quest's min_notional_usd is $50, so 0.01 SOL (~$1.50) wouldn't satisfy the quest. Baseline picked min_amount_in instead of min_notional_usd because it invented the params."
-    }
-  ],
-  "user_notes_summary": {
-    "uncertainties": ["Endpoint structure invented", "Reward currency QPP a guess", "Amount might need to be user-specified"],
-    "needs_review": [],
-    "workarounds": []
-  },
-  "eval_feedback": {
-    "suggestions": [
-      {
-        "reason": "The 'Reports the reward' assertion is good because it pins both amount AND token (5 QPT). Baseline got both wrong, which cleanly demonstrates the value of the skill's contract knowledge."
-      }
-    ],
-    "overall": "Baseline fails 7/9 assertions, which is exactly the expected comparison. The skill carries non-trivial contract knowledge (claim/proof flow, CLI mapping, reward shape) that the baseline cannot reconstruct from the prompt."
+    "total": 11,
+    "pass_rate": 0.364
   }
 }

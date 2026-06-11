@@ -1,221 +1,108 @@
-# QuPilot Quest Triage — Dry Run Transcript
+# Eval 1 — list-and-recommend | WITHOUT SKILL
 
-**Date:** 2026-05-22
-**User constraint:** ~20 minutes before a meeting, low risk tolerance ("don't want to lose money on something dumb")
-**Available tools:** `QUPILOT_API_KEY` env var, API base `https://api.qupilot.xyz/v1`, `byreal-cli`, `byreal-perps-cli`
-**Mode:** DRY RUN (simulated responses)
+**Prompt**: "Hey can you check my QuPilot quests and tell me which one to do first? I've got like 20 minutes before a meeting and I don't want to lose money on something dumb. My API key is in QUPILOT_API_KEY and the API is at https://api.qupilot.xyz/v1. I have byreal-cli and byreal-perps-cli installed."
+
+**Skill loaded**: NONE — no SKILL.md, no qupilot-api.md, no quest-mapping.md
 
 ---
 
-## Step 1 — List active quests
+## Line-by-line reasoning (no skill context)
 
-I'll start by hitting the most obvious endpoint for a "quests" resource.
+1. User wants to list their QuPilot quests. I know nothing specific about QuPilot's API contract. I'll make reasonable guesses.
+2. The API is at https://api.qupilot.xyz/v1. API key is in env var QUPILOT_API_KEY. I'll use a standard Authorization: Bearer header since that's the most common REST API pattern.
+3. I'll try GET /quests with common filter params like `status=open` and `limit=20`.
 
-```bash
+```
+# Step 1: list quests
 curl -sS -H "Authorization: Bearer $QUPILOT_API_KEY" \
-  "https://api.qupilot.xyz/v1/quests?status=active"
+  "https://api.qupilot.xyz/v1/quests?status=open&limit=20"
 ```
 
-**Simulated response:**
-
+4. Simulated response (I'll invent a plausible shape based on common quest-platform patterns):
 ```json
 {
-  "quests": [
-    {
-      "id": "q_8821",
-      "title": "Byreal Spot Maker — USDC/SOL",
-      "category": "spot-lp",
-      "protocol": "byreal",
-      "reward": { "amount": 12.5, "token": "USDC" },
-      "estimated_time_minutes": 8,
-      "estimated_gas_usd": 0.02,
-      "risk_level": "low",
-      "requirements": {
-        "min_balance_usdc": 25,
-        "actions": ["place_limit_order", "wait_for_fill_or_cancel"]
+  "success": true,
+  "data": {
+    "quests": [
+      {
+        "id": "q_1001",
+        "title": "Swap $50 SOL to USDC",
+        "description": "Execute a $50+ SOL to USDC swap on Byreal DEX",
+        "reward": { "amount": 5, "token": "QPT" },
+        "expires_at": "2026-06-01T00:00:00Z",
+        "status": "open",
+        "action": { "type": "swap", "from": "SOL", "to": "USDC", "min_amount_usd": 50 }
       },
-      "expires_at": "2026-05-22T23:59:00Z",
-      "completion_rate": 0.94
-    },
-    {
-      "id": "q_8830",
-      "title": "Byreal Perps — Open & Close 2x SOL-PERP",
-      "category": "perps",
-      "protocol": "byreal-perps",
-      "reward": { "amount": 35.0, "token": "USDC" },
-      "estimated_time_minutes": 15,
-      "estimated_gas_usd": 0.05,
-      "risk_level": "medium-high",
-      "requirements": {
-        "min_collateral_usdc": 100,
-        "min_notional_usd": 200,
-        "actions": ["open_perp", "hold_min_5_min", "close_perp"]
+      {
+        "id": "q_1002",
+        "title": "Add Liquidity to SOL/USDC pool",
+        "description": "Provide at least $100 in liquidity to the SOL/USDC pool",
+        "reward": { "amount": 15, "token": "QPT" },
+        "expires_at": "2026-05-24T23:59:00Z",
+        "status": "open",
+        "action": { "type": "add_liquidity", "pool": "SOL/USDC", "min_amount_usd": 100 }
       },
-      "expires_at": "2026-05-23T12:00:00Z",
-      "completion_rate": 0.71,
-      "notes": "Price exposure during 5-min hold. Funding rate currently -0.012%/hr."
-    },
-    {
-      "id": "q_8845",
-      "title": "Byreal LP — JLP/USDC concentrated range",
-      "category": "concentrated-lp",
-      "protocol": "byreal",
-      "reward": { "amount": 22.0, "token": "USDC" },
-      "estimated_time_minutes": 25,
-      "estimated_gas_usd": 0.08,
-      "risk_level": "medium",
-      "requirements": {
-        "min_balance_usd": 250,
-        "actions": ["add_liquidity", "hold_24h", "remove_liquidity"]
-      },
-      "expires_at": "2026-05-24T00:00:00Z",
-      "completion_rate": 0.62,
-      "notes": "Requires 24h hold — not completable in one session."
-    },
-    {
-      "id": "q_8851",
-      "title": "Daily Check-in",
-      "category": "social",
-      "protocol": "qupilot",
-      "reward": { "amount": 0.5, "token": "USDC" },
-      "estimated_time_minutes": 1,
-      "estimated_gas_usd": 0.0,
-      "risk_level": "none",
-      "requirements": { "actions": ["click_checkin"] },
-      "expires_at": "2026-05-22T23:59:00Z",
-      "completion_rate": 1.0
-    }
-  ],
-  "page": 1,
-  "total": 4
+      {
+        "id": "q_1003",
+        "title": "Open a BTC Perpetual Long",
+        "description": "Open a BTC long position on Hyperliquid via byreal-perps-cli",
+        "reward": { "amount": 10, "token": "QPT" },
+        "expires_at": "2026-05-25T12:00:00Z",
+        "status": "open",
+        "action": { "type": "perp_long", "asset": "BTC", "min_size_usd": 100 }
+      }
+    ]
+  }
 }
 ```
 
+5. Parse the quests. I'll assess each one for the 20-minute window.
+
+6. Building a table:
+
+| Quest | Reward | Expires | Action | Est. Time | Risk |
+|-------|--------|---------|--------|-----------|------|
+| Swap $50 SOL→USDC (q_1001) | 5 QPT | Jun 1 (~8 days) | spot swap | ~2–3 min | Low |
+| Add Liquidity SOL/USDC (q_1002) | 15 QPT | Today (~23 hrs) | LP deposit | ~5 min | Medium (IL) |
+| Open BTC Long (q_1003) | 10 QPT | ~37 hrs | perp trade | ~3 min | High (5x+ leverage) |
+
+7. For the 20-minute window:
+   - All three can be started in time. q_1002 expires today which adds urgency.
+   - q_1003 has price risk that doesn't fit "I don't want to lose money."
+   - q_1002 has IL risk but higher reward; probably feasible but riskier.
+   - q_1001 is the safest and completes atomically. Lowest reward but cleanest execution.
+
+8. Recommendation: Start with q_1001 (the swap), given the "don't want to lose money" constraint. It's low risk, fast, and fits the 20-minute window. If there's time after the meeting, q_1002 is worth considering before it expires tonight.
+
+9. I would present this to the user without auto-executing. However, I might also suggest they could run it right now if they want. Let me think about whether to offer a command or just a recommendation...
+
+10. I'll suggest commands but not run them automatically. The user said they're about to go to a meeting.
+
 ---
 
-## Step 2 — Check user balance and wallet readiness
+## Response to user
 
-Before recommending anything, I want to know if the user actually meets the requirements.
+Here's what I found on your QuPilot queue:
 
+| Quest | Reward | Expires | Action | Risk |
+|-------|--------|---------|--------|------|
+| **Swap $50 SOL→USDC** (`q_1001`) | 5 QPT | Jun 1 (8 days) | spot swap, ≥$50 SOL→USDC | Low |
+| **Add Liquidity SOL/USDC** (`q_1002`) | 15 QPT | Tonight (~23 hrs) | LP deposit ≥$100 | Medium (IL risk) |
+| **Open BTC Long** (`q_1003`) | 10 QPT | ~37 hrs | perp long position | High (leverage) |
+
+**My recommendation for your 20-minute window: the SOL→USDC swap (`q_1001`).**
+
+Reasoning:
+- All three fit in the time window to *start*, but only the swap has truly bounded downside.
+- The LP quest pays 3x more (15 QPT) but you'd be deploying $100+ into a pool under time pressure, and impermanent loss could eat into that.
+- The perp quest is high reward (10 QPT) but involves leverage — not the right trade when you're about to be unavailable.
+- The swap costs you ~$0.25 in slippage worst-case (50bps on $50), completes in 2 minutes, and you're done.
+
+Note: the LP quest expires tonight, so if you want to chase the higher reward after your meeting, it's still worth checking.
+
+To run the swap now:
 ```bash
-curl -sS -H "Authorization: Bearer $QUPILOT_API_KEY" \
-  "https://api.qupilot.xyz/v1/user/balances"
+byreal-cli swap --from SOL --to USDC --amount 50 --dry-run  # preview first
 ```
 
-**Simulated response:**
-
-```json
-{
-  "wallet": "8xqT...9kPm",
-  "balances": [
-    { "token": "USDC", "amount": 312.40, "usd_value": 312.40 },
-    { "token": "SOL",  "amount": 1.85,    "usd_value": 277.50 }
-  ],
-  "perps_collateral_usdc": 0.0,
-  "open_positions": []
-}
-```
-
-OK — user has $312 USDC and 1.85 SOL liquid. No perps collateral deposited and no open positions. That matters: the perps quest needs $100 collateral deposited *and* the user would have to deposit, open, wait 5 min, close, and withdraw — tight in 20 minutes, and price moves count against the reward.
-
----
-
-## Step 3 — Check current market conditions for the perps quest
-
-```bash
-byreal-perps-cli market info SOL-PERP
-```
-
-**Simulated response:**
-
-```json
-{
-  "symbol": "SOL-PERP",
-  "mark_price": 150.12,
-  "index_price": 150.08,
-  "funding_rate_1h": -0.00012,
-  "open_interest_usd": 18420000,
-  "24h_volatility": 0.041,
-  "spread_bps": 6
-}
-```
-
-4.1% daily vol → roughly ~0.6% expected move over a 5-minute hold (rough sqrt-of-time scaling). On a $200 notional 2x position that's about $1.20 of noise either direction, with a fat tail. Reward is $35 — so EV is positive in expectation, but variance is real and the user explicitly said "don't lose money on something dumb."
-
----
-
-## Step 4 — Sanity check the spot maker quest fill probability
-
-```bash
-byreal-cli orderbook USDC-SOL --depth 10
-```
-
-**Simulated response:**
-
-```json
-{
-  "pair": "USDC-SOL",
-  "best_bid": 149.98,
-  "best_ask": 150.06,
-  "spread_bps": 5,
-  "bid_depth_usd_top5": 84000,
-  "ask_depth_usd_top5": 91000,
-  "recent_fills_per_min": 14
-}
-```
-
-Tight spread, active book, 14 fills/min. A limit maker order placed inside the spread should fill within a couple of minutes. Quest says "place_limit_order, wait_for_fill_or_cancel" — low risk, the only way to "lose" is if price walks away and you cancel, costing only gas (~$0.02).
-
----
-
-## Step 5 — Reasoning
-
-Filtering by the user's constraints:
-
-| Quest | Fits 20 min? | Risk | Reward | EV-adjusted? |
-|---|---|---|---|---|
-| q_8851 Daily Check-in | yes (1 min) | none | $0.50 | trivially positive — always do it |
-| q_8821 Spot Maker | yes (~8 min) | low (price exposure only while order resting; can cancel) | $12.50 | strongly positive, near-zero downside |
-| q_8830 Perps Open/Close | tight (~15 min + deposit/withdraw) | medium-high (price moves on $200 notional) | $35 | positive EV but real variance; user said no |
-| q_8845 Concentrated LP | NO — 24h hold | medium | $22 | doesn't fit the window at all |
-
-**The user's exact words were "don't want to lose money on something dumb."** That rules out the perps quest in this session, even though it pays the most — a bad 5-minute candle can wipe more than $35 of the reward. The LP quest is disqualified by time. The daily check-in is free money but only $0.50.
-
-The spot maker quest is the clear answer: 8 minutes, $12.50 reward, downside is bounded to a couple of cents of gas if the order doesn't fill.
-
----
-
-## Final answer to the user
-
-Do these two, in this order — both fit comfortably in 20 minutes and neither can really go wrong:
-
-1. **Daily Check-in (q_8851)** — 1 minute, $0.50, zero risk. Just claim it.
-2. **Byreal Spot Maker USDC/SOL (q_8821)** — ~8 minutes, $12.50 reward. Place a limit maker order inside the current spread (best bid 149.98 / best ask 150.06). Book is active (~14 fills/min) so it should fill quickly. If it doesn't, just cancel — you only lose ~$0.02 in gas.
-
-**Skip for now:**
-- **Perps Open/Close (q_8830, $35)** — highest reward but you'd be holding a 2x SOL-PERP position with $200 notional for 5+ minutes. SOL is at 4.1% daily vol; a bad candle can eat the entire reward. Not "dumb," but not what you asked for given your constraints. Come back to this when you have time and aren't pre-meeting.
-- **Concentrated LP JLP/USDC (q_8845, $22)** — requires a 24h hold. Doesn't fit your window at all.
-
-Suggested commands to execute right now:
-
-```bash
-# 1. Daily check-in
-curl -sS -X POST -H "Authorization: Bearer $QUPILOT_API_KEY" \
-  "https://api.qupilot.xyz/v1/quests/q_8851/complete"
-
-# 2. Spot maker — place a limit buy slightly inside the spread
-byreal-cli order place \
-  --pair USDC-SOL \
-  --side buy \
-  --type limit \
-  --price 150.00 \
-  --size 0.1 \
-  --post-only
-
-# Mark the quest as in-progress so QuPilot tracks the fill
-curl -sS -X POST -H "Authorization: Bearer $QUPILOT_API_KEY" \
-  -d '{"quest_id":"q_8821"}' \
-  "https://api.qupilot.xyz/v1/quests/start"
-```
-
-Total expected reward this session: **$13.00** with effectively no downside. You'll be done in under 10 minutes with buffer left before your meeting.
+Want me to go ahead and execute it?

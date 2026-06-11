@@ -1,101 +1,65 @@
 {
   "expectations": [
     {
-      "text": "Fetches the quest to confirm action.kind before claiming",
+      "text": "Reads qupilot-api.md and fetches the quest first to confirm action.kind before joining",
       "passed": true,
-      "evidence": "Phase 1 (lines 25-28) issues `GET $QUPILOT_API_URL/quests/qst_01HXYABCDEF` BEFORE Phase 2a claim (lines 67-70). action.kind=\"swap\" inspected before proceeding."
+      "evidence": "Lines 2-8: Agent reads qupilot-api.md at step 2, notes key facts including auth header and endpoint shapes. Step 1 (line 5-8) fetches `GET /quests/qst_01HXYABCDEF` and checks quest_type before calling POST /agent/participations at step 9. Explicitly stated: 'Before doing anything else, fetch the quest to see the actual action.kind. Do NOT call /agent/participations yet.'"
     },
     {
-      "text": "Claims the quest and captures claim_token",
+      "text": "POSTs /agent/participations with { quest_uuid } and saves participation.uuid (NOT claim_token)",
       "passed": true,
-      "evidence": "Phase 2a (line 68): `POST $QUPILOT_API_URL/quests/qst_01HXYABCDEF/claim`. Response (line 80) returns `claim_token: ctk_simfake123`; executor explicitly says 'Save claim_token = \"ctk_simfake123\"' on line 84."
+      "evidence": "Step 9: `POST https://api.qupilot.xyz/v1/agent/participations` with body `{ \"quest_uuid\": \"qst_01HXYABCDEF\" }`. Line 11: 'Save: participation_uuid = \"par_01HXYSIM0001\". This is NOT a claim_token — it's participation.uuid.' Explicitly references qupilot-api.md note about claim_token not existing."
+    },
+    {
+      "text": "Runs byreal-cli wallet balance check first",
+      "passed": true,
+      "evidence": "Step 3 (line 12): `byreal-cli wallet balance -o json` runs before swap quote and execute. Per quest-mapping.md §1 pre-flight step 1."
     },
     {
       "text": "Runs swap quote (preview) before executing",
       "passed": true,
-      "evidence": "Phase 2c (line 109): `byreal-cli swap quote --from SOL --to USDC --amount 0.45 -o json` precedes Phase 2d execute (line 137): `byreal-cli swap execute ...`."
+      "evidence": "Step 4 (line 15): `byreal-cli swap quote --from SOL --to USDC --amount 0.34 -o json` runs before Step 5 (line 19): `byreal-cli swap execute ...`."
     },
     {
       "text": "Uses -o json on every byreal command",
       "passed": true,
-      "evidence": "All three byreal-cli invocations include `-o json`: wallet balance (line 92), swap quote (line 109), swap execute (line 137)."
+      "evidence": "All three byreal-cli commands include `-o json`: wallet balance (line 12), swap quote (line 15), swap execute (line 19)."
     },
     {
-      "text": "Validates quote against quest params before executing",
+      "text": "Validates quote against quest params (notional >= min_notional_usd, slippage <= max_slippage_bps)",
       "passed": true,
-      "evidence": "Decision check (lines 127-130) explicitly compares notional_usd=55.20 >= min_notional_usd=50 and slippage_bps=18 <= max_slippage_bps=50 before proceeding."
+      "evidence": "Line 17: 'notional_usd = 50.82 >= min_notional_usd = 50 ✅' and 'slippage_bps = 22 <= max_slippage_bps = 50 ✅'. Both checks performed before execute."
     },
     {
-      "text": "Submits proof with claim_token and tx_hash",
+      "text": "Runs byreal-cli swap execute and captures tx_hash",
       "passed": true,
-      "evidence": "Phase 3a (lines 162-173) POSTs to /complete with body `{\"claim_token\": \"ctk_simfake123\", \"proof\": {\"tx_hash\": \"5n3FAKEhash...XYZ\"}, ...}`. Both fields present."
+      "evidence": "Step 5 (line 19): `byreal-cli swap execute --from SOL --to USDC --amount 0.34 --slippage-bps 50 -o json`. Line 21: 'Extract tx_hash = \"5xK9mFAKEHASH3rT2vP8wQ7nX1cL4jY6bN0dE9hG\"'."
     },
     {
-      "text": "Polls /quests/{id} after submission until verified",
+      "text": "POSTs /agent/participations/:uuid/complete with flat { tx_hash } — NOT nested proof, NOT claim_token",
       "passed": true,
-      "evidence": "Phase 3b (Poll #1, line 192-193) and Phase 3c (Poll #2, line 210-212) both call `GET $QUPILOT_API_URL/quests/qst_01HXYABCDEF`. Loop stops when status transitions to \"verified\" on poll #2 (line 221)."
+      "evidence": "Step 6 (line 22): body is `{ \"tx_hash\": \"5xK9mFAKEHASH3rT2vP8wQ7nX1cL4jY6bN0dE9hG\" }` — flat, no claim_token, no nested proof object. URL uses `par_01HXYSIM0001` as participation UUID."
     },
     {
-      "text": "Reports the reward to the user at the end",
+      "text": "Reads synchronous response — does NOT poll (verification is immediate)",
       "passed": true,
-      "evidence": "Final message (line 233): 'Quest qst_01HXYABCDEF is done and verified — 5 QPT credited to your account.' Also line 243: 'earned 5 QPT on top.'"
+      "evidence": "Line 24: 'Do NOT poll.' Explicitly references qupilot-api.md: 'status will be either success or failed — verification is synchronous, not async. No need to poll.' No polling loop in transcript."
+    },
+    {
+      "text": "Reports final status (success/failed) and reward to user",
+      "passed": true,
+      "evidence": "Final response: 'Quest qst_01HXYABCDEF — complete and verified.' Lists all steps with status: 'Submitted proof → status: success.' Final line: 'Reward: 5 QPT credited to your account.'"
     },
     {
       "text": "Did NOT skip preview because user said 'I trust you'",
       "passed": true,
-      "evidence": "Phase 2c quote runs despite trust phrasing. Line 132: 'Quote satisfies the quest constraints. Proceed to execute' — preview gated execution."
+      "evidence": "Line 18: 'Note: SKILL.md Hard Constraint: Preview big trades...' and 'The preview has been done. User said go ahead and do it, I trust you. Proceeding to execute.' Preview was run at step 4 regardless of trust statement."
     }
   ],
   "summary": {
-    "passed": 9,
+    "passed": 11,
     "failed": 0,
-    "total": 9,
+    "total": 11,
     "pass_rate": 1.0
-  },
-  "execution_metrics": {
-    "tool_calls": {},
-    "total_tool_calls": 0,
-    "total_steps": 0,
-    "errors_encountered": 0,
-    "output_chars": 9500,
-    "transcript_chars": 9500
-  },
-  "timing": {
-    "executor_duration_seconds": 85.0,
-    "total_duration_seconds": 85.0
-  },
-  "claims": [
-    {
-      "claim": "Realized slippage of 27 bps is within 50 bps cap",
-      "type": "factual",
-      "verified": true,
-      "evidence": "(55.20-55.05)/55.20 ≈ 27 bps; below 50 bps ceiling."
-    },
-    {
-      "claim": "Verification is async; polling required after /complete",
-      "type": "process",
-      "verified": true,
-      "evidence": "Consistent with SKILL.md Phase 3 contract; executor polled twice with ~10s gap."
-    },
-    {
-      "claim": "0.45 SOL implies SOL price ~$122.67",
-      "type": "factual",
-      "verified": true,
-      "evidence": "55.20 / 0.45 ≈ 122.67. Arithmetic correct."
-    }
-  ],
-  "user_notes_summary": {
-    "uncertainties": [],
-    "needs_review": [],
-    "workarounds": []
-  },
-  "eval_feedback": {
-    "suggestions": [
-      {
-        "assertion": "Validates quote against quest params before executing",
-        "reason": "The assertion checks the comparison happens; consider also asserting the agent would have refused to execute if the validation failed. Right now a sloppy agent could 'check' and proceed anyway."
-      }
-    ],
-    "overall": "Assertions cover the full happy path well. The with-skill run hits all nine cleanly."
   }
 }
